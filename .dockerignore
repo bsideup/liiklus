@@ -1,8 +1,7 @@
-**
-!/gradle/
-!settings.gradle
-!gradlew*
-!**/build.gradle
+Dockerfile
+**/build/**
 
-!/app/src/
-!/protocol/src/
+.idea/*
+.vscode/*
+
+/protocol/generated/
