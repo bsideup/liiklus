@@ -27,7 +27,4 @@ dependencies {
 
     testCompileOnly 'org.projectlombok:lombok'
     testCompile 'org.springframework.boot:spring-boot-starter-test'
-    testCompile 'org.testcontainers:kafka'
-    testCompile 'org.awaitility:awaitility'
-    testCompile 'org.assertj:assertj-core'
 }
