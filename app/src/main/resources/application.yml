@@ -1,0 +1,6 @@
+spring:
+  jmx:
+    enabled: false
+
+  cache:
+    type: NONE

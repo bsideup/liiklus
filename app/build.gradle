@@ -1,0 +1,33 @@
+plugins {
+    id "java"
+}
+
+apply plugin: 'org.springframework.boot'
+
+test.testLogging {
+    displayGranularity 1
+    showStackTraces = true
+    exceptionFormat = 'full'
+    events "STARTED", "PASSED", "FAILED", "SKIPPED"
+}
+
+dependencies {
+    compileOnly 'org.projectlombok:lombok'
+
+    compile project(":protocol")
+
+    compile 'org.lognet:grpc-spring-boot-starter'
+    compile 'io.grpc:grpc-netty'
+    compile 'io.grpc:grpc-core'
+
+    compile 'org.springframework.boot:spring-boot-starter-actuator'
+    compile 'org.springframework.boot:spring-boot-starter-web'
+
+    compile 'io.projectreactor.kafka:reactor-kafka'
+
+    testCompileOnly 'org.projectlombok:lombok'
+    testCompile 'org.springframework.boot:spring-boot-starter-test'
+    testCompile 'org.testcontainers:kafka'
+    testCompile 'org.awaitility:awaitility'
+    testCompile 'org.assertj:assertj-core'
+}

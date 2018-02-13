@@ -1,0 +1,55 @@
+plugins {
+    id "java"
+    id "idea"
+    id "com.google.protobuf" version "0.8.3"
+}
+
+protobuf {
+    protoc {
+        artifact = 'com.google.protobuf:protoc:3.5.1'
+    }
+
+    generatedFilesBaseDir = "$projectDir/generated"
+
+    plugins {
+        grpc {
+            artifact = 'io.grpc:protoc-gen-grpc-java:1.9.0'
+        }
+
+        reactor {
+            artifact = "com.salesforce.servicelibs:reactor-grpc:0.8.0:jdk8@jar"
+        }
+    }
+
+    generateProtoTasks {
+        ofSourceSet('main')*.plugins {
+            grpc { }
+            reactor { }
+        }
+    }
+}
+
+clean {
+    delete protobuf.generatedFilesBaseDir
+}
+
+idea {
+    module {
+        sourceDirs += file("${protobuf.generatedFilesBaseDir}/main/java")
+        generatedSourceDirs += file("${protobuf.generatedFilesBaseDir}/main/java")
+
+        sourceDirs += file("${protobuf.generatedFilesBaseDir}/main/reactor")
+        generatedSourceDirs += file("${protobuf.generatedFilesBaseDir}/main/reactor")
+
+        sourceDirs += file("${protobuf.generatedFilesBaseDir}/main/grpc")
+        generatedSourceDirs += file("${protobuf.generatedFilesBaseDir}/main/grpc")
+    }
+}
+
+dependencies {
+    compile 'com.google.protobuf:protobuf-java'
+
+    compile 'io.grpc:grpc-stub'
+    compile 'io.grpc:grpc-protobuf'
+    compile 'com.salesforce.servicelibs:reactor-grpc-stub'
+}
