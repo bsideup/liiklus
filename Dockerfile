@@ -4,7 +4,7 @@ WORKDIR /project
 
 COPY . .
 
-RUN ./gradlew --no-daemon build -x check
+RUN ./gradlew --no-daemon build -x test
 
 FROM openjdk:8u151-jre
 
