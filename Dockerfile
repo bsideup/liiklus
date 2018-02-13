@@ -1,14 +1,16 @@
 FROM openjdk:8u151-jdk AS workspace
 
-WORKDIR /project
+COPY . /root/project
 
-COPY . .
+WORKDIR /root/project
+
+RUN ls -la
 
 RUN ./gradlew --no-daemon build -x check
 
 FROM openjdk:8u151-jre
 
-COPY --from=workspace /project/app/build/libs/app.jar /app.jar
+COPY --from=workspace /root/project/app/build/libs/app.jar /app.jar
 
 ENV JAVA_OPTS=""
 ENV JAVA_MEMORY_OPTS="-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap -XX:+UseG1GC"
