@@ -1,10 +1,12 @@
 version: 2
 executorType: machine
 jobs:
-  core:
+  build:
     steps:
       - checkout
+
       - run: ./gradlew check
+
       - run:
           name: Save test results
           command: |
