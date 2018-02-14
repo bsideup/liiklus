@@ -11,9 +11,12 @@ import java.util.concurrent.TimeUnit;
 public class GRPCConfiguration extends GRpcServerBuilderConfigurer {
     @Override
     public void configure(ServerBuilder<?> serverBuilder) {
-        ((NettyServerBuilder) serverBuilder)
-                .permitKeepAliveTime(150, TimeUnit.SECONDS)
-                .permitKeepAliveWithoutCalls(true)
-                .directExecutor();
+        serverBuilder.directExecutor();
+
+        if (serverBuilder instanceof NettyServerBuilder) {
+            ((NettyServerBuilder) serverBuilder)
+                    .permitKeepAliveTime(150, TimeUnit.SECONDS)
+                    .permitKeepAliveWithoutCalls(true);
+        }
     }
 }
