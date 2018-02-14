@@ -18,6 +18,8 @@ allprojects {
 
             dependency 'org.lognet:grpc-spring-boot-starter:2.1.5'
 
+            dependency 'org.testcontainers:kafka:1.6.0'
+
             dependency 'com.google.protobuf:protobuf-java:3.5.1'
             dependencySet(group: 'io.grpc', version: '1.9.1') {
                 entry 'grpc-netty'

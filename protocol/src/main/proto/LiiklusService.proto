@@ -10,6 +10,10 @@ option optimize_for = SPEED;
 option java_multiple_files = true;
 
 service LiiklusService {
+    rpc Publish(PublishRequest) returns (PublishReply) {
+
+    }
+
     rpc Subscribe (SubscribeRequest) returns (stream SubscribeReply) {
     }
 
@@ -20,6 +24,18 @@ service LiiklusService {
     rpc Ack (AckRequest) returns (google.protobuf.Empty) {
 
     }
+}
+
+message PublishRequest {
+    string topic = 1;
+
+    bytes key = 2;
+
+    bytes value = 3;
+}
+
+message PublishReply {
+
 }
 
 message SubscribeRequest {

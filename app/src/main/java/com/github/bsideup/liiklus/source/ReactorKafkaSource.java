@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteBufferDeserializer;
 import org.reactivestreams.Publisher;
@@ -13,6 +14,8 @@ import reactor.kafka.receiver.KafkaReceiver;
 import reactor.kafka.receiver.ReceiverOptions;
 import reactor.kafka.receiver.internals.DefaultKafkaReceiver;
 import reactor.kafka.receiver.internals.DefaultKafkaReceiverAccessor;
+import reactor.kafka.sender.KafkaSender;
+import reactor.kafka.sender.SenderRecord;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;
@@ -27,6 +30,15 @@ import static java.util.Collections.singletonList;
 public class ReactorKafkaSource implements KafkaSource {
 
     String bootstrapServers;
+
+    KafkaSender<ByteBuffer, ByteBuffer> sender;
+
+    @Override
+    public Mono<Void> publish(String topic, ByteBuffer key, ByteBuffer value) {
+        return sender.send(Mono.just(SenderRecord.create(new ProducerRecord<>(topic, key, value), 1)))
+                .single()
+                .flatMap(it -> it.exception() != null ? Mono.error(it.exception()) : Mono.empty());
+    }
 
     @Override
     public Subscription subscribe(Map<String, Object> props, String topic) {

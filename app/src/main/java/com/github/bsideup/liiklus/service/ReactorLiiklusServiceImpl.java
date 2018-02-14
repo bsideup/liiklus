@@ -1,9 +1,9 @@
 package com.github.bsideup.liiklus.service;
 
-import com.github.bsideup.liiklus.protocol.AckRequest;
-import com.github.bsideup.liiklus.protocol.ReactorLiiklusServiceGrpc;
-import com.github.bsideup.liiklus.protocol.SubscribeReply;
-import com.github.bsideup.liiklus.protocol.SubscribeRequest;
+import com.github.bsideup.liiklus.protocol.*;
+import com.github.bsideup.liiklus.protocol.ReceiveReply.Record;
+import com.github.bsideup.liiklus.source.KafkaSource;
+import com.github.bsideup.liiklus.source.KafkaSource.Subscription;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
 import com.google.protobuf.Timestamp;
@@ -15,10 +15,6 @@ import org.lognet.springboot.grpc.GRpcService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.SignalType;
-import com.github.bsideup.liiklus.protocol.*;
-import com.github.bsideup.liiklus.protocol.ReceiveReply.Record;
-import com.github.bsideup.liiklus.source.KafkaSource;
-import com.github.bsideup.liiklus.source.KafkaSource.Subscription;
 
 import java.time.Duration;
 import java.util.HashMap;
@@ -38,6 +34,17 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
     ConcurrentMap<String, ConcurrentMap<String, ConcurrentMap<Integer, Flux<KafkaSource.KafkaRecord>>>> sources = new ConcurrentHashMap<>();
 
     KafkaSource kafkaSource;
+
+    @Override
+    public Mono<PublishReply> publish(Mono<PublishRequest> requestMono) {
+        return requestMono
+                .flatMap(request -> kafkaSource.publish(
+                        request.getTopic(),
+                        request.getKey().asReadOnlyByteBuffer(),
+                        request.getValue().asReadOnlyByteBuffer()
+                ))
+                .then(Mono.just(PublishReply.getDefaultInstance()));
+    }
 
     @Override
     public Flux<SubscribeReply> subscribe(Mono<SubscribeRequest> requestFlux) {

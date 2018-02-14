@@ -11,6 +11,8 @@ import java.util.Map;
 
 public interface KafkaSource {
 
+    Mono<Void> publish(String topic, ByteBuffer key, ByteBuffer value);
+
     Subscription subscribe(Map<String, Object> props, String topic);
 
     interface Subscription {
