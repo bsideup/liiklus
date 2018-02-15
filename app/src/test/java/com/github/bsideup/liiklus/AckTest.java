@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -132,8 +131,6 @@ public class AckTest extends AbstractIntegrationTest {
     public void testInterruption() throws Exception {
         ByteString key = ByteString.copyFromUtf8(UUID.randomUUID().toString());
 
-        AtomicBoolean acked = new AtomicBoolean();
-
         Map<String, Integer> receiveStatus = Flux.fromStream(IntStream.range(0, 10).boxed())
                 .concatMap(i -> stub.publish(Mono.just(
                         PublishRequest.newBuilder()
@@ -143,30 +140,29 @@ public class AckTest extends AbstractIntegrationTest {
                                 .build()
                 )))
                 .thenMany(
-                        Flux.defer(() -> stub.subscribe(Mono.just(subscribeRequest)))
-                                .flatMap(it -> stub
-                                        .receive(Mono.just(ReceiveRequest.newBuilder().setAssignment(it.getAssignment()).build()))
-                                        .delayUntil(reply -> {
-                                            if (reply.getRecord().getOffset() == 4) {
-                                                return stub
+                        Flux
+                                .defer(() -> stub
+                                        .subscribe(Mono.just(subscribeRequest))
+                                        .flatMap(it -> stub
+                                                .receive(Mono.just(ReceiveRequest.newBuilder().setAssignment(it.getAssignment()).build()))
+                                                .map(ReceiveReply::getRecord)
+                                                .filter(record -> key.equals(record.getKey()))
+                                                .buffer(5)
+                                                .delayUntil(batch -> stub
                                                         .ack(Mono.just(AckRequest.newBuilder()
                                                                 .setAssignment(it.getAssignment())
-                                                                .setOffset(reply.getRecord().getOffset())
+                                                                .setOffset(batch.get(batch.size() - 1).getOffset())
                                                                 .build()
                                                         ))
-                                                        .doOnSuccess(__ -> acked.set(true));
-                                            } else {
-                                                return Mono.empty();
-                                            }
-                                        })
+                                                )
+                                        )
+                                        .take(1)
                                 )
-                                .filter(it -> key.equals(it.getRecord().getKey()))
-                                // Cancel previous subscription after ACK
-                                .takeUntil(__ -> acked.getAndSet(false))
-                                .repeat(2)
+                                .repeat()
+                                .flatMapIterable(batch -> batch)
                 )
                 .take(10)
-                .map(it -> it.getRecord().getValue().toStringUtf8())
+                .map(it -> it.getValue().toStringUtf8())
                 .scan(new HashMap<String, Integer>(), (acc, value) -> {
                     acc.compute(value, (__, currentCount) -> currentCount == null ? 1 : currentCount + 1);
                     return acc;
