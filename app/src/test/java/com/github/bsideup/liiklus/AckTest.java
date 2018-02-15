@@ -132,7 +132,7 @@ public class AckTest extends AbstractIntegrationTest {
                 .collectList()
                 .block(Duration.ofSeconds(10));
 
-        assertThat(records).hasSize(10);
+        assertThat(records).hasSize(values.size());
 
         for (PartitionInfo info : kafkaConsumer.partitionsFor(subscribeRequest.getTopic())) {
             OffsetAndMetadata offsetAndMetadata = kafkaConsumer.committed(new TopicPartition(info.topic(), info.partition()));
