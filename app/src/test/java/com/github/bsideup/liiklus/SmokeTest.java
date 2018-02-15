@@ -44,9 +44,7 @@ public class SmokeTest extends AbstractIntegrationTest {
                         stub.subscribe(Mono.just(subscribeAction))
                                 .flatMap(it -> stub.receive(Mono.just(
                                         ReceiveRequest.newBuilder()
-                                                .setGroup(subscribeAction.getGroup())
-                                                .setTopic(subscribeAction.getTopic())
-                                                .setPartition(it.getAssignment().getPartition())
+                                                .setAssignment(it.getAssignment())
                                                 .build()
                                         ))
                                 )

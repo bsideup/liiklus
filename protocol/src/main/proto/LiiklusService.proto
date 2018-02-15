@@ -52,34 +52,28 @@ message SubscribeRequest {
     }
 }
 
+message Assignment {
+    string sessionId = 1;
+
+    uint32 partition = 2;
+}
+
 message SubscribeReply {
     oneof reply {
         Assignment assignment = 1;
     }
-
-    message Assignment {
-        uint32 partition = 1;
-    }
 }
 
 message AckRequest {
-    string topic = 1;
+    Assignment assignment = 1;
 
-    string group = 2;
-
-    uint32 partition = 3;
-
-    uint64 offset = 4;
+    uint64 offset = 2;
 }
 
 message ReceiveRequest {
-    string topic = 1;
+    Assignment assignment = 1;
 
-    string group = 2;
-
-    uint32 partition = 3;
-
-    uint64 lastKnownOffset = 4;
+    uint64 lastKnownOffset = 2;
 }
 
 message ReceiveReply {

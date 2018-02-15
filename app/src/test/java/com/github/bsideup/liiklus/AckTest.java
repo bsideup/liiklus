@@ -20,7 +20,9 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -36,19 +38,12 @@ public class AckTest extends AbstractIntegrationTest {
 
     SubscribeRequest subscribeRequest;
 
-    AckRequest baseAckRequest;
-
     @Before
     public void setUpAckTest() throws Exception {
         subscribeRequest = SubscribeRequest.newBuilder()
                 .setTopic(testName.getMethodName())
                 .setGroup(testName.getMethodName())
                 .setAutoOffsetReset(SubscribeRequest.AutoOffsetReset.EARLIEST)
-                .build();
-
-        baseAckRequest = AckRequest.newBuilder()
-                .setTopic(subscribeRequest.getTopic())
-                .setGroup(subscribeRequest.getGroup())
                 .build();
 
         Map<String, Object> props = new HashMap<>();
@@ -74,15 +69,14 @@ public class AckTest extends AbstractIntegrationTest {
 
     @Test
     public void testManualAck() throws Exception {
-        AckRequest ackRequest = baseAckRequest.toBuilder().setPartition(0).setOffset(100).build();
-
+        int partition = 0;
         stub.subscribe(Mono.just(subscribeRequest))
-                .filter(it -> it.getAssignment().getPartition() == ackRequest.getPartition())
-                .delayUntil(__ -> stub.ack(Mono.just(ackRequest)))
+                .filter(it -> it.getAssignment().getPartition() == partition)
+                .delayUntil(it -> stub.ack(Mono.just(AckRequest.newBuilder().setAssignment(it.getAssignment()).setOffset(100).build())))
                 .blockFirst(Duration.ofSeconds(10));
 
         await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
-            OffsetAndMetadata offsetAndMetadata = kafkaConsumer.committed(new TopicPartition(subscribeRequest.getTopic(), ackRequest.getPartition()));
+            OffsetAndMetadata offsetAndMetadata = kafkaConsumer.committed(new TopicPartition(subscribeRequest.getTopic(), partition));
             assertThat(offsetAndMetadata)
                     .isNotNull()
                     .hasFieldOrPropertyWithValue("offset", 100 + 1L);
@@ -91,17 +85,17 @@ public class AckTest extends AbstractIntegrationTest {
 
     @Test
     public void testAlwaysLatest() throws Exception {
-        AckRequest ackRequest = baseAckRequest.toBuilder().setPartition(0).setOffset(10).build();
-
+        int partition = 0;
         stub.subscribe(Mono.just(subscribeRequest))
-                .filter(it -> it.getAssignment().getPartition() == ackRequest.getPartition())
-                .delayUntil(__ -> stub.ack(Mono.just(ackRequest)))
-                .delayUntil(__ -> stub.ack(Mono.just(ackRequest.toBuilder().setOffset(200).build())))
-                .delayUntil(__ -> stub.ack(Mono.just(ackRequest.toBuilder().setOffset(100).build())))
+                .filter(it -> it.getAssignment().getPartition() == partition)
+                .map(SubscribeReply::getAssignment)
+                .delayUntil(assignment -> stub.ack(Mono.just(AckRequest.newBuilder().setAssignment(assignment).setOffset(10).build())))
+                .delayUntil(assignment -> stub.ack(Mono.just(AckRequest.newBuilder().setAssignment(assignment).setOffset(200).build())))
+                .delayUntil(assignment -> stub.ack(Mono.just(AckRequest.newBuilder().setAssignment(assignment).setOffset(100).build())))
                 .blockFirst(Duration.ofSeconds(10));
 
         await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
-            OffsetAndMetadata offsetAndMetadata = kafkaConsumer.committed(new TopicPartition(subscribeRequest.getTopic(), ackRequest.getPartition()));
+            OffsetAndMetadata offsetAndMetadata = kafkaConsumer.committed(new TopicPartition(subscribeRequest.getTopic(), partition));
             assertThat(offsetAndMetadata)
                     .isNotNull()
                     .hasFieldOrPropertyWithValue("offset", 100 + 1L);
@@ -120,13 +114,7 @@ public class AckTest extends AbstractIntegrationTest {
                 )))
                 .thenMany(
                         stub.subscribe(Mono.just(subscribeRequest))
-                                .flatMap(it -> stub.receive(Mono.just(
-                                        ReceiveRequest.newBuilder()
-                                                .setGroup(subscribeRequest.getGroup())
-                                                .setTopic(subscribeRequest.getTopic())
-                                                .setPartition(it.getAssignment().getPartition())
-                                                .build()
-                                )))
+                                .flatMap(it -> stub.receive(Mono.just(ReceiveRequest.newBuilder().setAssignment(it.getAssignment()).build())))
                 )
                 .take(values.size())
                 .collectList()
@@ -138,5 +126,55 @@ public class AckTest extends AbstractIntegrationTest {
             OffsetAndMetadata offsetAndMetadata = kafkaConsumer.committed(new TopicPartition(info.topic(), info.partition()));
             assertThat(offsetAndMetadata).isNull();
         }
+    }
+
+    @Test
+    public void testInterruption() throws Exception {
+        ByteString key = ByteString.copyFromUtf8(UUID.randomUUID().toString());
+
+        AtomicBoolean acked = new AtomicBoolean();
+
+        Map<String, Integer> receiveStatus = Flux.fromStream(IntStream.range(0, 10).boxed())
+                .concatMap(i -> stub.publish(Mono.just(
+                        PublishRequest.newBuilder()
+                                .setTopic(subscribeRequest.getTopic())
+                                .setKey(key)
+                                .setValue(ByteString.copyFromUtf8("foo-" + i))
+                                .build()
+                )))
+                .thenMany(
+                        Flux.defer(() -> stub.subscribe(Mono.just(subscribeRequest)))
+                                .flatMap(it -> stub
+                                        .receive(Mono.just(ReceiveRequest.newBuilder().setAssignment(it.getAssignment()).build()))
+                                        .delayUntil(reply -> {
+                                            if (reply.getRecord().getOffset() == 4) {
+                                                return stub
+                                                        .ack(Mono.just(AckRequest.newBuilder()
+                                                                .setAssignment(it.getAssignment())
+                                                                .setOffset(reply.getRecord().getOffset())
+                                                                .build()
+                                                        ))
+                                                        .doOnSuccess(__ -> acked.set(true));
+                                            } else {
+                                                return Mono.empty();
+                                            }
+                                        })
+                                )
+                                .filter(it -> key.equals(it.getRecord().getKey()))
+                                // Cancel previous subscription after ACK
+                                .takeUntil(__ -> acked.getAndSet(false))
+                                .repeat(2)
+                )
+                .take(10)
+                .map(it -> it.getRecord().getValue().toStringUtf8())
+                .scan(new HashMap<String, Integer>(), (acc, value) -> {
+                    acc.compute(value, (__, currentCount) -> currentCount == null ? 1 : currentCount + 1);
+                    return acc;
+                })
+                .blockLast(Duration.ofSeconds(30));
+
+        assertThat(receiveStatus.values())
+                .hasSize(10)
+                .containsOnly(1);
     }
 }
