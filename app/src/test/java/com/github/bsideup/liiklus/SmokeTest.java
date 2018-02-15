@@ -53,9 +53,8 @@ public class SmokeTest extends AbstractIntegrationTest {
                 )
                 .take(values.size())
                 .collectList()
-                .timeout(Duration.ofSeconds(10))
                 .log("consumer", Level.WARNING, SignalType.ON_ERROR)
-                .block();
+                .block(Duration.ofSeconds(10));
 
         assertThat(records)
                 .hasSize(10)
