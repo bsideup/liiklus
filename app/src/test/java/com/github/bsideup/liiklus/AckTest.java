@@ -68,11 +68,11 @@ public class AckTest extends AbstractIntegrationTest {
 
     @Test
     public void testManualAck() throws Exception {
-        int partition = 0;
-        stub.subscribe(Mono.just(subscribeRequest))
-                .filter(it -> it.getAssignment().getPartition() == partition)
+        Integer partition = stub.subscribe(Mono.just(subscribeRequest))
+                .take(1)
                 .delayUntil(it -> stub.ack(Mono.just(AckRequest.newBuilder().setAssignment(it.getAssignment()).setOffset(100).build())))
-                .blockFirst(Duration.ofSeconds(10));
+                .map(it -> it.getAssignment().getPartition())
+                .blockFirst(Duration.ofSeconds(30));
 
         await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
             OffsetAndMetadata offsetAndMetadata = kafkaConsumer.committed(new TopicPartition(subscribeRequest.getTopic(), partition));
@@ -84,16 +84,19 @@ public class AckTest extends AbstractIntegrationTest {
 
     @Test
     public void testAlwaysLatest() throws Exception {
-        int partition = 0;
-        stub.subscribe(Mono.just(subscribeRequest))
-                .filter(it -> it.getAssignment().getPartition() == partition)
+        Integer partition = stub.subscribe(Mono.just(subscribeRequest))
                 .map(SubscribeReply::getAssignment)
-                .delayUntil(assignment -> stub.ack(Mono.just(AckRequest.newBuilder().setAssignment(assignment).setOffset(10).build())))
-                .delayUntil(assignment -> stub.ack(Mono.just(AckRequest.newBuilder().setAssignment(assignment).setOffset(200).build())))
-                .delayUntil(assignment -> stub.ack(Mono.just(AckRequest.newBuilder().setAssignment(assignment).setOffset(100).build())))
+                .concatMap(assignment ->
+                        stub.ack(Mono.just(AckRequest.newBuilder().setAssignment(assignment).setOffset(10).build()))
+                        .then(stub.ack(Mono.just(AckRequest.newBuilder().setAssignment(assignment).setOffset(200).build())))
+                        .then(stub.ack(Mono.just(AckRequest.newBuilder().setAssignment(assignment).setOffset(100).build())))
+                        .then(Mono.just(assignment))
+                )
+                .take(1)
+                .map(Assignment::getPartition)
                 .blockFirst(Duration.ofSeconds(10));
 
-        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
+        await().atMost(30, TimeUnit.SECONDS).untilAsserted(() -> {
             OffsetAndMetadata offsetAndMetadata = kafkaConsumer.committed(new TopicPartition(subscribeRequest.getTopic(), partition));
             assertThat(offsetAndMetadata)
                     .isNotNull()

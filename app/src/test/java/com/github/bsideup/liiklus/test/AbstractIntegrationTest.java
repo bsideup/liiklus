@@ -27,11 +27,14 @@ import java.util.stream.Stream;
 )
 public abstract class AbstractIntegrationTest {
 
+    public static final int NUM_PARTITIONS = 32;
+
     protected static final ManagedChannel channel = InProcessChannelBuilder.forName("liiklus")
             .build();
 
     static {
-        KafkaContainer kafka = new KafkaContainer();
+        KafkaContainer kafka = new KafkaContainer()
+                .withEnv("KAFKA_NUM_PARTITIONS", NUM_PARTITIONS + "");
 
         Stream.of(kafka).parallel().forEach(GenericContainer::start);
 
