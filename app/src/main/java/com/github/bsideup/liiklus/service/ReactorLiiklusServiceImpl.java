@@ -82,6 +82,8 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                                 sourcesByPartition.put(
                                         partition,
                                         Flux.from(group)
+                                                .log("partition-" + partition, Level.WARNING, SignalType.ON_ERROR)
+                                                .retry()
                                                 .doFinally(__ -> {
                                                     sourcesByPartition.remove(partition);
                                                     sink.complete();
