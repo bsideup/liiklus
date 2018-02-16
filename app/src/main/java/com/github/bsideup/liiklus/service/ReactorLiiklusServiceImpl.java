@@ -3,6 +3,7 @@ package com.github.bsideup.liiklus.service;
 import com.github.bsideup.liiklus.protocol.*;
 import com.github.bsideup.liiklus.protocol.ReceiveReply.Record;
 import com.github.bsideup.liiklus.source.KafkaSource;
+import com.github.bsideup.liiklus.source.KafkaSource.KafkaRecord;
 import com.github.bsideup.liiklus.source.KafkaSource.Subscription;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
@@ -31,7 +32,7 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
 
     ConcurrentMap<String, Subscription> subscriptions = new ConcurrentHashMap<>();
 
-    ConcurrentMap<String, ConcurrentMap<Integer, Flux<KafkaSource.KafkaRecord>>> sources = new ConcurrentHashMap<>();
+    ConcurrentMap<String, ConcurrentMap<Integer, Flux<KafkaRecord>>> sources = new ConcurrentHashMap<>();
 
     KafkaSource kafkaSource;
 
@@ -76,7 +77,7 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                             .<SubscribeReply>handle((group, sink) -> {
                                 int partition = group.getGroup();
 
-                                ConcurrentMap<Integer, Flux<KafkaSource.KafkaRecord>> sourcesByPartition = sources
+                                ConcurrentMap<Integer, Flux<KafkaRecord>> sourcesByPartition = sources
                                         .computeIfAbsent(sessionId, __ -> new ConcurrentHashMap<>());
 
                                 sourcesByPartition.put(
@@ -113,7 +114,14 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                     // TODO auto ack to the last known offset
                     long lastKnownOffset = request.getLastKnownOffset();
 
-                    return sources.get(sessionId).get(partition)
+                    Flux<KafkaRecord> source = sources.get(sessionId).get(partition);
+
+                    if (source == null) {
+                        log.warn("Source is null, returning empty Publisher. Request: {}", request);
+                        return Mono.empty();
+                    }
+
+                    return source
                             .map(consumerRecord -> ReceiveReply.newBuilder()
                                     .setRecord(
                                             Record.newBuilder()
@@ -134,7 +142,16 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
     @Override
     public Mono<Empty> ack(Mono<AckRequest> request) {
         return request
-                .flatMap(ack -> subscriptions.get(ack.getAssignment().getSessionId()).acknowledge(ack.getAssignment().getPartition(), ack.getOffset()))
+                .flatMap(ack -> {
+                    Subscription subscription = subscriptions.get(ack.getAssignment().getSessionId());
+
+                    if (subscription == null) {
+                        log.warn("Subscription is null, returning empty Publisher. Request: {}", ack);
+                        return Mono.empty();
+                    }
+
+                    return subscription.acknowledge(ack.getAssignment().getPartition(), ack.getOffset());
+                })
                 .then(Mono.just(Empty.getDefaultInstance()))
                 .log("ack", Level.WARNING, SignalType.ON_ERROR);
     }
