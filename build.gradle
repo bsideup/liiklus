@@ -30,6 +30,7 @@ allprojects {
 
             dependency 'com.salesforce.servicelibs:reactor-grpc-stub:0.8.0'
             dependency 'org.awaitility:awaitility:3.0.0'
+            dependency 'org.assertj:assertj-core:3.9.0'
         }
     }
 }
