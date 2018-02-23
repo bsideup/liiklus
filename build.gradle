@@ -12,9 +12,16 @@ allprojects {
     dependencyManagement {
         overriddenByDependencies = false
 
+        imports {
+            mavenBom 'org.springframework.boot:spring-boot-dependencies:1.5.9.RELEASE'
+        }
+
         dependencies {
+            dependency 'org.reactivestreams:reactive-streams:1.0.2'
+
+            dependency 'org.projectlombok:lombok:1.16.20'
+
             dependency 'io.projectreactor:reactor-core:3.1.3.RELEASE'
-            dependency 'io.projectreactor.kafka:reactor-kafka:1.0.0.RELEASE'
 
             dependency 'org.lognet:grpc-spring-boot-starter:2.1.5'
 

@@ -1,0 +1,16 @@
+plugins {
+    id "java"
+}
+
+dependencies {
+    compileOnly 'org.projectlombok:lombok'
+    compileOnly 'org.springframework.boot:spring-boot-starter'
+    compileOnly 'org.springframework.boot:spring-boot-starter-validation'
+
+    compile project(":api")
+
+    compile 'com.amazonaws:aws-java-sdk-dynamodb:1.11.283'
+    compile 'io.projectreactor:reactor-core'
+
+    testCompileOnly 'org.projectlombok:lombok'
+}

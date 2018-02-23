@@ -1,2 +1,6 @@
+include 'api'
 include 'app'
 include 'protocol'
+
+include 'kafka-records-storage'
+include 'dynamodb-positions-storage'

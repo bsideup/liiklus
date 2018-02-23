@@ -14,7 +14,6 @@ import reactor.core.publisher.SignalType;
 
 import java.time.Duration;
 import java.util.List;
-import java.util.UUID;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -26,7 +25,7 @@ public class SmokeTest extends AbstractIntegrationTest {
     @Test
     public void testPublishSubscribe() throws Exception {
         SubscribeRequest subscribeAction = SubscribeRequest.newBuilder()
-                .setTopic("test-" + UUID.randomUUID())
+                .setTopic(testName.getMethodName())
                 .setGroup(testName.getMethodName())
                 .setAutoOffsetReset(SubscribeRequest.AutoOffsetReset.EARLIEST)
                 .build();
@@ -52,7 +51,7 @@ public class SmokeTest extends AbstractIntegrationTest {
                 .take(values.size())
                 .collectList()
                 .log("consumer", Level.WARNING, SignalType.ON_ERROR)
-                .block(Duration.ofSeconds(10));
+                .block(Duration.ofSeconds(60));
 
         assertThat(records)
                 .hasSize(10)

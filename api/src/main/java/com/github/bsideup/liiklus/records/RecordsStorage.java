@@ -1,29 +1,27 @@
-package com.github.bsideup.liiklus.source;
+package com.github.bsideup.liiklus.records;
 
 import lombok.Value;
 import lombok.experimental.Delegate;
 import org.reactivestreams.Publisher;
-import reactor.core.publisher.Mono;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;
-import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.CompletionStage;
 
-public interface KafkaSource {
+public interface RecordsStorage {
 
-    Mono<Void> publish(String topic, ByteBuffer key, ByteBuffer value);
+    CompletionStage<Void> publish(String topic, ByteBuffer key, ByteBuffer value);
 
-    Subscription subscribe(Map<String, Object> props, String topic);
+    Subscription subscribe(String topic, String groupId, Optional<String> autoOffsetReset);
 
     interface Subscription {
 
-        Publisher<? extends GroupedPublisher<Integer, KafkaRecord>> getPublisher();
-
-        Mono<Void> acknowledge(int partition, long offset);
+        Publisher<? extends GroupedPublisher<Integer, Record>> getPublisher();
     }
 
     @Value
-    class KafkaRecord {
+    class Record {
 
         ByteBuffer key;
 

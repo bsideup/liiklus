@@ -14,7 +14,11 @@ test.testLogging {
 dependencies {
     compileOnly 'org.projectlombok:lombok'
 
+    compile project(":api")
     compile project(":protocol")
+
+    runtime project(":kafka-records-storage")
+    runtime project(":dynamodb-positions-storage")
 
     compile 'org.lognet:grpc-spring-boot-starter'
     compile 'io.grpc:grpc-netty'
@@ -23,11 +27,12 @@ dependencies {
     compile 'org.springframework.boot:spring-boot-starter-actuator'
     compile 'org.springframework.boot:spring-boot-starter-web'
 
-    compile 'io.projectreactor.kafka:reactor-kafka'
-
     testCompileOnly 'org.projectlombok:lombok'
     testCompile 'org.springframework.boot:spring-boot-starter-test'
     testCompile 'org.testcontainers:kafka'
     testCompile 'org.assertj:assertj-core'
     testCompile 'org.awaitility:awaitility'
+
+    testCompile project(":kafka-records-storage")
+    testCompile project(":dynamodb-positions-storage")
 }

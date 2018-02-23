@@ -1,0 +1,11 @@
+plugins {
+    id "java"
+}
+
+dependencies {
+    compileOnly 'org.projectlombok:lombok'
+
+    compile 'org.reactivestreams:reactive-streams'
+
+    testCompileOnly 'org.projectlombok:lombok'
+}
