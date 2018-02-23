@@ -8,14 +8,14 @@ import com.github.bsideup.liiklus.positions.PositionsStorage;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.val;
+import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.SignalType;
 
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
@@ -33,6 +33,48 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
     AmazonDynamoDBAsync dynamoDB;
 
     String tableName;
+
+    @Override
+    public Publisher<Positions> findAll() {
+        val request = new ScanRequest(tableName);
+
+        AtomicBoolean done = new AtomicBoolean(false);
+
+        return Mono
+                .<List<Map<String, AttributeValue>>>create(sink -> dynamoDB.scanAsync(request, new AsyncHandler<ScanRequest, ScanResult>() {
+                    @Override
+                    public void onError(Exception exception) {
+                        sink.error(exception);
+                    }
+
+                    @Override
+                    public void onSuccess(ScanRequest request, ScanResult scanResult) {
+                        try {
+                            if (scanResult.getCount() <= 0) {
+                                done.set(true);
+                                sink.success();
+                            } else {
+                                if (scanResult.getLastEvaluatedKey() == null || scanResult.getLastEvaluatedKey().isEmpty()) {
+                                    done.set(true);
+                                }
+                                sink.success(scanResult.getItems());
+                            }
+                        } catch (Exception e) {
+                            sink.error(e);
+                        }
+                    }
+                }))
+                .repeat(() -> !done.get())
+                .flatMapIterable(it -> it)
+                .map(item -> new Positions(
+                        item.get("topic").getS(),
+                        item.get("groupId").getS(),
+                        item.get("positions").getM().entrySet().stream().collect(Collectors.toMap(
+                                it -> Integer.parseInt(it.getKey()),
+                                it -> Long.parseLong(it.getValue().getN())
+                        ))
+                ));
+    }
 
     @Override
     public CompletionStage<Map<Integer, Long>> fetch(String topic, String groupId, Set<Integer> partitions, Map<Integer, Long> externalPositions) {

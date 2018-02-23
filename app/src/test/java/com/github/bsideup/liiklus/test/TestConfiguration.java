@@ -5,6 +5,7 @@ import com.amazonaws.services.dynamodbv2.model.*;
 import com.github.bsideup.liiklus.dynamodb.DynamoDBPositionsStorage;
 import com.github.bsideup.liiklus.dynamodb.config.DynamoDBConfiguration.DynamoDBProperties;
 import lombok.SneakyThrows;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 
@@ -12,6 +13,7 @@ import java.util.Arrays;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+@Profile("test")
 @org.springframework.boot.test.context.TestConfiguration
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class TestConfiguration {

@@ -4,3 +4,7 @@ spring:
 
   cache:
     type: NONE
+
+endpoints:
+  prometheus:
+    sensitive: false
