@@ -58,13 +58,13 @@ public class PositionsTest extends AbstractIntegrationTest {
 
     @Test
     public void testExternalPositions() {
-        TopicPartition topicPartition = new TopicPartition(subscribeRequest.getTopic(), 0);
+        val topicPartition = new TopicPartition(subscribeRequest.getTopic(), 0);
 
         val props = new HashMap<String, Object>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaProperties.getBootstrapServers());
         props.put(ConsumerConfig.GROUP_ID_CONFIG, subscribeRequest.getGroup());
 
-        try(val kafkaConsumer = new KafkaConsumer<>(props, new StringDeserializer(), new StringDeserializer())) {
+        try (val kafkaConsumer = new KafkaConsumer<>(props, new StringDeserializer(), new StringDeserializer())) {
             kafkaConsumer.commitSync(ImmutableMap.of(topicPartition, new OffsetAndMetadata(5)));
         }
 
