@@ -5,7 +5,6 @@ import com.github.bsideup.liiklus.protocol.SubscribeReply;
 import com.github.bsideup.liiklus.protocol.SubscribeRequest;
 import com.github.bsideup.liiklus.test.AbstractIntegrationTest;
 import com.google.protobuf.ByteString;
-import org.apache.kafka.common.utils.Utils;
 import org.junit.Before;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
@@ -14,21 +13,10 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ConsumerGroupsTest extends AbstractIntegrationTest {
-
-    // Generate a set of keys where each key goes to unique partition
-    private static Set<String> PARTITION_UNIQUE_KEYS = Mono.fromCallable(() -> UUID.randomUUID().toString())
-            .repeat()
-            .distinct(key -> Utils.toPositive(Utils.murmur2(key.getBytes())) % NUM_PARTITIONS)
-            .take(NUM_PARTITIONS)
-            .collect(Collectors.toSet())
-            .block(Duration.ofSeconds(10));
 
     SubscribeRequest subscribeRequest;
 

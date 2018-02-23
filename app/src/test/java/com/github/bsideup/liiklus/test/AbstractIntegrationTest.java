@@ -6,6 +6,7 @@ import com.github.bsideup.liiklus.protocol.ReactorLiiklusServiceGrpc.ReactorLiik
 import com.github.bsideup.liiklus.test.support.LocalStackContainer;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import lombok.val;
+import org.apache.kafka.common.utils.Utils;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
@@ -14,8 +15,12 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.KafkaContainer;
+import reactor.core.publisher.Mono;
 
+import java.time.Duration;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @RunWith(SpringRunner.class)
@@ -31,6 +36,14 @@ import java.util.stream.Stream;
 public abstract class AbstractIntegrationTest {
 
     public static final int NUM_PARTITIONS = 32;
+
+    // Generate a set of keys where each key goes to unique partition
+    public static Set<String> PARTITION_UNIQUE_KEYS = Mono.fromCallable(() -> UUID.randomUUID().toString())
+            .repeat()
+            .distinct(key -> Utils.toPositive(Utils.murmur2(key.getBytes())) % NUM_PARTITIONS)
+            .take(NUM_PARTITIONS)
+            .collect(Collectors.toSet())
+            .block(Duration.ofSeconds(10));
 
     static {
         val localstack = new LocalStackContainer();
