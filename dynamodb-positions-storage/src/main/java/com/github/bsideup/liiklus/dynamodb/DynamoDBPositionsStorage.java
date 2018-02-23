@@ -2,7 +2,6 @@ package com.github.bsideup.liiklus.dynamodb;
 
 import com.amazonaws.handlers.AsyncHandler;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsync;
-import com.amazonaws.services.dynamodbv2.document.ItemUtils;
 import com.amazonaws.services.dynamodbv2.model.*;
 import com.amazonaws.util.ImmutableMapParameter;
 import com.github.bsideup.liiklus.positions.PositionsStorage;
@@ -12,7 +11,6 @@ import lombok.val;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.SignalType;
 
-import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -65,7 +63,7 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
                                                     AttributeValue attributeValue = positions != null ? positions.get(it.toString()) : null;
 
                                                     if (attributeValue != null) {
-                                                        return ((BigDecimal) ItemUtils.toSimpleValue(attributeValue)).longValue();
+                                                        return Long.parseLong(attributeValue.getN());
                                                     } else {
                                                         return externalPositions.get(it);
                                                     }
