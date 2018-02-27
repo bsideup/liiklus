@@ -1,3 +1,13 @@
+# Liiklus config defaults
+storage:
+  positions:
+    type: DYNAMODB
+
+  records:
+    type: KAFKA
+
+
+# Spring Boot config
 spring:
   jmx:
     enabled: false

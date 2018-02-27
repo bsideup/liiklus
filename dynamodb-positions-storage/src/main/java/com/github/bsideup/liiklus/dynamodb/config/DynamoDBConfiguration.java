@@ -18,7 +18,7 @@ import org.springframework.context.annotation.Configuration;
 import java.util.Optional;
 
 @Configuration
-@ConditionalOnProperty(value = "storage.positions.type", havingValue = "DYNAMODB", matchIfMissing = true)
+@ConditionalOnProperty(value = "storage.positions.type", havingValue = "DYNAMODB")
 @EnableConfigurationProperties(DynamoDBConfiguration.DynamoDBProperties.class)
 public class DynamoDBConfiguration {
 

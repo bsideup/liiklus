@@ -6,14 +6,14 @@ plugins {
 
 protobuf {
     protoc {
-        artifact = 'com.google.protobuf:protoc:3.5.1'
+        artifact = 'com.google.protobuf:protoc'
     }
 
     generatedFilesBaseDir = "$projectDir/generated"
 
     plugins {
         grpc {
-            artifact = 'io.grpc:protoc-gen-grpc-java:1.9.0'
+            artifact = 'io.grpc:protoc-gen-grpc-java'
         }
 
         reactor {

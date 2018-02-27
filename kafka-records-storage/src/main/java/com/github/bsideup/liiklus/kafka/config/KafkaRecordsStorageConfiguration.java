@@ -22,7 +22,7 @@ import java.util.UUID;
 
 @Configuration
 @EnableConfigurationProperties(KafkaRecordsStorageConfiguration.KafkaProperties.class)
-@ConditionalOnProperty(value = "storage.records.type", havingValue = "KAFKA", matchIfMissing = true)
+@ConditionalOnProperty(value = "storage.records.type", havingValue = "KAFKA")
 public class KafkaRecordsStorageConfiguration {
 
     @Autowired

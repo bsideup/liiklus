@@ -21,18 +21,23 @@ allprojects {
 
             dependency 'org.projectlombok:lombok:1.16.20'
 
-            dependency 'io.projectreactor:reactor-core:3.1.3.RELEASE'
+            dependency 'io.projectreactor:reactor-core:3.1.4.RELEASE'
 
             dependency 'org.lognet:grpc-spring-boot-starter:2.1.5'
 
             dependency 'org.testcontainers:kafka:1.6.0'
 
-            dependency 'com.google.protobuf:protobuf-java:3.5.1'
-            dependencySet(group: 'io.grpc', version: '1.9.1') {
+            dependencySet(group: 'com.google.protobuf', version: '3.5.1') {
+                entry 'protoc'
+                entry 'protobuf-java'
+            }
+
+            dependencySet(group: 'io.grpc', version: '1.10.0') {
                 entry 'grpc-netty'
                 entry 'grpc-core'
                 entry 'grpc-protobuf'
                 entry 'grpc-stub'
+                entry 'protoc-gen-grpc-java'
             }
 
             dependency 'com.salesforce.servicelibs:reactor-grpc-stub:0.8.0'
