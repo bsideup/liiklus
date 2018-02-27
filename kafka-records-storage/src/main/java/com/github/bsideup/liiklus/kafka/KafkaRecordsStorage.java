@@ -12,6 +12,7 @@ import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteBufferDeserializer;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.UnicastProcessor;
 import reactor.kafka.receiver.KafkaReceiver;
 import reactor.kafka.receiver.ReceiverOptions;
 import reactor.kafka.receiver.ReceiverPartition;
@@ -23,8 +24,11 @@ import reactor.kafka.sender.SenderRecord;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -61,11 +65,20 @@ public class KafkaRecordsStorage implements RecordsStorage {
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
         props.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, "0");
 
-        return () -> {
+        return () -> Flux.create(assignmentsSink -> {
+            val revocations = new ConcurrentHashMap<Integer, UnicastProcessor<TopicPartition>>();
+
             val receiverRef = new AtomicReference<DefaultKafkaReceiver<ByteBuffer, ByteBuffer>>();
+            val recordsFluxRef = new AtomicReference<Flux<Record>>();
 
             val receiverOptions = ReceiverOptions.<ByteBuffer, ByteBuffer>create(props)
                     .subscription(singletonList(topic))
+                    .addRevokeListener(partitions -> {
+                        for (val partition : partitions) {
+                            val topicPartition = partition.topicPartition();
+                            revocations.get(topicPartition.partition()).onNext(topicPartition);
+                        }
+                    })
                     .addAssignListener(partitions -> {
                         val offsets = Mono
                                 .fromCompletionStage(
@@ -82,54 +95,78 @@ public class KafkaRecordsStorage implements RecordsStorage {
                                 )
                                 .block(Duration.ofSeconds(10));
 
+                        val kafkaReceiver = receiverRef.get();
+                        val recordFlux = recordsFluxRef.get();
+
                         for (val partition : partitions) {
+                            DefaultKafkaReceiverAccessor.pause(kafkaReceiver, partition.topicPartition());
+
                             val lastKnownPosition = offsets.get(partition.topicPartition().partition());
                             if (lastKnownPosition != null && lastKnownPosition > 0) {
                                 partition.seek(lastKnownPosition + 1);
                             }
+
+                            val topicPartition = partition.topicPartition();
+                            val partitionList = Arrays.asList(topicPartition);
+                            val partitionNum = topicPartition.partition();
+
+                            val requests = new AtomicLong();
+
+                            val revocationsProcessor = UnicastProcessor.<TopicPartition>create();
+                            revocations.put(partitionNum, revocationsProcessor);
+
+                            assignmentsSink.next(
+                                    new DelegatingGroupedPublisher<>(
+                                            partitionNum,
+                                            recordFlux
+                                                    .filter(it -> it.getPartition() == partitionNum)
+                                                    .delayUntil(record -> {
+                                                        if (requests.decrementAndGet() <= 0) {
+                                                            return kafkaReceiver.doOnConsumer(consumer -> {
+                                                                consumer.pause(partitionList);
+                                                                return true;
+                                                            });
+                                                        } else {
+                                                            return Mono.empty();
+                                                        }
+                                                    })
+                                                    .doOnRequest(requested -> {
+                                                        if (requests.addAndGet(requested) > 0) {
+                                                            DefaultKafkaReceiverAccessor.resume(kafkaReceiver, topicPartition);
+                                                        }
+                                                    })
+                                                    .takeUntilOther(revocationsProcessor)
+                                    )
+                            );
                         }
                     });
 
             val kafkaReceiver = (DefaultKafkaReceiver<ByteBuffer, ByteBuffer>) KafkaReceiver.create(receiverOptions);
             receiverRef.set(kafkaReceiver);
 
-            return Flux
-                    .defer(kafkaReceiver::receive)
-                    .map(record -> new Record(
-                            record.key(),
-                            record.value(),
-                            Instant.ofEpochMilli(record.timestamp()),
-                            record.partition(),
-                            record.offset()
-                    ))
-                    .groupBy(Record::getPartition)
-                    .map(it -> {
-                        val topicPartition = new TopicPartition(topic, it.key());
-                        val partitionList = Arrays.asList(topicPartition);
+            recordsFluxRef.set(
+                    Flux
+                            .defer(kafkaReceiver::receive)
+                            .map(record -> new Record(
+                                    record.key(),
+                                    record.value(),
+                                    Instant.ofEpochMilli(record.timestamp()),
+                                    record.partition(),
+                                    record.offset()
+                            ))
+                            .share()
+            );
 
-                        val requests = new AtomicLong();
+            val disposable = recordsFluxRef.get().subscribe(
+                    __ -> {},
+                    assignmentsSink::error,
+                    assignmentsSink::complete
+            );
 
-                        return new DelegatingGroupedPublisher<>(
-                                it.key(),
-                                it
-                                        .delayUntil(record -> {
-                                            if (requests.decrementAndGet() <= 0) {
-                                                return kafkaReceiver.doOnConsumer(consumer -> {
-                                                    consumer.pause(partitionList);
-                                                    return true;
-                                                });
-                                            } else {
-                                                return Mono.empty();
-                                            }
-                                        })
-                                        .doOnRequest(requested -> {
-                                            if (requests.addAndGet(requested) > 0) {
-                                                DefaultKafkaReceiverAccessor.resume(kafkaReceiver, topicPartition);
-                                            }
-                                        })
-                                        .doFinally(__ -> DefaultKafkaReceiverAccessor.close(kafkaReceiver))
-                        );
-                    });
-        };
+            assignmentsSink.onDispose(() -> {
+                disposable.dispose();
+                DefaultKafkaReceiverAccessor.close(kafkaReceiver);
+            });
+        });
     }
 }

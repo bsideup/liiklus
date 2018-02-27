@@ -27,6 +27,18 @@ public class DefaultKafkaReceiverAccessor {
         kafkaReceiver.close();
     }
 
+    @SneakyThrows
+    public static void pause(DefaultKafkaReceiver kafkaReceiver, TopicPartition topicPartition) {
+        val state = (SubscriptionState) subscriptionsField.get(kafkaReceiver.kafkaConsumer());
+
+        if (state.isAssigned(topicPartition)) {
+            try {
+                state.pause(topicPartition);
+            } catch (IllegalStateException e) {
+                log.warn("Illegal state while accessing {}", topicPartition, e);
+            }
+        }
+    }
 
     @SneakyThrows
     public static void resume(DefaultKafkaReceiver kafkaReceiver, TopicPartition topicPartition) {
