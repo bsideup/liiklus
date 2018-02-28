@@ -45,6 +45,7 @@ public class ArmeriaConfiguration {
 
             builder
                     .idleTimeout(Duration.ofSeconds(180))
+                    .defaultRequestTimeout(Duration.ZERO)
                     .service(new GrpcServiceBuilder().addService(liiklusService).build())
                     .service(PathMapping.ofCatchAll(), TomcatService.forConnector(tomcatConnector));
         };

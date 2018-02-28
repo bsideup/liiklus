@@ -46,8 +46,6 @@ public class SmokeTest extends AbstractIntegrationTest {
                                                 .setAssignment(it.getAssignment())
                                                 .build()
                                         ))
-                                        // FIXME remove, just to demonstrate issue with Armeria
-                                        .delayElements(Duration.ofSeconds(1))
                                 )
                 )
                 .take(values.size())
