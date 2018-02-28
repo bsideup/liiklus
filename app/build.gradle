@@ -20,12 +20,14 @@ dependencies {
     runtime project(":kafka-records-storage")
     runtime project(":dynamodb-positions-storage")
 
-    compile 'org.lognet:grpc-spring-boot-starter'
-    compile 'io.grpc:grpc-netty'
-    compile 'io.grpc:grpc-core'
-
     compile 'org.springframework.boot:spring-boot-starter-actuator'
     compile 'org.springframework.boot:spring-boot-starter-web'
+
+    compile 'com.linecorp.armeria:armeria-spring-boot-starter-shaded'
+    compile 'com.linecorp.armeria:armeria-grpc-shaded'
+    runtime "com.linecorp.armeria:armeria-thrift-shaded"
+    compile "com.linecorp.armeria:armeria-tomcat-shaded"
+    compile 'com.google.guava:guava'
 
     compile 'io.micrometer:micrometer-spring-legacy:latest.release'
     compile 'io.micrometer:micrometer-registry-prometheus:latest.release'
@@ -36,6 +38,7 @@ dependencies {
     testCompile 'org.assertj:assertj-core'
     testCompile 'org.awaitility:awaitility'
 
+    testCompile 'io.grpc:grpc-netty'
     testCompile project(":kafka-records-storage")
     testCompile project(":dynamodb-positions-storage")
 }

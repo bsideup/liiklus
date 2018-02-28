@@ -23,8 +23,6 @@ allprojects {
 
             dependency 'io.projectreactor:reactor-core:3.1.4.RELEASE'
 
-            dependency 'org.lognet:grpc-spring-boot-starter:2.1.5'
-
             dependency 'org.testcontainers:kafka:1.6.0'
 
             dependencySet(group: 'com.google.protobuf', version: '3.5.1') {
@@ -39,6 +37,15 @@ allprojects {
                 entry 'grpc-stub'
                 entry 'protoc-gen-grpc-java'
             }
+
+            dependencySet(group: 'com.linecorp.armeria', version: '0.58.1') {
+                entry 'armeria-spring-boot-starter-shaded'
+                entry 'armeria-grpc-shaded'
+                entry "armeria-thrift-shaded"
+                entry "armeria-tomcat-shaded"
+            }
+
+            dependency 'com.google.guava:guava:24.0-jre'
 
             dependency 'com.salesforce.servicelibs:reactor-grpc-stub:0.8.0'
             dependency 'org.awaitility:awaitility:3.0.0'

@@ -33,7 +33,7 @@ public class SmokeTest extends AbstractIntegrationTest {
         String key = "foo";
         List<String> values = IntStream.range(0, 10).mapToObj(i -> "bar-" + i).collect(Collectors.toList());
         List<ReceiveReply> records = Flux.fromIterable(values)
-                .flatMapSequential(it -> stub.publish(Mono.just(PublishRequest.newBuilder()
+                .concatMap(it -> stub.publish(Mono.just(PublishRequest.newBuilder()
                         .setTopic(subscribeAction.getTopic())
                         .setKey(ByteString.copyFromUtf8(key))
                         .setValue(ByteString.copyFromUtf8(it))
@@ -46,6 +46,8 @@ public class SmokeTest extends AbstractIntegrationTest {
                                                 .setAssignment(it.getAssignment())
                                                 .build()
                                         ))
+                                        // FIXME remove, just to demonstrate issue with Armeria
+                                        .delayElements(Duration.ofSeconds(1))
                                 )
                 )
                 .take(values.size())
