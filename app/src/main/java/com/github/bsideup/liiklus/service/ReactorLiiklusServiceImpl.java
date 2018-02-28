@@ -12,7 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.lognet.springboot.grpc.GRpcService;
+import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.SignalType;
@@ -26,7 +26,7 @@ import java.util.logging.Level;
 @RequiredArgsConstructor
 @FieldDefaults(makeFinal = true)
 @Slf4j
-@GRpcService
+@Component
 public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.LiiklusServiceImplBase {
 
     ConcurrentMap<String, StoredSubscription> subscriptions = new ConcurrentHashMap<>();
