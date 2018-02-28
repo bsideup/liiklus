@@ -43,10 +43,14 @@ public abstract class AbstractIntegrationTest {
     // Generate a set of keys where each key goes to unique partition
     public static Set<String> PARTITION_UNIQUE_KEYS = Mono.fromCallable(() -> UUID.randomUUID().toString())
             .repeat()
-            .distinct(key -> Utils.toPositive(Utils.murmur2(key.getBytes())) % NUM_PARTITIONS)
+            .distinct(AbstractIntegrationTest::getPartitionByKey)
             .take(NUM_PARTITIONS)
             .collect(Collectors.toSet())
             .block(Duration.ofSeconds(10));
+
+    public static int getPartitionByKey(String key) {
+        return Utils.toPositive(Utils.murmur2(key.getBytes())) % NUM_PARTITIONS;
+    }
 
     static {
         val localstack = new LocalStackContainer();
@@ -73,7 +77,7 @@ public abstract class AbstractIntegrationTest {
     @Before
     public void setUpAbstractIntegrationTest() throws Exception {
         stub = ReactorLiiklusServiceGrpc.newReactorStub(
-                ManagedChannelBuilder.forTarget("localhost:" + server.activePort().get().localAddress().getPort())
+                ManagedChannelBuilder.forAddress("localhost", server.activePort().get().localAddress().getPort())
                         .usePlaintext(true)
                         .keepAliveWithoutCalls(true)
                         .keepAliveTime(150, TimeUnit.SECONDS)

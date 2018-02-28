@@ -15,7 +15,6 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.IntStream;
 
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -82,13 +81,15 @@ public class AckTest extends AbstractIntegrationTest {
 
     @Test
     public void testInterruption() throws Exception {
-        ByteString key = ByteString.copyFromUtf8(UUID.randomUUID().toString());
+        String key = "some key";
+        int partition = getPartitionByKey(key);
+        ByteString keyBytes = ByteString.copyFromUtf8(key);
 
-        Map<String, Integer> receiveStatus = Flux.fromStream(IntStream.range(0, 10).boxed())
+        Map<String, Integer> receiveStatus = Flux.range(0, 10)
                 .concatMap(i -> stub.publish(Mono.just(
                         PublishRequest.newBuilder()
                                 .setTopic(subscribeRequest.getTopic())
-                                .setKey(key)
+                                .setKey(keyBytes)
                                 .setValue(ByteString.copyFromUtf8("foo-" + i))
                                 .build()
                 )))
@@ -96,10 +97,10 @@ public class AckTest extends AbstractIntegrationTest {
                         Flux
                                 .defer(() -> stub
                                         .subscribe(Mono.just(subscribeRequest))
+                                        .filter(it -> it.getAssignment().getPartition() == partition)
                                         .flatMap(it -> stub
                                                 .receive(Mono.just(ReceiveRequest.newBuilder().setAssignment(it.getAssignment()).build()))
                                                 .map(ReceiveReply::getRecord)
-                                                .filter(record -> key.equals(record.getKey()))
                                                 .buffer(5)
                                                 .delayUntil(batch -> stub
                                                         .ack(Mono.just(AckRequest.newBuilder()
