@@ -1,5 +1,5 @@
 plugins {
-    id "org.springframework.boot" version "2.0.0.RELEASE" apply false
+    id "org.springframework.boot" version "1.5.9.RELEASE" apply false
 }
 
 allprojects {
@@ -13,10 +13,16 @@ allprojects {
         overriddenByDependencies = false
 
         imports {
-            mavenBom 'org.springframework.boot:spring-boot-dependencies:2.0.0.RELEASE'
+            mavenBom 'org.springframework.boot:spring-boot-dependencies:1.5.9.RELEASE'
         }
 
         dependencies {
+            dependency 'org.reactivestreams:reactive-streams:1.0.2'
+
+            dependency 'org.projectlombok:lombok:1.16.20'
+
+            dependency 'io.projectreactor:reactor-core:3.1.4.RELEASE'
+
             dependency 'org.testcontainers:kafka:1.6.0'
 
             dependencySet(group: 'com.google.protobuf', version: '3.5.1') {
@@ -43,6 +49,7 @@ allprojects {
 
             dependency 'com.salesforce.servicelibs:reactor-grpc-stub:0.8.0'
             dependency 'org.awaitility:awaitility:3.0.0'
+            dependency 'org.assertj:assertj-core:3.9.0'
         }
     }
 }

@@ -22,16 +22,15 @@ dependencies {
 
     compile 'org.springframework.boot:spring-boot-starter-actuator'
     compile 'org.springframework.boot:spring-boot-starter-web'
-    compile 'io.micrometer:micrometer-registry-prometheus'
 
-    compile ('com.linecorp.armeria:armeria-spring-boot-starter-shaded') {
-        exclude group: "io.micrometer"
-    }
-
+    compile 'com.linecorp.armeria:armeria-spring-boot-starter-shaded'
     compile 'com.linecorp.armeria:armeria-grpc-shaded'
     runtime "com.linecorp.armeria:armeria-thrift-shaded"
     compile "com.linecorp.armeria:armeria-tomcat-shaded"
     compile 'com.google.guava:guava'
+
+    compile 'io.micrometer:micrometer-spring-legacy:latest.release'
+    compile 'io.micrometer:micrometer-registry-prometheus:latest.release'
 
     testCompileOnly 'org.projectlombok:lombok'
     testCompile 'org.springframework.boot:spring-boot-starter-test'

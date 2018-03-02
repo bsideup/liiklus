@@ -9,8 +9,8 @@ import com.linecorp.armeria.spring.ArmeriaServerConfigurator;
 import lombok.val;
 import org.apache.catalina.connector.Connector;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.web.embedded.tomcat.TomcatWebServer;
-import org.springframework.boot.web.servlet.context.ServletWebServerApplicationContext;
+import org.springframework.boot.context.embedded.EmbeddedWebApplicationContext;
+import org.springframework.boot.context.embedded.tomcat.TomcatEmbeddedServletContainer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -25,13 +25,13 @@ public class ArmeriaConfiguration {
     ReactorLiiklusServiceImpl liiklusService;
 
     @Bean
-    ArmeriaServerConfigurator serviceInitializer(ServletWebServerApplicationContext applicationContext) {
+    ArmeriaServerConfigurator serviceInitializer(EmbeddedWebApplicationContext applicationContext) {
         return builder -> {
-            val container = (TomcatWebServer) applicationContext.getWebServer();
+            val container = (TomcatEmbeddedServletContainer) applicationContext.getEmbeddedServletContainer();
             Connector tomcatConnector = container.getTomcat().getConnector();
             if (tomcatConnector == null) {
                 try {
-                    val serviceConnectorsField = TomcatWebServer.class.getDeclaredField("serviceConnectors");
+                    val serviceConnectorsField = TomcatEmbeddedServletContainer.class.getDeclaredField("serviceConnectors");
                     serviceConnectorsField.setAccessible(true);
                     tomcatConnector = ((Map<Service, Connector[]>) serviceConnectorsField.get(container)).values()
                             .stream()
