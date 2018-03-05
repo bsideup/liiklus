@@ -1,5 +1,6 @@
 package com.github.bsideup.liiklus.monitoring;
 
+import com.github.bsideup.liiklus.config.ExporterProfile;
 import com.github.bsideup.liiklus.positions.PositionsStorage;
 import io.prometheus.client.Collector;
 import io.prometheus.client.CollectorRegistry;
@@ -19,6 +20,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @FieldDefaults(makeFinal = true)
 @Slf4j
+@ExporterProfile
 public class MetricsCollector extends Collector {
 
     CollectorRegistry collectorRegistry;

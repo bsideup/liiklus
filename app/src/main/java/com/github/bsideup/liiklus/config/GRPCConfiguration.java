@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import java.util.concurrent.TimeUnit;
 
 @Configuration
+@GatewayProfile
 public class GRPCConfiguration extends GRpcServerBuilderConfigurer {
     @Override
     public void configure(ServerBuilder<?> serverBuilder) {

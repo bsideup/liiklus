@@ -1,26 +1,29 @@
 package com.github.bsideup.liiklus.kafka.config;
 
+import com.github.bsideup.liiklus.config.GatewayProfile;
 import com.github.bsideup.liiklus.kafka.KafkaRecordsStorage;
 import com.github.bsideup.liiklus.positions.PositionsStorage;
 import lombok.Data;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.ByteBufferSerializer;
-import org.hibernate.validator.constraints.NotEmpty;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.validation.annotation.Validated;
 import reactor.kafka.sender.KafkaSender;
 import reactor.kafka.sender.SenderOptions;
 
+import javax.validation.constraints.NotEmpty;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 @Configuration
+@GatewayProfile
 @EnableConfigurationProperties(KafkaRecordsStorageConfiguration.KafkaProperties.class)
 @ConditionalOnProperty(value = "storage.records.type", havingValue = "KAFKA")
 public class KafkaRecordsStorageConfiguration {
@@ -54,6 +57,7 @@ public class KafkaRecordsStorageConfiguration {
 
     @Data
     @ConfigurationProperties("kafka")
+    @Validated
     public static class KafkaProperties {
 
         @NotEmpty

@@ -1,5 +1,6 @@
 package com.github.bsideup.liiklus.service;
 
+import com.github.bsideup.liiklus.config.GatewayProfile;
 import com.github.bsideup.liiklus.positions.PositionsStorage;
 import com.github.bsideup.liiklus.protocol.*;
 import com.github.bsideup.liiklus.records.RecordsStorage;
@@ -27,6 +28,7 @@ import java.util.logging.Level;
 @FieldDefaults(makeFinal = true)
 @Slf4j
 @GRpcService
+@GatewayProfile
 public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.LiiklusServiceImplBase {
 
     ConcurrentMap<String, StoredSubscription> subscriptions = new ConcurrentHashMap<>();
