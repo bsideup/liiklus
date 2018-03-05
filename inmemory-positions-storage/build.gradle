@@ -1,0 +1,14 @@
+plugins {
+    id "java"
+}
+
+dependencies {
+    compileOnly 'org.projectlombok:lombok'
+    compileOnly 'org.springframework.boot:spring-boot-starter'
+
+    compile project(":api")
+
+    compile 'io.projectreactor:reactor-core'
+
+    testCompileOnly 'org.projectlombok:lombok'
+}

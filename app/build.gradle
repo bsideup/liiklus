@@ -19,6 +19,7 @@ dependencies {
 
     runtime project(":kafka-records-storage")
     runtime project(":dynamodb-positions-storage")
+    runtime project(":inmemory-positions-storage")
 
     compile 'org.lognet:grpc-spring-boot-starter'
     compile 'io.grpc:grpc-netty'
@@ -35,4 +36,5 @@ dependencies {
 
     testCompile project(":kafka-records-storage")
     testCompile project(":dynamodb-positions-storage")
+    testCompile project(":inmemory-positions-storage")
 }
