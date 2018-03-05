@@ -62,6 +62,8 @@ public abstract class AbstractIntegrationTest {
         Stream.of(kafka, localstack).parallel().forEach(GenericContainer::start);
 
         System.setProperty("grpc.enabled", "false");
+
+        System.getProperties().putAll(localstack.getProperties());
     }
 
     public static Set<String> getKafkaProperties() {
@@ -71,9 +73,8 @@ public abstract class AbstractIntegrationTest {
     }
 
     public static Set<String> getDynamoDBProperties() {
-        return Sets.union(
-                localstack.getProperties().entrySet().stream().map(it -> it.getKey() + "=" + it.getValue()).collect(Collectors.toSet()),
-                Sets.newHashSet("dynamodb.positionsTable=positions")
+        return Sets.newHashSet(
+                "dynamodb.positionsTable=positions"
         );
     }
 
