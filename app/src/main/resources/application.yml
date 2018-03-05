@@ -8,13 +8,9 @@ storage:
 
 
 # Spring Boot config
-spring:
-  jmx:
-    enabled: false
-
-  cache:
-    type: NONE
-
-endpoints:
-  prometheus:
-    sensitive: false
+management:
+  endpoints:
+    web:
+      base-path: /
+      exposure:
+        include: health,info,prometheus
