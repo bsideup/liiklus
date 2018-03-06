@@ -18,20 +18,10 @@ import java.util.stream.Stream;
 @Slf4j
 public class Consumer {
     public static void main(String[] args) {
-        val kafka = new KafkaContainer()
-                .withEnv("KAFKA_NUM_PARTITIONS", "4");
+        // This variable should point to your Liiklus deployment (possible behind a Load Balancer)
+        String liiklusTarget = getLiiklusTarget();
 
-        GenericContainer liiklus = new GenericContainer<>("bsideup/liiklus:0.1.8")
-                .withNetwork(kafka.getNetwork())
-                .withExposedPorts(6565)
-                .withEnv("kafka_bootstrapServers", kafka.getNetworkAliases().get(0) + ":9093")
-                .withEnv("storage_positions_type", "MEMORY"); // Fine for testing, NOT FINE I WARNED YOU for production :D
-
-        Stream.of(kafka, liiklus).parallel().forEach(GenericContainer::start);
-
-        log.info("Containers started");
-
-        val channel = NettyChannelBuilder.forAddress(liiklus.getContainerIpAddress(), liiklus.getFirstMappedPort())
+        val channel = NettyChannelBuilder.forTarget(liiklusTarget)
                 .directExecutor()
                 .usePlaintext(true)
                 .build();
@@ -94,5 +84,22 @@ public class Consumer {
                         )
                 )
                 .blockLast();
+    }
+
+    private static String getLiiklusTarget() {
+        val kafka = new KafkaContainer()
+                .withEnv("KAFKA_NUM_PARTITIONS", "4");
+
+        GenericContainer liiklus = new GenericContainer<>("bsideup/liiklus:0.1.8")
+                .withNetwork(kafka.getNetwork())
+                .withExposedPorts(6565)
+                .withEnv("kafka_bootstrapServers", kafka.getNetworkAliases().get(0) + ":9093")
+                .withEnv("storage_positions_type", "MEMORY"); // Fine for testing, NOT FINE I WARNED YOU for production :D
+
+        Stream.of(kafka, liiklus).parallel().forEach(GenericContainer::start);
+
+        log.info("Containers started");
+
+        return String.format("%s:%d", liiklus.getContainerIpAddress(), liiklus.getFirstMappedPort());
     }
 }
