@@ -1,20 +1,19 @@
 plugins {
     id "java"
     id "idea"
+    id "com.google.protobuf"
 }
-
-apply plugin: "com.google.protobuf"
 
 protobuf {
     protoc {
-        artifact = 'com.google.protobuf:protoc'
+        artifact = 'com.google.protobuf:protoc:3.5.1'
     }
 
     generatedFilesBaseDir = "$projectDir/generated"
 
     plugins {
         grpc {
-            artifact = 'io.grpc:protoc-gen-grpc-java'
+            artifact = 'io.grpc:protoc-gen-grpc-java:1.10.0'
         }
 
         reactor {
@@ -42,10 +41,22 @@ idea {
     }
 }
 
-dependencies {
-    compile 'com.google.protobuf:protobuf-java'
+repositories {
+    jcenter()
+}
 
-    compile 'io.grpc:grpc-stub'
-    compile 'io.grpc:grpc-protobuf'
-    compile 'com.salesforce.servicelibs:reactor-grpc-stub'
+dependencies {
+    compileOnly 'org.projectlombok:lombok:1.16.20'
+
+    compile 'org.testcontainers:kafka:1.6.0'
+
+    compile 'org.apache.commons:commons-math3:3.6.1'
+
+    compile 'com.google.protobuf:protobuf-java:3.5.1'
+
+    compile 'io.grpc:grpc-netty:1.10.0'
+    compile 'io.grpc:grpc-protobuf:1.10.0'
+    compile 'com.salesforce.servicelibs:reactor-grpc-stub:0.8.0'
+
+    runtime 'ch.qos.logback:logback-classic:1.2.3'
 }

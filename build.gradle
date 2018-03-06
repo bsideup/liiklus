@@ -1,8 +1,9 @@
 plugins {
     id "org.springframework.boot" version "2.0.0.RELEASE" apply false
+    id "com.google.protobuf" version "0.8.4" apply false
 }
 
-allprojects {
+configure(subprojects.findAll { !it.name.startsWith("examples") }) {
     apply plugin: 'io.spring.dependency-management'
 
     repositories {

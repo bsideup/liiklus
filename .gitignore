@@ -19,6 +19,7 @@ bin/
 /config/
 
 /protocol/generated/
+/examples/java/generated/
 
 
 infrastructure.yaml

@@ -5,3 +5,5 @@ include 'protocol'
 include 'kafka-records-storage'
 include 'dynamodb-positions-storage'
 include 'inmemory-positions-storage'
+
+include 'examples/java'

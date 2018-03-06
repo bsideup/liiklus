@@ -92,6 +92,8 @@ stub
     .blockLast()
 ```
 
+Also check [examples/java/](examples/java/) for a complete example
+
 ## Configuration
 The project is based on Spring Boot and uses [it's configuration system](https://docs.spring.io/spring-boot/docs/2.0.0.RELEASE/reference/html/boot-features-external-config.html)  
 Please check [application.yml](app/src/main/resources/application.yml) for the available configuration keys.
