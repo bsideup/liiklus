@@ -6,6 +6,7 @@ import com.google.protobuf.ByteString;
 import io.grpc.netty.NettyChannelBuilder;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.reactivestreams.Publisher;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.KafkaContainer;
 import reactor.core.publisher.Flux;
@@ -13,6 +14,7 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 @Slf4j
@@ -34,7 +36,8 @@ public class Consumer {
 
         val stub = ReactorLiiklusServiceGrpc.newReactorStub(channel);
 
-        Flux.interval(Duration.ofMillis(1000))
+        // Send an event every second
+        Flux.interval(Duration.ofSeconds(1))
                 .onBackpressureDrop()
                 .concatMap(it -> stub.publish(Mono.just(
                         PublishRequest.newBuilder()
@@ -45,40 +48,37 @@ public class Consumer {
                 )))
                 .subscribe();
 
+        // Consume the events
+        Function<Integer, Function<ReceiveReply.Record, Publisher<?>>> businessLogic = partition -> record -> {
+            log.info("Processing record from partition {} offset {}", partition, record.getOffset());
+
+            // simulate processing
+            return Mono.delay(Duration.ofMillis(200));
+        };
+
         stub
                 .subscribe(Mono.just(subscribeAction))
                 .filter(it -> it.getReplyCase() == SubscribeReply.ReplyCase.ASSIGNMENT)
                 .map(SubscribeReply::getAssignment)
                 .doOnNext(assignment -> log.info("Assigned to partition {}", assignment.getPartition()))
                 .flatMap(assignment -> stub
-                        .receive(Mono.just(
-                                ReceiveRequest.newBuilder()
-                                        .setAssignment(assignment)
-                                        .setLastKnownOffset(0) // TODO
-                                        .build()
-                        ))
+                        // Start receiving the events from a partition
+                        .receive(Mono.just(ReceiveRequest.newBuilder().setAssignment(assignment).build()))
                         .window(1000) // ACK every 1000th record
                         .concatMap(
                                 batch -> batch
                                         .map(ReceiveReply::getRecord)
-                                        .delayUntil(record -> {
-                                            log.info("Processing record from partition {} offset {}", assignment.getPartition(), record.getOffset());
-
-                                            // simulate processing
-                                            return Mono.delay(Duration.ofMillis(200));
-                                        })
+                                        .delayUntil(businessLogic.apply(assignment.getPartition()))
                                         .sample(Duration.ofSeconds(5)) // ACK every 5 seconds
                                         .onBackpressureLatest()
                                         .delayUntil(record -> {
                                             log.info("ACKing partition {} offset {}", assignment.getPartition(), record.getOffset());
-                                            return Mono
-                                                    .defer(() -> stub.ack(Mono.just(
-                                                            AckRequest.newBuilder()
-                                                                    .setAssignment(assignment)
-                                                                    .setOffset(record.getOffset())
-                                                                    .build()
-                                                            ))
-                                                    );
+                                            return stub.ack(Mono.just(
+                                                    AckRequest.newBuilder()
+                                                            .setAssignment(assignment)
+                                                            .setOffset(record.getOffset())
+                                                            .build()
+                                            ));
                                         }),
                                 1
                         )
