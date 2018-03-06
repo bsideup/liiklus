@@ -48,7 +48,7 @@ The clients must implement the following algorithm:
         offset=record.getOffset()
     ))
     ```
-    **Note 1:** If you ACK record before processing it you get at-most-once, after processing - at-least-once
+    **Note 1:** If you ACK record before processing it you get at-most-once, after processing - at-least-once  
     **Note 2:** It's recommended to ACK every n-th record, or every n seconds to reduce the load on the positions storage
 
 
@@ -57,7 +57,13 @@ Example code using [Project Reactor](http://projectreactor.io) and [reactive-grp
 ```java
 val stub = ReactorLiiklusServiceGrpc.newReactorStub(channel);
 stub
-    .subscribe(Mono.just(subscribeAction))
+    .subscribe(Mono.just(
+        SubscribeRequest.newBuilder()
+            .setTopic("user-events")
+            .setGroup("analytics")
+            .setAutoOffsetReset(AutoOffsetReset.EARLIEST)
+            .build()
+    ))
     .flatMap(reply -> stub
         .receive(Mono.just(
             ReceiveRequest.newBuilder()
@@ -69,7 +75,7 @@ stub
         .concatMap(
             batch -> batch
                 .map(ReceiveReply::getRecord)
-                // TODO process instead of Mono.delay()
+                // TODO process instead of Mono.delay(), i.e. by indexing to ElasticSearch
                 .concatMap(record -> Mono.delay(Duration.ofMillis(100)))
                 .sample(Duration.ofSeconds(5)) // ACK every 5 seconds
                 .onBackpressureLatest()
