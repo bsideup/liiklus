@@ -1,0 +1,7 @@
+# Spring Boot config
+management:
+  endpoints:
+    web:
+      base-path: /
+      exposure:
+        include: health,info,prometheus

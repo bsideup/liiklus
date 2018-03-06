@@ -6,11 +6,11 @@ storage:
   records:
     type: KAFKA
 
+kafka:
+  bootstrapServers: # Required
 
-# Spring Boot config
-management:
-  endpoints:
-    web:
-      base-path: /
-      exposure:
-        include: health,info,prometheus
+dynamodb:
+  positionsTable: # Required
+
+grpc:
+  port: 6565
