@@ -65,12 +65,7 @@ stub
             .build()
     ))
     .flatMap(reply -> stub
-        .receive(Mono.just(
-            ReceiveRequest.newBuilder()
-                .setAssignment(reply.getAssignment())
-                .setLastKnownOffset(0) // TODO
-                .build()
-        ))
+        .receive(Mono.just(ReceiveRequest.newBuilder().setAssignment(reply.getAssignment()).build()))
         .window(1000) // ACK every 1000th records
         .concatMap(
             batch -> batch
