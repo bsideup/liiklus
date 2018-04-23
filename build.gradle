@@ -5,9 +5,14 @@ plugins {
 
 configure(subprojects.findAll { !it.name.startsWith("examples") }) {
     apply plugin: 'io.spring.dependency-management'
+    apply plugin: 'maven'
 
     repositories {
         jcenter()
+    }
+
+    project.afterEvaluate {
+        project.tasks.findByName("install")?.dependsOn(tasks.findByName("assemble"))
     }
 
     dependencyManagement {
