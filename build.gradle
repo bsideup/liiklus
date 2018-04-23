@@ -15,11 +15,10 @@ configure(subprojects.findAll { !it.name.startsWith("examples") }) {
 
         imports {
             mavenBom 'org.springframework.boot:spring-boot-dependencies:2.0.0.RELEASE'
+            mavenBom 'org.testcontainers:testcontainers-bom:1.7.1'
         }
 
         dependencies {
-            dependency 'org.testcontainers:kafka:1.6.0'
-
             dependency 'org.lognet:grpc-spring-boot-starter:2.1.5'
 
             dependencySet(group: 'com.google.protobuf', version: '3.5.1') {
@@ -27,7 +26,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples") }) {
                 entry 'protobuf-java'
             }
 
-            dependencySet(group: 'io.grpc', version: '1.10.0') {
+            dependencySet(group: 'io.grpc', version: '1.11.0') {
                 entry 'grpc-netty'
                 entry 'grpc-core'
                 entry 'grpc-services'
@@ -36,7 +35,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples") }) {
                 entry 'protoc-gen-grpc-java'
             }
 
-            dependency 'com.salesforce.servicelibs:reactor-grpc-stub:0.8.0'
+            dependency 'com.salesforce.servicelibs:reactor-grpc-stub:0.8.1'
 
             dependency 'org.awaitility:awaitility:3.0.0'
         }
