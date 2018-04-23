@@ -10,7 +10,7 @@ option optimize_for = SPEED;
 option java_multiple_files = true;
 
 service LiiklusService {
-    rpc Publish(PublishRequest) returns (PublishReply) {
+    rpc Publish (PublishRequest) returns (PublishReply) {
 
     }
 
@@ -22,6 +22,10 @@ service LiiklusService {
     }
 
     rpc Ack (AckRequest) returns (google.protobuf.Empty) {
+
+    }
+
+    rpc GetOffsets(GetOffsetsRequest) returns (GetOffsetsReply) {
 
     }
 }
@@ -36,6 +40,9 @@ message PublishRequest {
 
 message PublishReply {
 
+    uint32 partition = 1;
+
+    uint64 offset = 2;
 }
 
 message SubscribeRequest {
@@ -90,4 +97,16 @@ message ReceiveReply {
 
         google.protobuf.Timestamp timestamp = 4;
     }
+}
+
+message GetOffsetsRequest {
+
+    string topic = 1;
+
+    string group = 2;
+
+}
+
+message GetOffsetsReply {
+    map<uint32, uint64> offsets = 1;
 }

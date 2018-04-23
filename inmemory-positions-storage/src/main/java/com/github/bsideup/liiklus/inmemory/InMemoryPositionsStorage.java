@@ -7,7 +7,6 @@ import lombok.experimental.FieldDefaults;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -36,18 +35,13 @@ public class InMemoryPositionsStorage implements PositionsStorage {
     }
 
     @Override
-    public CompletionStage<Map<Integer, Long>> fetch(String topic, String groupId, Set<Integer> partitions, Map<Integer, Long> externalPositions) {
-        ConcurrentMap<Integer, Long> positions = storage.get(Key.of(topic, groupId));
+    public CompletionStage<Map<Integer, Long>> findAll(String topic, String groupId) {
+        return CompletableFuture.completedFuture(storage.get(Key.of(topic, groupId)));
+    }
 
-        if (positions == null) {
-            return CompletableFuture.completedFuture(externalPositions);
-        }
-
-        Map<Integer, Long> result = new HashMap<>();
-        result.putAll(externalPositions);
-        result.putAll(positions);
-
-        return CompletableFuture.completedFuture(result);
+    @Override
+    public CompletionStage<Map<Integer, Long>> fetch(String topic, String groupId, Set<Integer> __) {
+        return findAll(topic, groupId);
     }
 
     @Override

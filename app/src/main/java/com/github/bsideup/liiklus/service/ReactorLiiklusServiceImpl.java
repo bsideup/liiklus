@@ -18,6 +18,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.SignalType;
 
+import java.util.Collections;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -47,7 +48,11 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                         request.getKey().asReadOnlyByteBuffer(),
                         request.getValue().asReadOnlyByteBuffer()
                 )))
-                .then(Mono.just(PublishReply.getDefaultInstance()));
+                .map(it -> PublishReply.newBuilder()
+                        .setPartition(it.getPartition())
+                        .setOffset(it.getOffset())
+                        .build()
+                );
     }
 
     @Override
@@ -159,6 +164,15 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                 })
                 .then(Mono.just(Empty.getDefaultInstance()))
                 .log("ack", Level.WARNING, SignalType.ON_ERROR);
+    }
+
+    @Override
+    public Mono<GetOffsetsReply> getOffsets(Mono<GetOffsetsRequest> request) {
+        return request.flatMap(getOffsets -> Mono
+                .fromCompletionStage(positionsStorage.findAll(getOffsets.getTopic(), getOffsets.getGroup()))
+                .defaultIfEmpty(Collections.emptyMap())
+                .map(offsets -> GetOffsetsReply.newBuilder().putAllOffsets(offsets).build())
+        );
     }
 
     @Value

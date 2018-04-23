@@ -11,13 +11,23 @@ import java.util.concurrent.CompletionStage;
 
 public interface RecordsStorage {
 
-    CompletionStage<Void> publish(String topic, ByteBuffer key, ByteBuffer value);
+    CompletionStage<OffsetInfo> publish(String topic, ByteBuffer key, ByteBuffer value);
 
     Subscription subscribe(String topic, String groupId, Optional<String> autoOffsetReset);
 
     interface Subscription {
 
         Publisher<? extends GroupedPublisher<Integer, Record>> getPublisher();
+    }
+
+    @Value
+    class OffsetInfo {
+
+        String topic;
+
+        int partition;
+
+        long offset;
     }
 
     @Value

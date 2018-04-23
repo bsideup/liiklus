@@ -13,7 +13,10 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.SignalType;
 
 import java.time.Duration;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
@@ -69,15 +72,12 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
                 .map(item -> new Positions(
                         item.get("topic").getS(),
                         item.get("groupId").getS(),
-                        item.get("positions").getM().entrySet().stream().collect(Collectors.toMap(
-                                it -> Integer.parseInt(it.getKey()),
-                                it -> Long.parseLong(it.getValue().getN())
-                        ))
+                        toPositions(item)
                 ));
     }
 
     @Override
-    public CompletionStage<Map<Integer, Long>> fetch(String topic, String groupId, Set<Integer> partitions, Map<Integer, Long> externalPositions) {
+    public CompletionStage<Map<Integer, Long>> findAll(String topic, String groupId) {
         val request = new GetItemRequest()
                 .withTableName(tableName)
                 .withConsistentRead(true)
@@ -94,24 +94,13 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
                         @Override
                         public void onSuccess(GetItemRequest request, GetItemResult getItemResult) {
                             try {
-                                Map<String, AttributeValue> item = getItemResult.getItem();
+                                val positions = toPositions(getItemResult.getItem());
 
-                                val positions = item != null ? item.get("positions").getM() : null;
-
-                                sink.success(
-                                        partitions.stream().collect(Collectors.toMap(
-                                                it -> it,
-                                                it -> {
-                                                    AttributeValue attributeValue = positions != null ? positions.get(it.toString()) : null;
-
-                                                    if (attributeValue != null) {
-                                                        return Long.parseLong(attributeValue.getN());
-                                                    } else {
-                                                        return externalPositions.get(it);
-                                                    }
-                                                }
-                                        ))
-                                );
+                                if (positions == null) {
+                                    sink.success();
+                                } else {
+                                    sink.success(positions);
+                                }
                             } catch (Exception e) {
                                 sink.error(e);
                             }
@@ -123,6 +112,11 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
                 .log(this.getClass().getName(), Level.WARNING, SignalType.ON_ERROR)
                 .retryWhen(it -> it.delayElements(Duration.ofSeconds(1)))
                 .toFuture();
+    }
+
+    @Override
+    public CompletionStage<Map<Integer, Long>> fetch(String topic, String groupId, Set<Integer> __) {
+        return findAll(topic, groupId);
     }
 
     @Override
@@ -204,5 +198,23 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
         result.put(HASH_KEY_FIELD, new AttributeValue(topic));
         result.put(RANGE_KEY_FIELD, new AttributeValue(groupId));
         return result;
+    }
+
+    Map<Integer, Long> toPositions(Map<String, AttributeValue> item) {
+        if (item == null) {
+            return null;
+        }
+
+        AttributeValue positions = item.get("positions");
+
+        if (positions == null || positions.getM() == null) {
+            return null;
+        }
+
+        return positions.getM().entrySet().stream()
+                .collect(Collectors.toMap(
+                        it -> Integer.parseInt(it.getKey()),
+                        it -> Long.parseLong(it.getValue().getN())
+                ));
     }
 }

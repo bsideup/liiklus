@@ -1,9 +1,7 @@
 package com.github.bsideup.liiklus;
 
 import com.github.bsideup.liiklus.kafka.config.KafkaRecordsStorageConfiguration.KafkaProperties;
-import com.github.bsideup.liiklus.protocol.PublishRequest;
-import com.github.bsideup.liiklus.protocol.ReceiveRequest;
-import com.github.bsideup.liiklus.protocol.SubscribeRequest;
+import com.github.bsideup.liiklus.protocol.*;
 import com.github.bsideup.liiklus.test.AbstractIntegrationTest;
 import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.ByteString;
@@ -21,6 +19,7 @@ import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -76,5 +75,64 @@ public class PositionsTest extends AbstractIntegrationTest {
 
         assertThat(record.getRecord().getOffset())
                 .isEqualTo(6);
+    }
+
+    @Test
+    public void testGetOffsets() throws Exception {
+        val key = UUID.randomUUID().toString();
+        val partition = getPartitionByKey(key);
+
+        val publishReply = stub.publish(Mono.just(
+                PublishRequest.newBuilder()
+                        .setTopic(subscribeRequest.getTopic())
+                        .setKey(ByteString.copyFromUtf8(key))
+                        .setValue(ByteString.copyFromUtf8("bar"))
+                        .build()
+        )).block(Duration.ofSeconds(10));
+
+        assertThat(publishReply)
+                .hasFieldOrPropertyWithValue("partition", partition);
+
+        val reportedOffset = publishReply.getOffset();
+
+        stub
+                .subscribe(Mono.just(subscribeRequest))
+                .filter(it -> it.getAssignment().getPartition() == partition)
+                .flatMap(it -> stub.receive(Mono.just(ReceiveRequest.newBuilder().setAssignment(it.getAssignment()).build()))
+                        .map(ReceiveReply::getRecord)
+                        .filter(record -> key.equals(record.getKey().toStringUtf8()))
+                        .delayUntil(record -> stub.ack(Mono.just(AckRequest.newBuilder()
+                                .setAssignment(it.getAssignment())
+                                .setOffset(record.getOffset())
+                                .build()
+                        )))
+                )
+                .blockFirst(Duration.ofSeconds(10));
+
+        val getOffsetsReply = stub
+                .getOffsets(Mono.just(GetOffsetsRequest.newBuilder()
+                        .setTopic(subscribeRequest.getTopic())
+                        .setGroup(subscribeRequest.getGroup())
+                        .build())
+                )
+                .block(Duration.ofSeconds(10));
+
+        assertThat(getOffsetsReply.getOffsetsMap())
+                .containsEntry(partition, reportedOffset);
+    }
+
+    @Test
+    public void testGetEmptyOffsets() throws Exception {
+        val getOffsetsReply = stub
+                .getOffsets(Mono.just(GetOffsetsRequest.newBuilder()
+                        .setTopic(subscribeRequest.getTopic())
+                        .setGroup(UUID.randomUUID().toString())
+                        .build())
+                )
+                .block(Duration.ofSeconds(10));
+
+        assertThat(getOffsetsReply.getOffsetsMap())
+                .isEmpty();
+
     }
 }

@@ -24,15 +24,14 @@ import reactor.kafka.sender.SenderRecord;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 
 @RequiredArgsConstructor
@@ -47,10 +46,16 @@ public class KafkaRecordsStorage implements RecordsStorage {
     KafkaSender<ByteBuffer, ByteBuffer> sender;
 
     @Override
-    public CompletionStage<Void> publish(String topic, ByteBuffer key, ByteBuffer value) {
-        return sender.send(Mono.just(SenderRecord.create(new ProducerRecord<>(topic, key, value), 1)))
+    public CompletionStage<OffsetInfo> publish(String topic, ByteBuffer key, ByteBuffer value) {
+        return sender.send(Mono.just(SenderRecord.create(new ProducerRecord<>(topic, key, value), UUID.randomUUID())))
                 .single()
-                .flatMap(it -> it.exception() != null ? Mono.error(it.exception()) : Mono.<Void>empty())
+                .<OffsetInfo>handle((it, sink) -> {
+                    if (it.exception() != null) {
+                        sink.error(it.exception());
+                    } else {
+                        sink.next(new OffsetInfo(topic, it.recordMetadata().partition(), it.recordMetadata().offset()));
+                    }
+                })
                 .toFuture();
     }
 
@@ -86,22 +91,28 @@ public class KafkaRecordsStorage implements RecordsStorage {
                                                 .fetch(
                                                         topic,
                                                         groupId,
-                                                        partitions.stream().map(it -> it.topicPartition().partition()).collect(Collectors.toSet()),
-                                                        partitions.stream().collect(Collectors.toMap(
-                                                                it -> it.topicPartition().partition(),
-                                                                ReceiverPartition::position
-                                                        ))
+                                                        partitions.stream().map(it -> it.topicPartition().partition()).collect(Collectors.toSet())
                                                 )
                                 )
+                                .defaultIfEmpty(emptyMap())
                                 .block(Duration.ofSeconds(10));
 
                         val kafkaReceiver = receiverRef.get();
                         val recordFlux = recordsFluxRef.get();
 
+                        val externalPositions = partitions.stream().collect(Collectors.toMap(
+                                it -> it.topicPartition().partition(),
+                                ReceiverPartition::position
+                        ));
+
                         for (val partition : partitions) {
                             DefaultKafkaReceiverAccessor.pause(kafkaReceiver, partition.topicPartition());
 
-                            val lastKnownPosition = offsets.get(partition.topicPartition().partition());
+                            Long lastKnownPosition = offsets.get(partition.topicPartition().partition());
+                            if (lastKnownPosition == null) {
+                                lastKnownPosition = externalPositions.get(partition.topicPartition().partition());
+                            }
+
                             if (lastKnownPosition != null && lastKnownPosition > 0) {
                                 partition.seek(lastKnownPosition + 1);
                             }
