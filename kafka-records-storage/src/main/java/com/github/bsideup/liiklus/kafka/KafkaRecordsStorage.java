@@ -15,7 +15,6 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.UnicastProcessor;
 import reactor.kafka.receiver.KafkaReceiver;
 import reactor.kafka.receiver.ReceiverOptions;
-import reactor.kafka.receiver.ReceiverPartition;
 import reactor.kafka.receiver.internals.DefaultKafkaReceiver;
 import reactor.kafka.receiver.internals.DefaultKafkaReceiverAccessor;
 import reactor.kafka.sender.KafkaSender;
@@ -85,7 +84,7 @@ public class KafkaRecordsStorage implements RecordsStorage {
                         }
                     })
                     .addAssignListener(partitions -> {
-                        val offsets = Mono
+                        val lastAckedOffsets = Mono
                                 .fromCompletionStage(
                                         positionsStorage
                                                 .fetch(
@@ -100,21 +99,12 @@ public class KafkaRecordsStorage implements RecordsStorage {
                         val kafkaReceiver = receiverRef.get();
                         val recordFlux = recordsFluxRef.get();
 
-                        val externalPositions = partitions.stream().collect(Collectors.toMap(
-                                it -> it.topicPartition().partition(),
-                                ReceiverPartition::position
-                        ));
-
                         for (val partition : partitions) {
                             DefaultKafkaReceiverAccessor.pause(kafkaReceiver, partition.topicPartition());
 
-                            Long lastKnownPosition = offsets.get(partition.topicPartition().partition());
-                            if (lastKnownPosition == null) {
-                                lastKnownPosition = externalPositions.get(partition.topicPartition().partition());
-                            }
-
-                            if (lastKnownPosition != null && lastKnownPosition > 0) {
-                                partition.seek(lastKnownPosition + 1);
+                            val lastAckedOffset = lastAckedOffsets.get(partition.topicPartition().partition());
+                            if (lastAckedOffset != null) {
+                                partition.seek(lastAckedOffset + 1);
                             }
 
                             val topicPartition = partition.topicPartition();

@@ -67,13 +67,26 @@ public class PositionsTest extends AbstractIntegrationTest {
             kafkaConsumer.commitSync(ImmutableMap.of(topicPartition, new OffsetAndMetadata(5)));
         }
 
-        val record = stub
+        ReceiveReply reply = stub
+                .subscribe(Mono.just(subscribeRequest))
+                .map(SubscribeReply::getAssignment)
+                .filter(it -> it.getPartition() == topicPartition.partition())
+                .flatMap(assignment -> stub
+                        .receive(Mono.just(ReceiveRequest.newBuilder().setAssignment(assignment).build()))
+                        .delayUntil(it -> stub.ack(Mono.just(AckRequest.newBuilder().setAssignment(assignment).setOffset(it.getRecord().getOffset()).build())))
+                )
+                .blockFirst(Duration.ofSeconds(10));
+
+        assertThat(reply.getRecord().getOffset())
+                .isEqualTo(5);
+
+        reply = stub
                 .subscribe(Mono.just(subscribeRequest))
                 .filter(it -> it.getAssignment().getPartition() == topicPartition.partition())
                 .flatMap(it -> stub.receive(Mono.just(ReceiveRequest.newBuilder().setAssignment(it.getAssignment()).build())))
                 .blockFirst(Duration.ofSeconds(10));
 
-        assertThat(record.getRecord().getOffset())
+        assertThat(reply.getRecord().getOffset())
                 .isEqualTo(6);
     }
 
