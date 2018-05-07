@@ -122,9 +122,11 @@ public class KafkaRecordsStorage implements RecordsStorage {
                                             recordFlux
                                                     .filter(it -> it.getPartition() == partitionNum)
                                                     .delayUntil(record -> {
-                                                        if (requests.decrementAndGet() <= 0) {
+                                                        if (requests.decrementAndGet() < 0) {
                                                             return kafkaReceiver.doOnConsumer(consumer -> {
-                                                                consumer.pause(partitionList);
+                                                                if (requests.get() < 0) {
+                                                                    consumer.pause(partitionList);
+                                                                }
                                                                 return true;
                                                             });
                                                         } else {
