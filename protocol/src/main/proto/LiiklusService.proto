@@ -43,6 +43,8 @@ message PublishReply {
     uint32 partition = 1;
 
     uint64 offset = 2;
+
+    string topic = 3;
 }
 
 message SubscribeRequest {

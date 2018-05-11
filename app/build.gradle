@@ -17,10 +17,6 @@ dependencies {
     compile project(":api")
     compile project(":protocol")
 
-    runtime project(":kafka-records-storage")
-    runtime project(":dynamodb-positions-storage")
-    runtime project(":inmemory-positions-storage")
-
     compile 'org.lognet:grpc-spring-boot-starter'
     compile 'io.grpc:grpc-netty'
 
@@ -28,13 +24,17 @@ dependencies {
     compile 'org.springframework.boot:spring-boot-starter-web'
     compile 'io.micrometer:micrometer-registry-prometheus'
 
+    compile 'org.pf4j:pf4j'
+
     testCompileOnly 'org.projectlombok:lombok'
     testCompile 'org.springframework.boot:spring-boot-starter-test'
     testCompile 'org.testcontainers:kafka'
     testCompile 'org.assertj:assertj-core'
     testCompile 'org.awaitility:awaitility'
 
-    testCompile project(":kafka-records-storage")
-    testCompile project(":dynamodb-positions-storage")
-    testCompile project(":inmemory-positions-storage")
+    testCompile 'io.projectreactor.kafka:reactor-kafka'
 }
+
+def plugins = rootProject.allprojects.findAll { it.projectDir.parentFile.name == "plugins" }
+
+tasks.classes.dependsOn(plugins.collect { it.getTasksByName("build", true) })

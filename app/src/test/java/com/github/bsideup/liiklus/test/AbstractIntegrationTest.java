@@ -6,37 +6,21 @@ import com.github.bsideup.liiklus.protocol.ReactorLiiklusServiceGrpc.ReactorLiik
 import com.github.bsideup.liiklus.test.support.LocalStackContainer;
 import com.google.common.collect.Sets;
 import io.grpc.inprocess.InProcessChannelBuilder;
+import lombok.val;
 import org.apache.kafka.common.utils.Utils;
 import org.junit.Rule;
 import org.junit.rules.TestName;
-import org.junit.runner.RunWith;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.util.TestPropertyValues;
-import org.springframework.context.ApplicationContextInitializer;
-import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.KafkaContainer;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@RunWith(SpringRunner.class)
-@ActiveProfiles(profiles = {"test", "exporter", "gateway"})
-@SpringBootTest(
-        classes = {Application.class, TestConfiguration.class},
-        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = {
-                "grpc.inProcessServerName=liiklus",
-        }
-)
-@ContextConfiguration(initializers = AbstractIntegrationTest.Initializer.class)
 public abstract class AbstractIntegrationTest {
 
     public static final int NUM_PARTITIONS = 32;
@@ -55,15 +39,26 @@ public abstract class AbstractIntegrationTest {
 
     private static LocalStackContainer localstack = new LocalStackContainer();
 
-    private static KafkaContainer kafka = new KafkaContainer()
+    protected static KafkaContainer kafka = new KafkaContainer()
             .withEnv("KAFKA_NUM_PARTITIONS", NUM_PARTITIONS + "");
 
     static {
         Stream.of(kafka, localstack).parallel().forEach(GenericContainer::start);
 
-        System.setProperty("grpc.enabled", "false");
-
         System.getProperties().putAll(localstack.getProperties());
+
+        System.setProperty("server.port", "0");
+        System.setProperty("grpc.enabled", "false");
+        System.setProperty("plugins.dir", "../plugins");
+        System.setProperty("plugins.pathMatcher", "*/build/libs/*.jar");
+
+        val args = new ArrayList<String>();
+        args.add("grpc.inProcessServerName=liiklus");
+        args.add("dynamodb.autoCreateTable=true");
+        args.addAll(getKafkaProperties());
+        args.addAll(getDynamoDBProperties());
+
+        Application.start(args.stream().map(it -> "--" + it).toArray(String[]::new));
     }
 
     public static Set<String> getKafkaProperties() {
@@ -76,15 +71,6 @@ public abstract class AbstractIntegrationTest {
         return Sets.newHashSet(
                 "dynamodb.positionsTable=positions"
         );
-    }
-
-    public static class Initializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
-
-        @Override
-        public void initialize(ConfigurableApplicationContext applicationContext) {
-            TestPropertyValues.of(getKafkaProperties()).applyTo(applicationContext);
-            TestPropertyValues.of(getDynamoDBProperties()).applyTo(applicationContext);
-        }
     }
 
     @Rule

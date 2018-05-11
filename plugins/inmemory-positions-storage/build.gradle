@@ -1,0 +1,27 @@
+plugins {
+    id "java"
+}
+
+jar {
+    manifest {
+        attributes(
+                'Plugin-Id': "${project.name}",
+                'Plugin-Version': "${project.version}",
+        )
+    }
+
+    into('lib') {
+        from configurations.compile
+    }
+}
+
+dependencies {
+    compileOnly 'org.projectlombok:lombok'
+    compileOnly 'com.google.auto.service:auto-service'
+
+    compileOnly 'org.springframework.boot:spring-boot-starter'
+    compileOnly project(":api")
+    compileOnly 'io.projectreactor:reactor-core'
+
+    testCompileOnly 'org.projectlombok:lombok'
+}

@@ -1,9 +1,14 @@
 package com.github.bsideup.liiklus.service;
 
 import com.github.bsideup.liiklus.config.GatewayProfile;
+import com.github.bsideup.liiklus.config.RecordPostProcessorChain;
+import com.github.bsideup.liiklus.config.RecordPreProcessorChain;
 import com.github.bsideup.liiklus.positions.PositionsStorage;
 import com.github.bsideup.liiklus.protocol.*;
+import com.github.bsideup.liiklus.records.RecordPostProcessor;
+import com.github.bsideup.liiklus.records.RecordPreProcessor;
 import com.github.bsideup.liiklus.records.RecordsStorage;
+import com.github.bsideup.liiklus.records.RecordsStorage.Envelope;
 import com.github.bsideup.liiklus.records.RecordsStorage.Record;
 import com.github.bsideup.liiklus.records.RecordsStorage.Subscription;
 import com.google.protobuf.ByteString;
@@ -40,15 +45,27 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
 
     PositionsStorage positionsStorage;
 
+    RecordPreProcessorChain recordPreProcessorChain;
+
+    RecordPostProcessorChain recordPostProcessorChain;
+
     @Override
     public Mono<PublishReply> publish(Mono<PublishRequest> requestMono) {
         return requestMono
-                .flatMap(request -> Mono.fromCompletionStage(recordsStorage.publish(
+                .map(request -> new Envelope(
                         request.getTopic(),
                         request.getKey().asReadOnlyByteBuffer(),
                         request.getValue().asReadOnlyByteBuffer()
-                )))
+                ))
+                .transform(mono -> {
+                    for (RecordPreProcessor processor : recordPreProcessorChain.getAll()) {
+                        mono = mono.flatMap(envelope -> Mono.fromCompletionStage(processor.preProcess(envelope)));
+                    }
+                    return mono;
+                })
+                .flatMap(envelope -> Mono.fromCompletionStage(recordsStorage.publish(envelope)))
                 .map(it -> PublishReply.newBuilder()
+                        .setTopic(it.getTopic())
                         .setPartition(it.getPartition())
                         .setOffset(it.getOffset())
                         .build()
@@ -126,13 +143,17 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                         return Mono.empty();
                     }
 
+                    for (RecordPostProcessor processor : recordPostProcessorChain.getAll()) {
+                        source = source.transform(processor::postProcess);
+                    }
+
                     return source
                             .map(consumerRecord -> ReceiveReply.newBuilder()
                                     .setRecord(
                                             ReceiveReply.Record.newBuilder()
                                                     .setOffset(consumerRecord.getOffset())
-                                                    .setKey(ByteString.copyFrom(consumerRecord.getKey()))
-                                                    .setValue(ByteString.copyFrom(consumerRecord.getValue()))
+                                                    .setKey(ByteString.copyFrom(consumerRecord.getEnvelope().getKey()))
+                                                    .setValue(ByteString.copyFrom(consumerRecord.getEnvelope().getValue()))
                                                     .setTimestamp(Timestamp.newBuilder()
                                                             .setSeconds(consumerRecord.getTimestamp().getEpochSecond())
                                                             .setNanos(consumerRecord.getTimestamp().getNano())

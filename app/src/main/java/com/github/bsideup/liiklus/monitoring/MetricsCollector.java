@@ -14,7 +14,9 @@ import reactor.core.publisher.Flux;
 
 import javax.annotation.PostConstruct;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Component
 @RequiredArgsConstructor
@@ -27,14 +29,21 @@ public class MetricsCollector extends Collector {
 
     PositionsStorage positionsStorage;
 
+    private final AtomicBoolean initialized = new AtomicBoolean(false);
+
     @PostConstruct
     public void init() {
         // TODO use MicroMeter abstractions
         collectorRegistry.register(this);
+        initialized.set(true);
     }
 
     @Override
     public List<MetricFamilySamples> collect() {
+        if (!initialized.get()) {
+            // CollectorRegistry will collect on "register", we want to avoid it
+            return Collections.emptyList();
+        }
         return Flux.from(positionsStorage.findAll())
                 .<MetricFamilySamples>map(positions -> {
                     val gauge = new GaugeMetricFamily("liiklus_topic_position", "", Arrays.asList("topic", "groupId", "partition"));

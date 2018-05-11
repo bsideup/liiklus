@@ -14,3 +14,7 @@ dynamodb:
 
 grpc:
   port: 6565
+
+plugins:
+  dir: ./plugins
+  pathMatcher: "*.jar"
