@@ -15,20 +15,18 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 public class LiiklusPluginRepository implements PluginRepository {
 
-    final Path pluginsRoot;
-
-    final String pathMatcher;
+    final LiiklusPluginManager liiklusPluginManager;
 
     @Override
     @SneakyThrows
     public List<Path> getPluginPaths() {
-        PathMatcher[] matchers = Stream.of(pathMatcher.split("/"))
+        PathMatcher[] matchers = Stream.of(liiklusPluginManager.getPluginsPathMatcher().split("/"))
                 .map(it -> FileSystems.getDefault().getPathMatcher("glob:" + it))
                 .toArray(PathMatcher[]::new);
 
         List<Path> result = new ArrayList<>();
 
-        Files.walkFileTree(pluginsRoot, Collections.emptySet(), matchers.length, new FileVisitor<Path>() {
+        Files.walkFileTree(liiklusPluginManager.getPluginsRoot(), Collections.emptySet(), matchers.length, new FileVisitor<Path>() {
 
             int depth = -1;
 
