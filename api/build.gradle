@@ -7,6 +7,4 @@ dependencies {
     compileOnly 'org.springframework.boot:spring-boot-starter'
 
     compile 'org.reactivestreams:reactive-streams'
-
-    testCompileOnly 'org.projectlombok:lombok'
 }

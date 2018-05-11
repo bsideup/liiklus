@@ -2,8 +2,10 @@ include 'api'
 include 'app'
 include 'protocol'
 
-include 'kafka-records-storage'
-include 'dynamodb-positions-storage'
-include 'inmemory-positions-storage'
-
 include 'examples/java'
+
+file('plugins').eachDir { dir ->
+    def projectName = dir.name
+    include projectName
+    project(":${projectName}").projectDir = dir
+}

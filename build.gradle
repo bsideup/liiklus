@@ -9,10 +9,18 @@ configure(subprojects.findAll { !it.name.startsWith("examples") }) {
 
     repositories {
         jcenter()
+        maven { url 'https://jitpack.io' }
     }
 
     project.afterEvaluate {
         project.tasks.findByName("install")?.dependsOn(tasks.findByName("assemble"))
+    }
+
+    configurations.all {
+        resolutionStrategy.dependencySubstitution {
+            // FIXME after 2.3.0 is out
+            substitute module('org.pf4j:pf4j') with module('com.github.pf4j.pf4j:pf4j:f80bc959c1')
+        }
     }
 
     dependencyManagement {
@@ -20,7 +28,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples") }) {
 
         imports {
             mavenBom 'org.springframework.boot:spring-boot-dependencies:2.0.0.RELEASE'
-            mavenBom 'org.testcontainers:testcontainers-bom:1.7.1'
+            mavenBom 'org.testcontainers:testcontainers-bom:1.7.2'
         }
 
         dependencies {
@@ -30,6 +38,10 @@ configure(subprojects.findAll { !it.name.startsWith("examples") }) {
                 entry 'protoc'
                 entry 'protobuf-java'
             }
+
+            dependency 'com.google.auto.service:auto-service:1.0-rc4'
+
+            dependency 'io.projectreactor.kafka:reactor-kafka:1.0.0.RELEASE'
 
             dependencySet(group: 'io.grpc', version: '1.11.0') {
                 entry 'grpc-netty'

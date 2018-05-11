@@ -2,6 +2,7 @@ package com.github.bsideup.liiklus.records;
 
 import lombok.Value;
 import lombok.experimental.Delegate;
+import lombok.experimental.Wither;
 import org.reactivestreams.Publisher;
 
 import java.nio.ByteBuffer;
@@ -11,7 +12,7 @@ import java.util.concurrent.CompletionStage;
 
 public interface RecordsStorage {
 
-    CompletionStage<OffsetInfo> publish(String topic, ByteBuffer key, ByteBuffer value);
+    CompletionStage<OffsetInfo> publish(Envelope envelope);
 
     Subscription subscribe(String topic, String groupId, Optional<String> autoOffsetReset);
 
@@ -31,11 +32,20 @@ public interface RecordsStorage {
     }
 
     @Value
-    class Record {
+    @Wither
+    class Envelope {
+
+        String topic;
 
         ByteBuffer key;
 
         ByteBuffer value;
+    }
+
+    @Value
+    class Record {
+
+        Envelope envelope;
 
         Instant timestamp;
 

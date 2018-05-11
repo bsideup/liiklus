@@ -21,7 +21,9 @@ public class ProfilesTest extends AbstractIntegrationTest {
 
     static Set<String> DYNAMODB_PROPERTIES = AbstractIntegrationTest.getDynamoDBProperties();
 
-    Set<String> commonArgs = Sets.newHashSet("server.port=0", "grpc.inProcessServerName=liiklus-profile-test");
+    Set<String> commonArgs = Sets.newHashSet(
+            "grpc.inProcessServerName=liiklus-profile-test"
+    );
 
     ConfigurableApplicationContext lastApplicationContext;
 

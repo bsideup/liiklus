@@ -1,6 +1,5 @@
 package com.github.bsideup.liiklus;
 
-import com.github.bsideup.liiklus.kafka.config.KafkaRecordsStorageConfiguration.KafkaProperties;
 import com.github.bsideup.liiklus.protocol.*;
 import com.github.bsideup.liiklus.test.AbstractIntegrationTest;
 import com.google.common.collect.ImmutableMap;
@@ -13,7 +12,6 @@ import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -24,9 +22,6 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class PositionsTest extends AbstractIntegrationTest {
-
-    @Autowired
-    KafkaProperties kafkaProperties;
 
     SubscribeRequest subscribeRequest;
 
@@ -60,7 +55,7 @@ public class PositionsTest extends AbstractIntegrationTest {
         val topicPartition = new TopicPartition(subscribeRequest.getTopic(), 0);
 
         val props = new HashMap<String, Object>();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaProperties.getBootstrapServers());
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers());
         props.put(ConsumerConfig.GROUP_ID_CONFIG, subscribeRequest.getGroup());
 
         try (val kafkaConsumer = new KafkaConsumer<>(props, new StringDeserializer(), new StringDeserializer())) {
