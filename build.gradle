@@ -18,9 +18,6 @@ configure(subprojects.findAll { !it.name.startsWith("examples") }) {
 
     configurations.all {
         resolutionStrategy.dependencySubstitution {
-            substitute module('org.gradle:api') with project(':api')
-            substitute project(':util') with module('org.gradle:util:3.0')
-
             // FIXME after 2.3.0 is out
             substitute module('org.pf4j:pf4j') with module('com.github.pf4j.pf4j:pf4j:f80bc959c1')
         }
