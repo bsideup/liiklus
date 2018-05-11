@@ -34,12 +34,10 @@ public class Application {
         val pluginsDir = environment.getProperty("plugins.dir", String.class, "./plugins");
         val pathMatcher = environment.getProperty("plugins.pathMatcher", String.class, "*.jar");
 
-        log.info("Loading plugins from '{}' with matcher: '{}'", pluginsDir, pathMatcher);
+        Path pluginsRoot = Paths.get(pluginsDir).toAbsolutePath().normalize();
+        log.info("Loading plugins from '{}' with matcher: '{}'", pluginsRoot, pathMatcher);
 
-        val pluginManager = new LiiklusPluginManager(
-                Paths.get(pluginsDir).toAbsolutePath().normalize(),
-                pathMatcher
-        );
+        val pluginManager = new LiiklusPluginManager(pluginsRoot, pathMatcher);
 
         pluginManager.loadPlugins();
         pluginManager.startPlugins();
