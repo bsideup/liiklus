@@ -62,7 +62,6 @@ public class Application {
 
                     protected void loadJars(Path pluginPath, PluginClassLoader pluginClassLoader) {
                         pluginClassLoader.addFile(pluginPath.toFile());
-                        super.loadJars(pluginPath, pluginClassLoader);
                         try (FileSystem jarFileSystem = FileSystems.newFileSystem(pluginPath, null)) {
                             for (String libDirectory : this.pluginClasspath.getLibDirectories()) {
                                 Path libPath = jarFileSystem.getPath(libDirectory);
