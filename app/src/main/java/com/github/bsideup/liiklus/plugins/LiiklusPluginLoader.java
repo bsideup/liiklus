@@ -26,6 +26,7 @@ public class LiiklusPluginLoader extends DefaultPluginLoader {
         pluginClassLoader.addFile(pluginPath.toFile());
     }
 
+    @Override
     protected void loadJars(Path pluginPath, PluginClassLoader pluginClassLoader) {
         try (val jarFileSystem = FileSystems.newFileSystem(pluginPath, null)) {
             for (val libDirectory : this.pluginClasspath.getLibDirectories()) {
