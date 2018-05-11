@@ -66,19 +66,21 @@ public class Application {
                             for (String libDirectory : this.pluginClasspath.getLibDirectories()) {
                                 Path libPath = jarFileSystem.getPath(libDirectory);
                                 if (Files.exists(libPath)) {
-                                    Files.walk(libPath, 1).filter(it -> !Files.isDirectory(it)).forEach(it -> {
-                                        try {
-                                            Path tempFile = Files.createTempFile(it.getFileName().toString(), ".jar");
-                                            Files.copy(it, tempFile, StandardCopyOption.REPLACE_EXISTING);
-                                            pluginClassLoader.addURL(tempFile.toUri().toURL());
-                                        } catch (Exception e) {
-                                            e.printStackTrace();
-                                        }
-                                    });
+                                    try(Stream<Path> pathStream = Files.walk(libPath, 1)) {
+                                        pathStream.filter(it -> !Files.isDirectory(it)).forEach(it -> {
+                                            try {
+                                                Path tempFile = Files.createTempFile(it.getFileName().toString(), ".jar");
+                                                Files.copy(it, tempFile, StandardCopyOption.REPLACE_EXISTING);
+                                                pluginClassLoader.addURL(tempFile.toUri().toURL());
+                                            } catch (Exception e) {
+                                                log.error("Failed to add file from {}", it.toAbsolutePath(), e);
+                                            }
+                                        });
+                                    }
                                 }
                             }
                         } catch (IOException e) {
-                            log.error("", e);
+                            log.error("Failed to load JARs from {}", pluginPath.toAbsolutePath(), e);
                         }
                     }
                 };
