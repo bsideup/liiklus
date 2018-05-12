@@ -43,6 +43,7 @@ public interface RecordsStorage {
     }
 
     @Value
+    @Wither
     class Record {
 
         Envelope envelope;

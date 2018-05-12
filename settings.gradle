@@ -3,6 +3,7 @@ include 'app'
 include 'protocol'
 
 include 'examples/java'
+include 'examples/plugin'
 
 file('plugins').eachDir { dir ->
     def projectName = dir.name

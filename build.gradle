@@ -3,7 +3,7 @@ plugins {
     id "com.google.protobuf" version "0.8.4" apply false
 }
 
-configure(subprojects.findAll { !it.name.startsWith("examples") }) {
+configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
     apply plugin: 'io.spring.dependency-management'
     apply plugin: 'maven'
 

@@ -1,0 +1,63 @@
+plugins {
+    id "java"
+    id "io.spring.dependency-management"
+}
+
+jar {
+    baseName = "example-plugin"
+    manifest {
+        attributes(
+                'Plugin-Id': "example-plugin",
+                'Plugin-Version': "1.0.0",
+        )
+    }
+
+    into('lib') {
+        from configurations.compile
+    }
+}
+
+sourceSets.test.resources.srcDir jar.outputs.files.singleFile.parentFile
+test {
+    dependsOn jar
+}
+
+repositories {
+    jcenter()
+    maven { url 'https://jitpack.io' }
+}
+
+dependencyManagement {
+    overriddenByDependencies = false
+
+    imports {
+        mavenBom 'org.springframework.boot:spring-boot-dependencies:2.0.0.RELEASE'
+        mavenBom 'org.testcontainers:testcontainers-bom:1.7.2'
+    }
+
+    dependencies {
+        dependency 'com.github.bsideup.liiklus:api:0.3.0'
+        dependency 'com.github.bsideup.liiklus:protocol:0.3.0'
+        dependency 'io.grpc:grpc-netty:1.11.0'
+
+        dependency 'org.projectlombok:lombok:1.16.8'
+        dependency 'com.google.auto.service:auto-service:1.0-rc4'
+    }
+}
+
+dependencies {
+    compileOnly 'org.projectlombok:lombok'
+    compileOnly "com.google.auto.service:auto-service"
+
+    compileOnly "com.github.bsideup.liiklus:api"
+    compileOnly 'org.springframework.boot:spring-boot-starter'
+    compileOnly 'io.projectreactor:reactor-core'
+
+    compile 'org.apache.commons:commons-lang3:3.7'
+
+    testCompile 'org.testcontainers:kafka'
+    testCompile 'ch.qos.logback:logback-classic:'
+    testCompile "com.github.bsideup.liiklus:protocol"
+    testCompile "io.grpc:grpc-netty"
+    testCompile 'org.assertj:assertj-core'
+}
