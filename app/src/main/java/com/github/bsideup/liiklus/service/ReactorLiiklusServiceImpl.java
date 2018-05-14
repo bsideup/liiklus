@@ -59,7 +59,13 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                 ))
                 .transform(mono -> {
                     for (RecordPreProcessor processor : recordPreProcessorChain.getAll()) {
-                        mono = mono.flatMap(envelope -> Mono.fromCompletionStage(processor.preProcess(envelope)));
+                        mono = mono.flatMap(envelope -> {
+                            try {
+                                return Mono.fromCompletionStage(processor.preProcess(envelope));
+                            } catch (Throwable e) {
+                                return Mono.error(new RuntimeException(processor + " failed", e));
+                            }
+                        });
                     }
                     return mono;
                 })
@@ -69,7 +75,8 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                         .setPartition(it.getPartition())
                         .setOffset(it.getOffset())
                         .build()
-                );
+                )
+                .log("publish", Level.SEVERE, SignalType.ON_ERROR);
     }
 
     @Override
@@ -124,7 +131,7 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                                 subscriptions.remove(sessionId, subscription);
                             });
                 })
-                .log("subscribe", Level.WARNING, SignalType.ON_ERROR);
+                .log("subscribe", Level.SEVERE, SignalType.ON_ERROR);
     }
 
     @Override
@@ -162,7 +169,7 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                                     .build()
                             );
                 })
-                .log("receive", Level.WARNING, SignalType.ON_ERROR);
+                .log("receive", Level.SEVERE, SignalType.ON_ERROR);
     }
 
     @Override
@@ -184,7 +191,7 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                     ));
                 })
                 .then(Mono.just(Empty.getDefaultInstance()))
-                .log("ack", Level.WARNING, SignalType.ON_ERROR);
+                .log("ack", Level.SEVERE, SignalType.ON_ERROR);
     }
 
     @Override
