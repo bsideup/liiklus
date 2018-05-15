@@ -24,7 +24,7 @@ $ docker run \
     bsideup/liiklus:$LATEST_VERSION
 ```
 Where the latest version is:  
-[![](https://jitpack.io/v/bsideup/liiklus.svg?style=flat-square)](https://jitpack.io/#bsideup/liiklus)
+[![](https://img.shields.io/github/release/bsideup/liiklus.svg)](https://github.com/bsideup/liiklus/releases/latest)
 
 Now use [LiiklusService.proto](protocol/src/main/proto/LiiklusService.proto) to generate your client.
 
