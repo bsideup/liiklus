@@ -21,8 +21,10 @@ $ docker run \
     -e kafka_bootstrapServers=some.kafka.host:9092 \
     -e storage_positions_type=MEMORY \ # only for testing, DO NOT use in production
     -p 6565:6565 \
-    bsideup/liiklus:0.1.8
+    bsideup/liiklus:$LATEST_VERSION
 ```
+Where the latest version is:  
+[![](https://jitpack.io/v/bsideup/liiklus.svg?style=flat-square)](https://jitpack.io/#bsideup/liiklus)
 
 Now use [LiiklusService.proto](protocol/src/main/proto/LiiklusService.proto) to generate your client.
 
