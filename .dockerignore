@@ -5,4 +5,4 @@ Dockerfile
 .vscode/
 
 /protocol/generated/
-/examples/java/generated/
+/examples/**

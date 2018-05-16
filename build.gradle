@@ -1,5 +1,5 @@
 plugins {
-    id "org.springframework.boot" version "2.0.0.RELEASE" apply false
+    id "org.springframework.boot" version "2.0.2.RELEASE" apply false
     id "com.google.protobuf" version "0.8.4" apply false
 }
 
@@ -27,7 +27,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
         overriddenByDependencies = false
 
         imports {
-            mavenBom 'org.springframework.boot:spring-boot-dependencies:2.0.0.RELEASE'
+            mavenBom 'org.springframework.boot:spring-boot-dependencies:2.0.2.RELEASE'
             mavenBom 'org.testcontainers:testcontainers-bom:1.7.2'
         }
 
