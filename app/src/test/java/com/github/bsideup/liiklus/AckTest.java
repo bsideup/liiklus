@@ -6,7 +6,6 @@ import com.google.protobuf.ByteString;
 import org.junit.Before;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.HashMap;
@@ -28,28 +27,29 @@ public class AckTest extends AbstractIntegrationTest {
 
         // Will create a topic
         stub
-                .publish(Mono.just(
+                .publish(
                         PublishRequest.newBuilder()
                                 .setTopic(subscribeRequest.getTopic())
                                 .setValue(ByteString.copyFromUtf8("bar"))
                                 .build()
-                ))
+                )
                 .block();
     }
 
     @Test
     public void testManualAck() throws Exception {
-        Integer partition = stub.subscribe(Mono.just(subscribeRequest))
+        Integer partition = stub.subscribe(subscribeRequest)
                 .take(1)
-                .delayUntil(it -> stub.ack(Mono.just(AckRequest.newBuilder().setAssignment(it.getAssignment()).setOffset(100).build())))
+                .delayUntil(it -> stub.ack(AckRequest.newBuilder().setAssignment(it.getAssignment()).setOffset(100).build()))
                 .map(it -> it.getAssignment().getPartition())
                 .blockFirst(Duration.ofSeconds(30));
 
         Map<Integer, Long> positions = stub
-                .getOffsets(Mono.just(GetOffsetsRequest.newBuilder()
-                        .setTopic(subscribeRequest.getTopic())
-                        .setGroup(subscribeRequest.getGroup())
-                        .build())
+                .getOffsets(
+                        GetOffsetsRequest.newBuilder()
+                                .setTopic(subscribeRequest.getTopic())
+                                .setGroup(subscribeRequest.getGroup())
+                                .build()
                 )
                 .map(GetOffsetsReply::getOffsetsMap)
                 .block(Duration.ofSeconds(10));
@@ -61,23 +61,23 @@ public class AckTest extends AbstractIntegrationTest {
 
     @Test
     public void testAlwaysLatest() throws Exception {
-        Integer partition = stub.subscribe(Mono.just(subscribeRequest))
+        Integer partition = stub.subscribe(subscribeRequest)
                 .map(SubscribeReply::getAssignment)
-                .concatMap(assignment ->
-                        stub.ack(Mono.just(AckRequest.newBuilder().setAssignment(assignment).setOffset(10).build()))
-                                .then(stub.ack(Mono.just(AckRequest.newBuilder().setAssignment(assignment).setOffset(200).build())))
-                                .then(stub.ack(Mono.just(AckRequest.newBuilder().setAssignment(assignment).setOffset(100).build())))
-                                .then(Mono.just(assignment))
+                .delayUntil(assignment ->
+                        stub.ack(AckRequest.newBuilder().setAssignment(assignment).setOffset(10).build())
+                                .then(stub.ack(AckRequest.newBuilder().setAssignment(assignment).setOffset(200).build()))
+                                .then(stub.ack(AckRequest.newBuilder().setAssignment(assignment).setOffset(100).build()))
                 )
                 .take(1)
                 .map(Assignment::getPartition)
                 .blockFirst(Duration.ofSeconds(10));
 
         Map<Integer, Long> positions = stub
-                .getOffsets(Mono.just(GetOffsetsRequest.newBuilder()
-                        .setTopic(subscribeRequest.getTopic())
-                        .setGroup(subscribeRequest.getGroup())
-                        .build())
+                .getOffsets(
+                        GetOffsetsRequest.newBuilder()
+                                .setTopic(subscribeRequest.getTopic())
+                                .setGroup(subscribeRequest.getGroup())
+                                .build()
                 )
                 .map(GetOffsetsReply::getOffsetsMap)
                 .block(Duration.ofSeconds(10));
@@ -94,28 +94,29 @@ public class AckTest extends AbstractIntegrationTest {
         ByteString keyBytes = ByteString.copyFromUtf8(key);
 
         Map<String, Integer> receiveStatus = Flux.range(0, 10)
-                .concatMap(i -> stub.publish(Mono.just(
+                .concatMap(i -> stub.publish(
                         PublishRequest.newBuilder()
                                 .setTopic(subscribeRequest.getTopic())
                                 .setKey(keyBytes)
                                 .setValue(ByteString.copyFromUtf8("foo-" + i))
                                 .build()
-                )))
+                ))
                 .thenMany(
                         Flux
                                 .defer(() -> stub
-                                        .subscribe(Mono.just(subscribeRequest))
+                                        .subscribe(subscribeRequest)
                                         .filter(it -> it.getAssignment().getPartition() == partition)
                                         .flatMap(it -> stub
-                                                .receive(Mono.just(ReceiveRequest.newBuilder().setAssignment(it.getAssignment()).build()))
+                                                .receive(ReceiveRequest.newBuilder().setAssignment(it.getAssignment()).build())
                                                 .map(ReceiveReply::getRecord)
                                                 .buffer(5)
                                                 .delayUntil(batch -> stub
-                                                        .ack(Mono.just(AckRequest.newBuilder()
-                                                                .setAssignment(it.getAssignment())
-                                                                .setOffset(batch.get(batch.size() - 1).getOffset())
-                                                                .build()
-                                                        ))
+                                                        .ack(
+                                                                AckRequest.newBuilder()
+                                                                        .setAssignment(it.getAssignment())
+                                                                        .setOffset(batch.get(batch.size() - 1).getOffset())
+                                                                        .build()
+                                                        )
                                                 )
                                         )
                                         .take(1)

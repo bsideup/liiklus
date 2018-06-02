@@ -8,7 +8,6 @@ import com.google.protobuf.ByteString;
 import org.junit.Before;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.Collection;
@@ -31,13 +30,13 @@ public class ConsumerGroupsTest extends AbstractIntegrationTest {
         // Will create a topic and initialize every partition
         Flux.fromIterable(PARTITION_UNIQUE_KEYS)
                 .flatMap(key -> stub
-                        .publish(Mono.just(
+                        .publish(
                                 PublishRequest.newBuilder()
                                         .setTopic(subscribeRequest.getTopic())
                                         .setKey(ByteString.copyFromUtf8(key))
                                         .setValue(ByteString.copyFromUtf8("bar"))
                                         .build()
-                        ))
+                        )
                 )
                 .blockLast();
     }
@@ -46,8 +45,8 @@ public class ConsumerGroupsTest extends AbstractIntegrationTest {
     public void testConsumerGroups() {
         Map<String, Collection<SubscribeReply>> assignments = Flux
                 .merge(
-                        stub.subscribe(Mono.just(subscribeRequest)),
-                        stub.subscribe(Mono.just(subscribeRequest))
+                        stub.subscribe(subscribeRequest),
+                        stub.subscribe(subscribeRequest)
                 )
                 .distinct(it -> it.getAssignment().getPartition())
                 .take(NUM_PARTITIONS)

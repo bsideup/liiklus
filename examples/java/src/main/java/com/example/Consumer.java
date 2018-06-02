@@ -39,13 +39,13 @@ public class Consumer {
         // Send an event every second
         Flux.interval(Duration.ofSeconds(1))
                 .onBackpressureDrop()
-                .concatMap(it -> stub.publish(Mono.just(
+                .concatMap(it -> stub.publish(
                         PublishRequest.newBuilder()
                                 .setTopic(subscribeAction.getTopic())
                                 .setKey(ByteString.copyFromUtf8(UUID.randomUUID().toString()))
                                 .setValue(ByteString.copyFromUtf8(UUID.randomUUID().toString()))
                                 .build()
-                )))
+                ))
                 .subscribe();
 
         // Consume the events
@@ -57,13 +57,13 @@ public class Consumer {
         };
 
         stub
-                .subscribe(Mono.just(subscribeAction))
+                .subscribe(subscribeAction)
                 .filter(it -> it.getReplyCase() == SubscribeReply.ReplyCase.ASSIGNMENT)
                 .map(SubscribeReply::getAssignment)
                 .doOnNext(assignment -> log.info("Assigned to partition {}", assignment.getPartition()))
                 .flatMap(assignment -> stub
                         // Start receiving the events from a partition
-                        .receive(Mono.just(ReceiveRequest.newBuilder().setAssignment(assignment).build()))
+                        .receive(ReceiveRequest.newBuilder().setAssignment(assignment).build())
                         .window(1000) // ACK every 1000th record
                         .concatMap(
                                 batch -> batch
@@ -73,12 +73,12 @@ public class Consumer {
                                         .onBackpressureLatest()
                                         .delayUntil(record -> {
                                             log.info("ACKing partition {} offset {}", assignment.getPartition(), record.getOffset());
-                                            return stub.ack(Mono.just(
+                                            return stub.ack(
                                                     AckRequest.newBuilder()
                                                             .setAssignment(assignment)
                                                             .setOffset(record.getOffset())
                                                             .build()
-                                            ));
+                                            );
                                         }),
                                 1
                         )

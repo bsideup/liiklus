@@ -37,13 +37,13 @@ public class PositionsTest extends AbstractIntegrationTest {
         Flux.fromIterable(PARTITION_UNIQUE_KEYS)
                 .flatMap(key -> Mono
                         .defer(() -> stub
-                                .publish(Mono.just(
+                                .publish(
                                         PublishRequest.newBuilder()
                                                 .setTopic(subscribeRequest.getTopic())
                                                 .setKey(ByteString.copyFromUtf8(key))
                                                 .setValue(ByteString.copyFromUtf8("bar"))
                                                 .build()
-                                ))
+                                )
                         )
                         .repeat(10)
                 )
@@ -63,12 +63,12 @@ public class PositionsTest extends AbstractIntegrationTest {
         }
 
         ReceiveReply reply = stub
-                .subscribe(Mono.just(subscribeRequest))
+                .subscribe(subscribeRequest)
                 .map(SubscribeReply::getAssignment)
                 .filter(it -> it.getPartition() == topicPartition.partition())
                 .flatMap(assignment -> stub
-                        .receive(Mono.just(ReceiveRequest.newBuilder().setAssignment(assignment).build()))
-                        .delayUntil(it -> stub.ack(Mono.just(AckRequest.newBuilder().setAssignment(assignment).setOffset(it.getRecord().getOffset()).build())))
+                        .receive(ReceiveRequest.newBuilder().setAssignment(assignment).build())
+                        .delayUntil(it -> stub.ack(AckRequest.newBuilder().setAssignment(assignment).setOffset(it.getRecord().getOffset()).build()))
                 )
                 .blockFirst(Duration.ofSeconds(10));
 
@@ -76,9 +76,9 @@ public class PositionsTest extends AbstractIntegrationTest {
                 .isEqualTo(5);
 
         reply = stub
-                .subscribe(Mono.just(subscribeRequest))
+                .subscribe(subscribeRequest)
                 .filter(it -> it.getAssignment().getPartition() == topicPartition.partition())
-                .flatMap(it -> stub.receive(Mono.just(ReceiveRequest.newBuilder().setAssignment(it.getAssignment()).build())))
+                .flatMap(it -> stub.receive(ReceiveRequest.newBuilder().setAssignment(it.getAssignment()).build()))
                 .blockFirst(Duration.ofSeconds(10));
 
         assertThat(reply.getRecord().getOffset())
@@ -90,13 +90,13 @@ public class PositionsTest extends AbstractIntegrationTest {
         val key = UUID.randomUUID().toString();
         val partition = getPartitionByKey(key);
 
-        val publishReply = stub.publish(Mono.just(
+        val publishReply = stub.publish(
                 PublishRequest.newBuilder()
                         .setTopic(subscribeRequest.getTopic())
                         .setKey(ByteString.copyFromUtf8(key))
                         .setValue(ByteString.copyFromUtf8("bar"))
                         .build()
-        )).block(Duration.ofSeconds(10));
+        ).block(Duration.ofSeconds(10));
 
         assertThat(publishReply)
                 .hasFieldOrPropertyWithValue("partition", partition);
@@ -104,24 +104,26 @@ public class PositionsTest extends AbstractIntegrationTest {
         val reportedOffset = publishReply.getOffset();
 
         stub
-                .subscribe(Mono.just(subscribeRequest))
+                .subscribe(subscribeRequest)
                 .filter(it -> it.getAssignment().getPartition() == partition)
-                .flatMap(it -> stub.receive(Mono.just(ReceiveRequest.newBuilder().setAssignment(it.getAssignment()).build()))
+                .flatMap(it -> stub.receive(ReceiveRequest.newBuilder().setAssignment(it.getAssignment()).build())
                         .map(ReceiveReply::getRecord)
                         .filter(record -> key.equals(record.getKey().toStringUtf8()))
-                        .delayUntil(record -> stub.ack(Mono.just(AckRequest.newBuilder()
-                                .setAssignment(it.getAssignment())
-                                .setOffset(record.getOffset())
-                                .build()
-                        )))
+                        .delayUntil(record -> stub.ack(
+                                AckRequest.newBuilder()
+                                        .setAssignment(it.getAssignment())
+                                        .setOffset(record.getOffset())
+                                        .build()
+                        ))
                 )
                 .blockFirst(Duration.ofSeconds(10));
 
         val getOffsetsReply = stub
-                .getOffsets(Mono.just(GetOffsetsRequest.newBuilder()
-                        .setTopic(subscribeRequest.getTopic())
-                        .setGroup(subscribeRequest.getGroup())
-                        .build())
+                .getOffsets(
+                        GetOffsetsRequest.newBuilder()
+                                .setTopic(subscribeRequest.getTopic())
+                                .setGroup(subscribeRequest.getGroup())
+                                .build()
                 )
                 .block(Duration.ofSeconds(10));
 
@@ -132,10 +134,11 @@ public class PositionsTest extends AbstractIntegrationTest {
     @Test
     public void testGetEmptyOffsets() throws Exception {
         val getOffsetsReply = stub
-                .getOffsets(Mono.just(GetOffsetsRequest.newBuilder()
-                        .setTopic(subscribeRequest.getTopic())
-                        .setGroup(UUID.randomUUID().toString())
-                        .build())
+                .getOffsets(
+                        GetOffsetsRequest.newBuilder()
+                                .setTopic(subscribeRequest.getTopic())
+                                .setGroup(UUID.randomUUID().toString())
+                                .build()
                 )
                 .block(Duration.ofSeconds(10));
 

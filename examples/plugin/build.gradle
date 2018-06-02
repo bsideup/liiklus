@@ -32,13 +32,13 @@ dependencyManagement {
 
     imports {
         mavenBom 'org.springframework.boot:spring-boot-dependencies:2.0.0.RELEASE'
-        mavenBom 'org.testcontainers:testcontainers-bom:1.7.2'
+        mavenBom 'org.testcontainers:testcontainers-bom:1.7.3'
     }
 
     dependencies {
         dependency 'com.github.bsideup.liiklus:api:0.3.0'
         dependency 'com.github.bsideup.liiklus:protocol:0.3.0'
-        dependency 'io.grpc:grpc-netty:1.11.0'
+        dependency 'io.grpc:grpc-netty:1.12.0'
 
         dependency 'org.projectlombok:lombok:1.16.8'
         dependency 'com.google.auto.service:auto-service:1.0-rc4'

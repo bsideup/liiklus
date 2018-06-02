@@ -18,7 +18,7 @@ protobuf {
         }
 
         reactor {
-            artifact = "com.salesforce.servicelibs:reactor-grpc:0.8.0:jdk8@jar"
+            artifact = "com.salesforce.servicelibs:reactor-grpc:0.8.2:jdk8@jar"
         }
     }
 

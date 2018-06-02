@@ -59,15 +59,15 @@ Example code using [Project Reactor](http://projectreactor.io) and [reactive-grp
 ```java
 val stub = ReactorLiiklusServiceGrpc.newReactorStub(channel);
 stub
-    .subscribe(Mono.just(
+    .subscribe(
         SubscribeRequest.newBuilder()
             .setTopic("user-events")
             .setGroup("analytics")
             .setAutoOffsetReset(AutoOffsetReset.EARLIEST)
             .build()
-    ))
+    )
     .flatMap(reply -> stub
-        .receive(Mono.just(ReceiveRequest.newBuilder().setAssignment(reply.getAssignment()).build()))
+        .receive(ReceiveRequest.newBuilder().setAssignment(reply.getAssignment()).build())
         .window(1000) // ACK every 1000th records
         .concatMap(
             batch -> batch
@@ -76,13 +76,12 @@ stub
                 .concatMap(record -> Mono.delay(Duration.ofMillis(100)))
                 .sample(Duration.ofSeconds(5)) // ACK every 5 seconds
                 .onBackpressureLatest()
-                .delayUntil(record -> stub.ack(Mono.just(
+                .delayUntil(record -> stub.ack(
                     AckRequest.newBuilder()
                         .setAssignment(reply.getAssignment())
                         .setOffset(record.getOffset())
                         .build()
-                    ))
-                ),
+                )),
             1
         )
     )

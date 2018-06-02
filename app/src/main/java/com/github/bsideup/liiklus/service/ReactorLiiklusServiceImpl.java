@@ -190,7 +190,7 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                             ack.getOffset()
                     ));
                 })
-                .then(Mono.just(Empty.getDefaultInstance()))
+                .thenReturn(Empty.getDefaultInstance())
                 .log("ack", Level.SEVERE, SignalType.ON_ERROR);
     }
 

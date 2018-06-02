@@ -9,7 +9,6 @@ import com.google.protobuf.ByteString;
 import org.assertj.core.api.Condition;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 import reactor.core.publisher.SignalType;
 
 import java.time.Duration;
@@ -33,20 +32,20 @@ public class SmokeTest extends AbstractIntegrationTest {
         String key = "foo";
         List<String> values = IntStream.range(0, 10).mapToObj(i -> "bar-" + i).collect(Collectors.toList());
         List<ReceiveReply> records = Flux.fromIterable(values)
-                .concatMap(it -> stub.publish(Mono.just(PublishRequest.newBuilder()
-                        .setTopic(subscribeAction.getTopic())
-                        .setKey(ByteString.copyFromUtf8(key))
-                        .setValue(ByteString.copyFromUtf8(it))
-                        .build()
-                )))
+                .concatMap(it -> stub.publish(
+                        PublishRequest.newBuilder()
+                                .setTopic(subscribeAction.getTopic())
+                                .setKey(ByteString.copyFromUtf8(key))
+                                .setValue(ByteString.copyFromUtf8(it))
+                                .build()
+                ))
                 .thenMany(
-                        stub.subscribe(Mono.just(subscribeAction))
-                                .flatMap(it -> stub.receive(Mono.just(
+                        stub.subscribe(subscribeAction)
+                                .flatMap(it -> stub.receive(
                                         ReceiveRequest.newBuilder()
                                                 .setAssignment(it.getAssignment())
                                                 .build()
-                                        ))
-                                )
+                                ))
                 )
                 .take(values.size())
                 .collectList()
