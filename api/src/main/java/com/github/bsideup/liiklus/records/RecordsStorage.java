@@ -14,7 +14,7 @@ public interface RecordsStorage {
 
     CompletionStage<OffsetInfo> publish(Envelope envelope);
 
-    Subscription subscribe(String topic, String groupId, Optional<String> autoOffsetReset);
+    Subscription subscribe(String topic, String groupId, Optional<Integer> groupVersion, Optional<String> autoOffsetReset);
 
     interface Subscription {
 
@@ -53,6 +53,8 @@ public interface RecordsStorage {
         int partition;
 
         long offset;
+
+        boolean replay;
     }
 
     interface GroupedPublisher<G, T> extends Publisher<T> {

@@ -16,7 +16,6 @@ import java.util.concurrent.ConcurrentMap;
 
 /**
  * WARNING: this storage type should only be used for testing and NOT in production
- *
  */
 @RequiredArgsConstructor
 @FieldDefaults(makeFinal = true)
@@ -42,6 +41,13 @@ public class InMemoryPositionsStorage implements PositionsStorage {
     @Override
     public CompletionStage<Map<Integer, Long>> fetch(String topic, String groupId, Set<Integer> __) {
         return findAll(topic, groupId);
+    }
+
+    @Override
+    public Publisher<Positions> findByPrefix(String topic, String groupPrefix) {
+        return Flux.from(findAll())
+                .filter(it -> topic.equals(it.getTopic()))
+                .filter(it -> it.getGroupId().startsWith(groupPrefix));
     }
 
     @Override

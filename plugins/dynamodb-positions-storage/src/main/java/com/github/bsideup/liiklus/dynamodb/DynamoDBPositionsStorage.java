@@ -17,11 +17,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
+import static com.amazonaws.services.dynamodbv2.model.ComparisonOperator.BEGINS_WITH;
+import static com.amazonaws.services.dynamodbv2.model.ComparisonOperator.EQ;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 
@@ -111,6 +114,39 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
                 })
                 .log(this.getClass().getName(), Level.WARNING, SignalType.ON_ERROR)
                 .retryWhen(it -> it.delayElements(Duration.ofSeconds(1)))
+                .toFuture();
+    }
+
+    @Override
+    public CompletableFuture<Map<String, Map<Integer, Long>>> findByPrefix(String topic, String groupPrefix) {
+        val request = new QueryRequest(tableName)
+                .addKeyConditionsEntry(HASH_KEY_FIELD, new Condition().withComparisonOperator(EQ).withAttributeValueList(new AttributeValue(topic)))
+                .addKeyConditionsEntry(RANGE_KEY_FIELD, new Condition().withComparisonOperator(BEGINS_WITH).withAttributeValueList(new AttributeValue(groupPrefix)));
+
+        AtomicBoolean done = new AtomicBoolean(false);
+
+        return Mono
+                .<List<Map<String, AttributeValue>>>create(sink -> dynamoDB.queryAsync(request, new AsyncHandler<QueryRequest, QueryResult>() {
+                    @Override
+                    public void onError(Exception exception) {
+                        sink.error(exception);
+                    }
+
+                    @Override
+                    public void onSuccess(QueryRequest request, QueryResult result) {
+                        try {
+                            if (result.getCount() <= 0 || result.getLastEvaluatedKey() == null || result.getLastEvaluatedKey().isEmpty()) {
+                                done.set(true);
+                            }
+                            sink.success(result.getItems());
+                        } catch (Exception e) {
+                            sink.error(e);
+                        }
+                    }
+                }))
+                .repeat(() -> !done.get())
+                .flatMapIterable(it -> it)
+                .collectMap(item -> item.get("groupId").getS(), this::toPositions)
                 .toFuture();
     }
 

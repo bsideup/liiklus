@@ -5,6 +5,7 @@ import org.reactivestreams.Publisher;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 public interface PositionsStorage {
@@ -16,6 +17,8 @@ public interface PositionsStorage {
     Publisher<Positions> findAll();
 
     CompletionStage<Map<Integer, Long>> findAll(String topic, String groupId);
+
+    CompletableFuture<Map<String, Map<Integer, Long>>> findByPrefix(String topic, String groupPrefix);
 
     @Value
     class Positions {
