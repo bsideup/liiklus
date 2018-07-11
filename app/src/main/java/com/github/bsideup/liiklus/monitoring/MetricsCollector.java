@@ -46,10 +46,19 @@ public class MetricsCollector extends Collector {
         }
         return Flux.from(positionsStorage.findAll())
                 .<MetricFamilySamples>map(positions -> {
-                    val gauge = new GaugeMetricFamily("liiklus_topic_position", "", Arrays.asList("topic", "groupId", "partition"));
+                    val gauge = new GaugeMetricFamily("liiklus_topic_position", "", Arrays.asList("topic", "groupId", "groupName", "groupVersion", "partition"));
 
                     for (val entry : positions.getValues().entrySet()) {
-                        gauge.addMetric(Arrays.asList(positions.getTopic(), positions.getGroupId(), entry.getKey().toString()), entry.getValue().doubleValue());
+                        gauge.addMetric(
+                                Arrays.asList(
+                                        positions.getTopic(),
+                                        positions.getGroupId().asString(),
+                                        positions.getGroupId().getName(),
+                                        Integer.toString(positions.getGroupId().getVersion().orElse(0)),
+                                        entry.getKey().toString()
+                                ),
+                                entry.getValue().doubleValue()
+                        );
                     }
 
                     return gauge;
