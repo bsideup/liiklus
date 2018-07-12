@@ -12,6 +12,7 @@ import org.junit.Rule;
 import org.junit.rules.TestName;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.KafkaContainer;
+import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
@@ -40,7 +41,8 @@ public abstract class AbstractIntegrationTest {
     private static LocalStackContainer localstack = new LocalStackContainer();
 
     protected static KafkaContainer kafka = new KafkaContainer()
-            .withEnv("KAFKA_NUM_PARTITIONS", NUM_PARTITIONS + "");
+            .withEnv("KAFKA_NUM_PARTITIONS", NUM_PARTITIONS + "")
+            .withEnv("KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS", "0"); // Speed up tests
 
     static {
         Stream.of(kafka, localstack).parallel().forEach(GenericContainer::start);
@@ -59,6 +61,8 @@ public abstract class AbstractIntegrationTest {
         args.addAll(getDynamoDBProperties());
 
         Application.start(args.stream().map(it -> "--" + it).toArray(String[]::new));
+
+        Hooks.onOperatorDebug();
     }
 
     public static Set<String> getKafkaProperties() {

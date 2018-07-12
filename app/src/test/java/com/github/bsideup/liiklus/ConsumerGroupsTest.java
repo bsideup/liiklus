@@ -1,7 +1,6 @@
 package com.github.bsideup.liiklus;
 
 import com.github.bsideup.liiklus.protocol.PublishRequest;
-import com.github.bsideup.liiklus.protocol.SubscribeReply;
 import com.github.bsideup.liiklus.protocol.SubscribeRequest;
 import com.github.bsideup.liiklus.test.AbstractIntegrationTest;
 import com.google.protobuf.ByteString;
@@ -10,10 +9,9 @@ import org.junit.Test;
 import reactor.core.publisher.Flux;
 
 import java.time.Duration;
-import java.util.Collection;
-import java.util.Map;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 public class ConsumerGroupsTest extends AbstractIntegrationTest {
 
@@ -43,18 +41,19 @@ public class ConsumerGroupsTest extends AbstractIntegrationTest {
 
     @Test
     public void testConsumerGroups() {
-        Map<String, Collection<SubscribeReply>> assignments = Flux
+        Flux
                 .merge(
                         stub.subscribe(subscribeRequest),
                         stub.subscribe(subscribeRequest)
                 )
-                .distinct(it -> it.getAssignment().getPartition())
-                .take(NUM_PARTITIONS)
-                .collectMultimap(it -> it.getAssignment().getSessionId())
-                .block(Duration.ofSeconds(30));
-
-        assertThat(assignments)
-                .hasSize(2)
-                .allSatisfy((__, value) -> assertThat(value).isNotEmpty());
+                .scanWith(
+                        () -> new HashMap<String, Set<Integer>>(),
+                        (acc, it) -> {
+                            acc.computeIfAbsent(it.getAssignment().getSessionId(), __ -> new HashSet<>()).add(it.getAssignment().getPartition());
+                            return acc;
+                        }
+                )
+                .filter(it -> it.size() == 2 && it.values().stream().noneMatch(Set::isEmpty))
+                .blockFirst(Duration.ofSeconds(30));
     }
 }

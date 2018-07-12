@@ -39,7 +39,7 @@ public class InMemoryPositionsStorage implements PositionsStorage {
     }
 
     @Override
-    public CompletableFuture<Map<Integer, Map<Integer, Long>>> findAllVersionsByGroup(String topic, String groupName) {
+    public CompletionStage<Map<Integer, Map<Integer, Long>>> findAllVersionsByGroup(String topic, String groupName) {
         return Flux.fromIterable(storage.entrySet())
                 .filter(it -> topic.equals(it.getKey().getTopic()))
                 .filter(it -> groupName.equals(GroupId.ofString(it.getKey().getGroupId()).getName()))

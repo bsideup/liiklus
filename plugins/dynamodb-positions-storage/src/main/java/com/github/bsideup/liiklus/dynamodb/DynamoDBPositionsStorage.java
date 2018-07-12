@@ -18,7 +18,6 @@ import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
@@ -119,7 +118,7 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
     }
 
     @Override
-    public CompletableFuture<Map<Integer, Map<Integer, Long>>> findAllVersionsByGroup(String topic, String groupName) {
+    public CompletionStage<Map<Integer, Map<Integer, Long>>> findAllVersionsByGroup(String topic, String groupName) {
         val request = new QueryRequest(tableName)
                 .addKeyConditionsEntry(HASH_KEY_FIELD, new Condition().withComparisonOperator(EQ).withAttributeValueList(new AttributeValue(topic)))
                 .addKeyConditionsEntry(RANGE_KEY_FIELD, new Condition().withComparisonOperator(BEGINS_WITH).withAttributeValueList(new AttributeValue(groupName)));

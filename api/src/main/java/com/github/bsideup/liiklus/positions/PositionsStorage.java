@@ -4,7 +4,6 @@ import lombok.Value;
 import org.reactivestreams.Publisher;
 
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 public interface PositionsStorage {
@@ -15,7 +14,7 @@ public interface PositionsStorage {
 
     CompletionStage<Map<Integer, Long>> findAll(String topic, GroupId groupId);
 
-    CompletableFuture<Map<Integer, Map<Integer, Long>>> findAllVersionsByGroup(String topic, String groupName);
+    CompletionStage<Map<Integer, Map<Integer, Long>>> findAllVersionsByGroup(String topic, String groupName);
 
     @Value
     class Positions {
