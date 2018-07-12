@@ -1,7 +1,6 @@
 package com.github.bsideup.liiklus.records;
 
 import lombok.Value;
-import lombok.experimental.Delegate;
 import lombok.experimental.Wither;
 import org.reactivestreams.Publisher;
 
@@ -9,6 +8,7 @@ import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
+import java.util.stream.Stream;
 
 public interface RecordsStorage {
 
@@ -18,7 +18,7 @@ public interface RecordsStorage {
 
     interface Subscription {
 
-        Publisher<? extends GroupedPublisher<Integer, Record>> getPublisher();
+        Publisher<Stream<? extends PartitionSource>> getPublisher();
     }
 
     @Value
@@ -55,16 +55,12 @@ public interface RecordsStorage {
         long offset;
     }
 
-    interface GroupedPublisher<G, T> extends Publisher<T> {
-        G getGroup();
-    }
+    interface PartitionSource {
 
-    @Value
-    class DelegatingGroupedPublisher<G, T> implements GroupedPublisher<G, T> {
+        int getPartition();
 
-        G group;
+        Publisher<Record> getPublisher();
 
-        @Delegate(types = Publisher.class)
-        Publisher<T> delegate;
+        CompletionStage<Void> seekTo(long position);
     }
 }

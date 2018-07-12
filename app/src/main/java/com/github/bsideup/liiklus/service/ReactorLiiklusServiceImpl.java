@@ -18,17 +18,21 @@ import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.lognet.springboot.grpc.GRpcService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.SignalType;
 
 import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
+
+import static java.util.Collections.emptyMap;
 
 @RequiredArgsConstructor
 @FieldDefaults(makeFinal = true)
@@ -102,33 +106,48 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
 
                     String sessionId = UUID.randomUUID().toString();
 
-                    subscriptions.put(sessionId, new StoredSubscription(subscription, topic, groupId));
+                    val storedSubscription = new StoredSubscription(subscription, topic, groupId);
+                    subscriptions.put(sessionId, storedSubscription);
 
                     ConcurrentMap<Integer, Flux<Record>> sourcesByPartition = sources
                             .computeIfAbsent(sessionId, __ -> new ConcurrentHashMap<>());
 
                     return Flux.from(subscription.getPublisher())
-                            .map(group -> {
-                                int partition = group.getGroup();
+                            .switchMap(sources ->
+                                    getAckedOffsets(groupId, topic).flatMapMany(lastAckedOffsets ->
+                                            Flux.fromStream(sources).map(source -> {
+                                                int partition = source.getPartition();
 
-                                sourcesByPartition.put(
-                                        partition,
-                                        Flux.from(group)
-                                                .log("partition-" + partition, Level.WARNING, SignalType.ON_ERROR)
-                                                .retry()
-                                                .doFinally(__ -> sourcesByPartition.remove(partition))
-                                );
+                                                sourcesByPartition.put(
+                                                        partition,
+                                                        Mono
+                                                                .defer(() -> {
+                                                                    val lastAckedOffset = lastAckedOffsets.get(partition);
+                                                                    if (lastAckedOffset != null) {
+                                                                        return Mono.fromCompletionStage(source.seekTo(lastAckedOffset));
+                                                                    } else {
+                                                                        return Mono.empty();
+                                                                    }
+                                                                })
+                                                                .cache()
+                                                                .thenMany(source.getPublisher())
+                                                                .log("partition-" + partition, Level.WARNING, SignalType.ON_ERROR)
+                                                                .retry()
+                                                                .doFinally(__ -> sourcesByPartition.remove(partition))
+                                                );
 
-                                return SubscribeReply.newBuilder()
-                                        .setAssignment(Assignment.newBuilder()
-                                                .setPartition(partition)
-                                                .setSessionId(sessionId)
-                                        )
-                                        .build();
-                            })
+                                                return SubscribeReply.newBuilder()
+                                                        .setAssignment(Assignment.newBuilder()
+                                                                .setPartition(partition)
+                                                                .setSessionId(sessionId)
+                                                        )
+                                                        .build();
+                                            })
+                                    )
+                            )
                             .doFinally(__ -> {
                                 sources.remove(sessionId, sourcesByPartition);
-                                subscriptions.remove(sessionId, subscription);
+                                subscriptions.remove(sessionId, storedSubscription);
                             });
                 })
                 .log("subscribe", Level.SEVERE, SignalType.ON_ERROR);
@@ -201,6 +220,11 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                 .defaultIfEmpty(Collections.emptyMap())
                 .map(offsets -> GetOffsetsReply.newBuilder().putAllOffsets(offsets).build())
         );
+    }
+
+    private Mono<Map<Integer, Long>> getAckedOffsets(String groupId, String topic) {
+        return Mono.fromCompletionStage(positionsStorage.findAll(topic, groupId))
+                .defaultIfEmpty(emptyMap());
     }
 
     @Value
