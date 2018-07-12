@@ -42,7 +42,7 @@ public abstract class AbstractIntegrationTest {
 
     protected static KafkaContainer kafka = new KafkaContainer()
             .withEnv("KAFKA_NUM_PARTITIONS", NUM_PARTITIONS + "")
-            .withEnv("KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS", "0"); // Speed up tests
+            .withEnv("KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS", "10"); // Speed up tests
 
     static {
         Stream.of(kafka, localstack).parallel().forEach(GenericContainer::start);
