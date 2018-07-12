@@ -17,6 +17,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.ReplayProcessor;
 import reactor.kafka.receiver.KafkaReceiver;
 import reactor.kafka.receiver.ReceiverOptions;
+import reactor.kafka.receiver.ReceiverPartition;
 import reactor.kafka.receiver.internals.DefaultKafkaReceiver;
 import reactor.kafka.receiver.internals.DefaultKafkaReceiverAccessor;
 import reactor.kafka.sender.KafkaSender;
@@ -95,60 +96,12 @@ public class KafkaRecordsStorage implements RecordsStorage {
                         }
 
                         assignmentsSink.next(
-                                partitions.stream().map(partition -> {
-                                    val topicPartition = partition.topicPartition();
-                                    val partitionList = Arrays.asList(topicPartition);
-                                    val partitionNum = topicPartition.partition();
-
-                                    val requests = new AtomicLong();
-
-                                    val revocation = ReplayProcessor.<TopicPartition>create(1);
-                                    revocations.put(partitionNum, revocation);
-
-                                    return new PartitionSource() {
-
-                                        @Override
-                                        public int getPartition() {
-                                            return partitionNum;
-                                        }
-
-                                        @Override
-                                        public Publisher<Record> getPublisher() {
-                                            return recordFlux
-                                                    .filter(it -> it.getPartition() == partitionNum)
-                                                    .delayUntil(record -> {
-                                                        if (requests.decrementAndGet() < 0) {
-                                                            return kafkaReceiver.doOnConsumer(consumer -> {
-                                                                if (requests.get() < 0) {
-                                                                    consumer.pause(partitionList);
-                                                                }
-                                                                return true;
-                                                            });
-                                                        } else {
-                                                            return Mono.empty();
-                                                        }
-                                                    })
-                                                    .doOnRequest(requested -> {
-                                                        if (requests.addAndGet(requested) > 0) {
-                                                            DefaultKafkaReceiverAccessor.resume(kafkaReceiver, topicPartition);
-                                                        }
-                                                    })
-                                                    .takeUntilOther(revocation)
-                                                    .doFinally(__ -> DefaultKafkaReceiverAccessor.pause(kafkaReceiver, partition.topicPartition()));
-                                        }
-
-                                        @Override
-                                        public CompletionStage<Void> seekTo(long position) {
-                                            return kafkaReceiver
-                                                    .doOnConsumer(consumer -> {
-                                                        consumer.seek(topicPartition, position + 1);
-                                                        return true;
-                                                    })
-                                                    .then()
-                                                    .toFuture();
-                                        }
-                                    };
-                                })
+                                partitions.stream().map(partition -> toPartitionSource(
+                                        kafkaReceiver,
+                                        recordFlux,
+                                        revocations,
+                                        partition.topicPartition()
+                                ))
                         );
                     });
 
@@ -172,7 +125,7 @@ public class KafkaRecordsStorage implements RecordsStorage {
             );
 
             val disposable = recordsFluxRef.get().subscribe(
-                    __ -> {},
+                    null,
                     assignmentsSink::error,
                     assignmentsSink::complete
             );
@@ -182,5 +135,65 @@ public class KafkaRecordsStorage implements RecordsStorage {
                 DefaultKafkaReceiverAccessor.close(kafkaReceiver);
             });
         });
+    }
+
+    private PartitionSource toPartitionSource(
+            DefaultKafkaReceiver<ByteBuffer, ByteBuffer> kafkaReceiver,
+            Flux<Record> recordFlux,
+            ConcurrentHashMap<Integer, Processor<TopicPartition, TopicPartition>> revocations,
+            TopicPartition topicPartition
+    ) {
+        val partitionList = Arrays.asList(topicPartition);
+        val partitionNum = topicPartition.partition();
+
+        val requests = new AtomicLong();
+
+        val revocation = ReplayProcessor.<TopicPartition>create(1);
+        revocations.put(partitionNum, revocation);
+
+        return new PartitionSource() {
+
+            @Override
+            public int getPartition() {
+                return partitionNum;
+            }
+
+            @Override
+            public Publisher<Record> getPublisher() {
+                return recordFlux
+                        .filter(it -> it.getPartition() == partitionNum)
+                        .delayUntil(record -> {
+                            if (requests.decrementAndGet() < 0) {
+                                return kafkaReceiver.doOnConsumer(consumer -> {
+                                    if (requests.get() < 0) {
+                                        consumer.pause(partitionList);
+                                    }
+                                    return true;
+                                });
+                            } else {
+                                return Mono.empty();
+                            }
+                        })
+                        .doOnRequest(requested -> {
+                            if (requests.addAndGet(requested) > 0) {
+                                DefaultKafkaReceiverAccessor.resume(kafkaReceiver, topicPartition);
+                            }
+                        })
+                        .takeUntilOther(revocation)
+                        .doFinally(__ -> DefaultKafkaReceiverAccessor.pause(kafkaReceiver, topicPartition));
+            }
+
+            @Override
+            public CompletionStage<Void> seekTo(long position) {
+                return kafkaReceiver
+                        .doOnConsumer(consumer -> {
+                            // + 1 because in Kafka "seek" moves the cursor to the desired next record
+                            consumer.seek(topicPartition, position + 1);
+                            return true;
+                        })
+                        .then()
+                        .toFuture();
+            }
+        };
     }
 }
