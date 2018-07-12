@@ -4,18 +4,14 @@ import com.github.bsideup.liiklus.protocol.PublishRequest;
 import com.github.bsideup.liiklus.protocol.SubscribeRequest;
 import com.github.bsideup.liiklus.test.AbstractIntegrationTest;
 import com.google.protobuf.ByteString;
-import lombok.val;
 import org.junit.Before;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
 
 import java.time.Duration;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class ConsumerGroupsTest extends AbstractIntegrationTest {
 
@@ -45,12 +41,11 @@ public class ConsumerGroupsTest extends AbstractIntegrationTest {
 
     @Test
     public void testConsumerGroups() {
-        val assignments = Flux
+        Flux
                 .merge(
                         stub.subscribe(subscribeRequest),
                         stub.subscribe(subscribeRequest)
                 )
-                .distinct(it -> it.getAssignment().getPartition())
                 .scanWith(
                         () -> new HashMap<String, Set<Integer>>(),
                         (acc, it) -> {
@@ -58,12 +53,7 @@ public class ConsumerGroupsTest extends AbstractIntegrationTest {
                             return acc;
                         }
                 )
-                .filter(it -> it.size() == 2)
-                .filter(it -> it.values().stream().flatMap(Collection::stream).distinct().count() == NUM_PARTITIONS)
+                .filter(it -> it.size() == 2 && it.values().stream().noneMatch(Set::isEmpty))
                 .blockFirst(Duration.ofSeconds(30));
-
-        assertThat(assignments)
-                .hasSize(2)
-                .allSatisfy((__, value) -> assertThat(value).isNotEmpty());
     }
 }
