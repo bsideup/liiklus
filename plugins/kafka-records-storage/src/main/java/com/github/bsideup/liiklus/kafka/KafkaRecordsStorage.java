@@ -17,7 +17,6 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.ReplayProcessor;
 import reactor.kafka.receiver.KafkaReceiver;
 import reactor.kafka.receiver.ReceiverOptions;
-import reactor.kafka.receiver.ReceiverPartition;
 import reactor.kafka.receiver.internals.DefaultKafkaReceiver;
 import reactor.kafka.receiver.internals.DefaultKafkaReceiverAccessor;
 import reactor.kafka.sender.KafkaSender;
@@ -63,23 +62,14 @@ public class KafkaRecordsStorage implements RecordsStorage {
     }
 
     @Override
-    public Subscription subscribe(String topic, String groupId, Optional<String> autoOffsetReset) {
-        val props = new HashMap<String, Object>();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
-        autoOffsetReset.ifPresent(it -> props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, it));
-        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ByteBufferDeserializer.class);
-        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteBufferDeserializer.class);
-        props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
-        props.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, "0");
-
+    public Subscription subscribe(String topic, String groupName, Optional<String> autoOffsetReset) {
         return () -> Flux.create(assignmentsSink -> {
             val revocations = new ConcurrentHashMap<Integer, Processor<TopicPartition, TopicPartition>>();
 
             val receiverRef = new AtomicReference<DefaultKafkaReceiver<ByteBuffer, ByteBuffer>>();
             val recordsFluxRef = new AtomicReference<Flux<Record>>();
 
-            val receiverOptions = ReceiverOptions.<ByteBuffer, ByteBuffer>create(props)
+            val receiverOptions = createReceiverOptions(groupName, autoOffsetReset)
                     .subscription(singletonList(topic))
                     .addRevokeListener(partitions -> {
                         for (val partition : partitions) {
@@ -196,4 +186,17 @@ public class KafkaRecordsStorage implements RecordsStorage {
             }
         };
     }
+
+    protected ReceiverOptions<ByteBuffer, ByteBuffer> createReceiverOptions(String groupName, Optional<String> autoOffsetReset) {
+        val props = new HashMap<String, Object>();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, groupName);
+        autoOffsetReset.ifPresent(it -> props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, it));
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ByteBufferDeserializer.class);
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteBufferDeserializer.class);
+        props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
+        props.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, "0");
+        return ReceiverOptions.create(props);
+    }
+
 }
