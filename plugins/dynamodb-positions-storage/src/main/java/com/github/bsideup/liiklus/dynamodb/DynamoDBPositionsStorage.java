@@ -16,7 +16,6 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
@@ -112,11 +111,6 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
                 .log(this.getClass().getName(), Level.WARNING, SignalType.ON_ERROR)
                 .retryWhen(it -> it.delayElements(Duration.ofSeconds(1)))
                 .toFuture();
-    }
-
-    @Override
-    public CompletionStage<Map<Integer, Long>> fetch(String topic, String groupId, Set<Integer> __) {
-        return findAll(topic, groupId);
     }
 
     @Override

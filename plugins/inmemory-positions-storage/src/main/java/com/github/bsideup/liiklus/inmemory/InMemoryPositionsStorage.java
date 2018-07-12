@@ -8,7 +8,6 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,11 +36,6 @@ public class InMemoryPositionsStorage implements PositionsStorage {
     @Override
     public CompletionStage<Map<Integer, Long>> findAll(String topic, String groupId) {
         return CompletableFuture.completedFuture(storage.get(Key.of(topic, groupId)));
-    }
-
-    @Override
-    public CompletionStage<Map<Integer, Long>> fetch(String topic, String groupId, Set<Integer> __) {
-        return findAll(topic, groupId);
     }
 
     @Override

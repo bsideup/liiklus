@@ -11,6 +11,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteBufferDeserializer;
 import org.reactivestreams.Processor;
+import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.ReplayProcessor;
@@ -31,9 +32,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 
-import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 
 @RequiredArgsConstructor
@@ -88,72 +87,69 @@ public class KafkaRecordsStorage implements RecordsStorage {
                         }
                     })
                     .addAssignListener(partitions -> {
-                        val lastAckedOffsets = Mono
-                                .fromCompletionStage(
-                                        positionsStorage
-                                                .fetch(
-                                                        topic,
-                                                        groupId,
-                                                        partitions.stream().map(it -> it.topicPartition().partition()).collect(Collectors.toSet())
-                                                )
-                                )
-                                .defaultIfEmpty(emptyMap())
-                                .cache();
-
                         val kafkaReceiver = receiverRef.get();
                         val recordFlux = recordsFluxRef.get();
 
                         for (val partition : partitions) {
                             DefaultKafkaReceiverAccessor.pause(kafkaReceiver, partition.topicPartition());
+                        }
 
-                            val topicPartition = partition.topicPartition();
-                            val partitionList = Arrays.asList(topicPartition);
-                            val partitionNum = topicPartition.partition();
+                        assignmentsSink.next(
+                                partitions.stream().map(partition -> {
+                                    val topicPartition = partition.topicPartition();
+                                    val partitionList = Arrays.asList(topicPartition);
+                                    val partitionNum = topicPartition.partition();
 
-                            val requests = new AtomicLong();
+                                    val requests = new AtomicLong();
 
-                            val revocation = ReplayProcessor.<TopicPartition>create(1);
-                            revocations.put(partitionNum, revocation);
+                                    val revocation = ReplayProcessor.<TopicPartition>create(1);
+                                    revocations.put(partitionNum, revocation);
 
-                            assignmentsSink.next(
-                                    new DelegatingGroupedPublisher<>(
-                                            partitionNum,
-                                            lastAckedOffsets
-                                                    .delayUntil(offsets -> {
-                                                        val lastAckedOffset = offsets.get(partition.topicPartition().partition());
-                                                        if (lastAckedOffset != null) {
+                                    return new PartitionSource() {
+
+                                        @Override
+                                        public int getPartition() {
+                                            return partitionNum;
+                                        }
+
+                                        @Override
+                                        public Publisher<Record> getPublisher() {
+                                            return recordFlux
+                                                    .filter(it -> it.getPartition() == partitionNum)
+                                                    .delayUntil(record -> {
+                                                        if (requests.decrementAndGet() < 0) {
                                                             return kafkaReceiver.doOnConsumer(consumer -> {
-                                                                consumer.seek(topicPartition, lastAckedOffset + 1);
+                                                                if (requests.get() < 0) {
+                                                                    consumer.pause(partitionList);
+                                                                }
                                                                 return true;
                                                             });
                                                         } else {
                                                             return Mono.empty();
                                                         }
                                                     })
-                                                    .thenMany(Flux.defer(() -> recordFlux
-                                                            .filter(it -> it.getPartition() == partitionNum)
-                                                            .delayUntil(record -> {
-                                                                if (requests.decrementAndGet() < 0) {
-                                                                    return kafkaReceiver.doOnConsumer(consumer -> {
-                                                                        if (requests.get() < 0) {
-                                                                            consumer.pause(partitionList);
-                                                                        }
-                                                                        return true;
-                                                                    });
-                                                                } else {
-                                                                    return Mono.empty();
-                                                                }
-                                                            })
-                                                            .doOnRequest(requested -> {
-                                                                if (requests.addAndGet(requested) > 0) {
-                                                                    DefaultKafkaReceiverAccessor.resume(kafkaReceiver, topicPartition);
-                                                                }
-                                                            })
-                                                    ))
+                                                    .doOnRequest(requested -> {
+                                                        if (requests.addAndGet(requested) > 0) {
+                                                            DefaultKafkaReceiverAccessor.resume(kafkaReceiver, topicPartition);
+                                                        }
+                                                    })
                                                     .takeUntilOther(revocation)
-                                    )
-                            );
-                        }
+                                                    .doFinally(__ -> DefaultKafkaReceiverAccessor.pause(kafkaReceiver, partition.topicPartition()));
+                                        }
+
+                                        @Override
+                                        public CompletionStage<Void> seekTo(long position) {
+                                            return kafkaReceiver
+                                                    .doOnConsumer(consumer -> {
+                                                        consumer.seek(topicPartition, position + 1);
+                                                        return true;
+                                                    })
+                                                    .then()
+                                                    .toFuture();
+                                        }
+                                    };
+                                })
+                        );
                     });
 
             val kafkaReceiver = (DefaultKafkaReceiver<ByteBuffer, ByteBuffer>) KafkaReceiver.create(receiverOptions);
