@@ -44,6 +44,10 @@ public abstract class AbstractIntegrationTest {
             .withEnv("KAFKA_NUM_PARTITIONS", NUM_PARTITIONS + "")
             .withEnv("KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS", "0"); // Speed up tests
 
+    protected static ReactorLiiklusServiceStub stub = ReactorLiiklusServiceGrpc.newReactorStub(
+            InProcessChannelBuilder.forName("liiklus").build()
+    );
+
     static {
         Stream.of(kafka, localstack).parallel().forEach(GenericContainer::start);
 
@@ -79,8 +83,4 @@ public abstract class AbstractIntegrationTest {
 
     @Rule
     public TestName testName = new TestName();
-
-    protected ReactorLiiklusServiceStub stub = ReactorLiiklusServiceGrpc.newReactorStub(
-            InProcessChannelBuilder.forName("liiklus").build()
-    );
 }
