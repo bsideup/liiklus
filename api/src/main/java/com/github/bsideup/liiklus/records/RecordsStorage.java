@@ -14,7 +14,7 @@ public interface RecordsStorage {
 
     CompletionStage<OffsetInfo> publish(Envelope envelope);
 
-    Subscription subscribe(String topic, String groupId, Optional<String> autoOffsetReset);
+    Subscription subscribe(String topic, String groupName, Optional<String> autoOffsetReset);
 
     interface Subscription {
 

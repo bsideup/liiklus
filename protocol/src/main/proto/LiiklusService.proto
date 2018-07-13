@@ -53,6 +53,8 @@ message SubscribeRequest {
 
     string group = 2;
 
+    uint32 groupVersion = 4;
+
     AutoOffsetReset autoOffsetReset = 3;
 
     enum AutoOffsetReset {
@@ -98,6 +100,8 @@ message ReceiveReply {
         bytes value = 3;
 
         google.protobuf.Timestamp timestamp = 4;
+
+        bool replay = 5;
     }
 }
 
@@ -106,6 +110,8 @@ message GetOffsetsRequest {
     string topic = 1;
 
     string group = 2;
+
+    uint32 groupVersion = 3;
 
 }
 

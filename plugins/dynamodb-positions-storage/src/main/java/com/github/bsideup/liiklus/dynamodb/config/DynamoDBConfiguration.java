@@ -38,11 +38,11 @@ public class DynamoDBConfiguration implements LiiklusConfiguration {
     @Autowired
     DynamoDBProperties dynamoDBProperties;
 
-    @Bean(destroyMethod = "shutdown")
-    AmazonDynamoDBAsync dynamoDb(DynamoDBProperties properties) {
+    @Bean
+    PositionsStorage dynamoDBPositionsStorage() {
         AmazonDynamoDBAsyncClientBuilder builder = AmazonDynamoDBAsyncClient.asyncBuilder();
 
-        properties.getEndpoint()
+        dynamoDBProperties.getEndpoint()
                 .map(endpoint -> new AwsClientBuilder.EndpointConfiguration(
                         endpoint,
                         new DefaultAwsRegionProviderChain().getRegion()
@@ -51,14 +51,14 @@ public class DynamoDBConfiguration implements LiiklusConfiguration {
 
         AmazonDynamoDBAsync dynamoDB = builder.build();
 
-        if (properties.isAutoCreateTable()) {
-            log.info("Going to automatically create a table with name '{}'", properties.getPositionsTable());
+        if (dynamoDBProperties.isAutoCreateTable()) {
+            log.info("Going to automatically create a table with name '{}'", dynamoDBProperties.getPositionsTable());
             dynamoDB.createTable(new CreateTableRequest(
                     Arrays.asList(
                             new AttributeDefinition("topic", ScalarAttributeType.S),
                             new AttributeDefinition("groupId", ScalarAttributeType.S)
                     ),
-                    properties.getPositionsTable(),
+                    dynamoDBProperties.getPositionsTable(),
                     Arrays.asList(
                             new KeySchemaElement("topic", KeyType.HASH),
                             new KeySchemaElement("groupId", KeyType.RANGE)
@@ -67,11 +67,6 @@ public class DynamoDBConfiguration implements LiiklusConfiguration {
             ));
         }
 
-        return dynamoDB;
-    }
-
-    @Bean
-    PositionsStorage dynamoDBPositionsStorage(AmazonDynamoDBAsync dynamoDB) {
         return new DynamoDBPositionsStorage(
                 dynamoDB,
                 dynamoDBProperties.getPositionsTable()

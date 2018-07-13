@@ -3,6 +3,20 @@ plugins {
     id "com.google.protobuf" version "0.8.4" apply false
 }
 
+allprojects {
+    task downloadDependencies {
+        doLast {
+            configurations.all {
+                try {
+                    it.files
+                } catch (e) {
+                    project.logger.info(e.message)
+                }
+            }
+        }
+    }
+}
+
 configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
     apply plugin: 'io.spring.dependency-management'
     apply plugin: 'maven'
@@ -43,7 +57,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
 
             dependency 'io.projectreactor.kafka:reactor-kafka:1.0.0.RELEASE'
 
-            dependencySet(group: 'io.grpc', version: '1.12.0') {
+            dependencySet(group: 'io.grpc', version: '1.13.1') {
                 entry 'grpc-netty'
                 entry 'grpc-core'
                 entry 'grpc-services'
@@ -52,7 +66,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
                 entry 'protoc-gen-grpc-java'
             }
 
-            dependency 'com.salesforce.servicelibs:reactor-grpc-stub:0.8.2'
+            dependency 'com.salesforce.servicelibs:reactor-grpc-stub:0.9.0'
 
             dependency 'org.awaitility:awaitility:3.0.0'
         }

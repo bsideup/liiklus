@@ -4,6 +4,7 @@ import com.amazonaws.handlers.AsyncHandler;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsync;
 import com.amazonaws.services.dynamodbv2.model.*;
 import com.amazonaws.util.ImmutableMapParameter;
+import com.github.bsideup.liiklus.positions.GroupId;
 import com.github.bsideup.liiklus.positions.PositionsStorage;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -13,6 +14,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.SignalType;
 
 import java.time.Duration;
+import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +23,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
+import static com.amazonaws.services.dynamodbv2.model.ComparisonOperator.BEGINS_WITH;
+import static com.amazonaws.services.dynamodbv2.model.ComparisonOperator.EQ;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 
@@ -70,13 +74,13 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
                 .flatMapIterable(it -> it)
                 .map(item -> new Positions(
                         item.get("topic").getS(),
-                        item.get("groupId").getS(),
+                        GroupId.ofString(item.get("groupId").getS()),
                         toPositions(item)
                 ));
     }
 
     @Override
-    public CompletionStage<Map<Integer, Long>> findAll(String topic, String groupId) {
+    public CompletionStage<Map<Integer, Long>> findAll(String topic, GroupId groupId) {
         val request = new GetItemRequest()
                 .withTableName(tableName)
                 .withConsistentRead(true)
@@ -114,7 +118,48 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
     }
 
     @Override
-    public CompletionStage<Void> update(String topic, String groupId, int partition, long position) {
+    public CompletionStage<Map<Integer, Map<Integer, Long>>> findAllVersionsByGroup(String topic, String groupName) {
+        val request = new QueryRequest(tableName)
+                .addKeyConditionsEntry(HASH_KEY_FIELD, new Condition().withComparisonOperator(EQ).withAttributeValueList(new AttributeValue(topic)))
+                .addKeyConditionsEntry(RANGE_KEY_FIELD, new Condition().withComparisonOperator(BEGINS_WITH).withAttributeValueList(new AttributeValue(groupName)));
+
+        AtomicBoolean done = new AtomicBoolean(false);
+
+        return Mono
+                .<List<Map<String, AttributeValue>>>create(sink -> dynamoDB.queryAsync(request, new AsyncHandler<QueryRequest, QueryResult>() {
+                    @Override
+                    public void onError(Exception exception) {
+                        sink.error(exception);
+                    }
+
+                    @Override
+                    public void onSuccess(QueryRequest request, QueryResult result) {
+                        try {
+                            if (result.getCount() <= 0 || result.getLastEvaluatedKey() == null || result.getLastEvaluatedKey().isEmpty()) {
+                                done.set(true);
+                            }
+                            sink.success(result.getItems());
+                        } catch (Exception e) {
+                            sink.error(e);
+                        }
+                    }
+                }))
+                .repeat(() -> !done.get())
+                .flatMapIterable(it -> it)
+                .map(item -> new AbstractMap.SimpleEntry<>(
+                        GroupId.ofString(item.get("groupId").getS()),
+                        toPositions(item)
+                ))
+                .filter(it -> groupName.equals(it.getKey().getName()))
+                .collectMap(
+                        it -> it.getKey().getVersion().orElse(0),
+                        Map.Entry::getValue
+                )
+                .toFuture();
+    }
+
+    @Override
+    public CompletionStage<Void> update(String topic, GroupId groupId, int partition, long position) {
         Map<String, AttributeValue> key = toKey(topic, groupId);
 
         return Mono
@@ -187,10 +232,10 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
                 .toFuture();
     }
 
-    Map<String, AttributeValue> toKey(String topic, String groupId) {
+    Map<String, AttributeValue> toKey(String topic, GroupId groupId) {
         val result = new HashMap<String, AttributeValue>();
         result.put(HASH_KEY_FIELD, new AttributeValue(topic));
-        result.put(RANGE_KEY_FIELD, new AttributeValue(groupId));
+        result.put(RANGE_KEY_FIELD, new AttributeValue(groupId.asString()));
         return result;
     }
 
