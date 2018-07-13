@@ -113,7 +113,7 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                     val sourcesByPartition = sources.computeIfAbsent(sessionId, __ -> new ConcurrentHashMap<>());
 
                     return Flux.from(subscription.getPublisher())
-                            .switchMap(sources -> getOffsetsByGroup(topic, groupId)
+                            .switchMap(sources -> getOffsetsByGroupName(topic, groupId.getName())
                                     .flatMapMany(ackedOffsets -> Flux.fromStream(sources).map(source -> {
                                         val partition = source.getPartition();
 
@@ -247,9 +247,9 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
         );
     }
 
-    private Mono<NavigableMap<Integer, Map<Integer, Long>>> getOffsetsByGroup(String topic, GroupId groupId) {
+    private Mono<NavigableMap<Integer, Map<Integer, Long>>> getOffsetsByGroupName(String topic, String groupName) {
         return Mono
-                .fromCompletionStage(positionsStorage.findAllVersionsByGroup(topic, groupId.getName()))
+                .fromCompletionStage(positionsStorage.findAllVersionsByGroup(topic, groupName))
                 .<NavigableMap<Integer, Map<Integer, Long>>>map(TreeMap::new)
                 .defaultIfEmpty(EMPTY_ACKED_OFFSETS);
     }

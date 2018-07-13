@@ -11,6 +11,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -19,6 +20,7 @@ import static org.assertj.core.api.Assertions.tuple;
 
 public class GroupVersionTest extends AbstractIntegrationTest {
 
+    public static final int NUM_OF_RECORDS_PER_PARTITION = 10;
     private String topic;
 
     @Before
@@ -37,7 +39,7 @@ public class GroupVersionTest extends AbstractIntegrationTest {
                                                 .build()
                                 )
                         )
-                        .repeat(10)
+                        .repeat(NUM_OF_RECORDS_PER_PARTITION)
                 )
                 .blockLast();
     }
@@ -58,17 +60,19 @@ public class GroupVersionTest extends AbstractIntegrationTest {
         assertThat(getRecords(Optional.empty()).blockFirst(Duration.ofSeconds(10)).getOffset())
                 .isEqualTo(nextOffset);
     }
+    @Test
+    public void testReplayWithNoAck() throws Exception {
+        assertThat(getAllRecords(0)).noneMatch(Record::getReplay);
+        assertThat(getAllRecords(1)).noneMatch(Record::getReplay);
+    }
 
     @Test
-    public void testReplay() throws Exception {
-        assertThat(getRecords(Optional.of(4)).take(3).collectList().block(Duration.ofSeconds(10)))
-                .noneMatch(Record::getReplay);
-
+    public void testReplayUsesAlwaysLatest() throws Exception {
         ackOffset(1, 3);
         ackOffset(2, 7);
         ackOffset(3, 5);
 
-        assertThat(getRecords(Optional.of(4)).take(10).collectList().block(Duration.ofSeconds(10)))
+        assertThat(getAllRecords(4))
                 .extracting(Record::getOffset, Record::getReplay)
                 .containsExactly(
                         tuple(0L, true),
@@ -79,6 +83,26 @@ public class GroupVersionTest extends AbstractIntegrationTest {
                         tuple(5L, true),
                         tuple(6L, true),
                         tuple(7L, true), // 7 because seen by version 2
+                        tuple(8L, false),
+                        tuple(9L, false)
+                );
+    }
+
+    @Test
+    public void testReplayWithPreviousVersion() throws Exception {
+        ackOffset(2, 7);
+
+        assertThat(getAllRecords(1))
+                .extracting(Record::getOffset, Record::getReplay)
+                .containsExactly(
+                        tuple(0L, true),
+                        tuple(1L, true),
+                        tuple(2L, true),
+                        tuple(3L, true),
+                        tuple(4L, true),
+                        tuple(5L, true),
+                        tuple(6L, true),
+                        tuple(7L, true),
                         tuple(8L, false),
                         tuple(9L, false)
                 );
@@ -97,6 +121,12 @@ public class GroupVersionTest extends AbstractIntegrationTest {
                 .filter(it -> it.getPartition() == 0)
                 .delayUntil(assignment -> stub.ack(AckRequest.newBuilder().setAssignment(assignment).setOffset(offset).build()))
                 .blockFirst(Duration.ofSeconds(10));
+    }
+
+    private List<Record> getAllRecords(Integer groupVersion) {
+        return getRecords(Optional.of(groupVersion)).take(NUM_OF_RECORDS_PER_PARTITION)
+                .collectList()
+                .block(Duration.ofSeconds(10));
     }
 
     private Flux<Record> getRecords(Optional<Integer> groupVersion) {
