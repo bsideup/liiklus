@@ -16,10 +16,7 @@ import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import java.util.*;
 import java.util.stream.Stream;
 
 public abstract class AbstractIntegrationTest {
@@ -27,12 +24,19 @@ public abstract class AbstractIntegrationTest {
     public static final int NUM_PARTITIONS = 32;
 
     // Generate a set of keys where each key goes to unique partition
-    public static Set<String> PARTITION_UNIQUE_KEYS = Mono.fromCallable(() -> UUID.randomUUID().toString())
+    public static Map<Integer, String> PARTITION_KEYS = Mono.fromCallable(() -> UUID.randomUUID().toString())
             .repeat()
-            .distinct(AbstractIntegrationTest::getPartitionByKey)
-            .take(NUM_PARTITIONS)
-            .collect(Collectors.toSet())
-            .block(Duration.ofSeconds(10));
+            .scanWith(
+                    () -> new HashMap<Integer, String>(),
+                    (acc, it) -> {
+                        acc.put(getPartitionByKey(it), it);
+                        return acc;
+                    }
+            )
+            .filter(it -> it.size() == NUM_PARTITIONS)
+            .blockFirst(Duration.ofSeconds(10));
+
+    public static Set<String> PARTITION_UNIQUE_KEYS = new HashSet<>(PARTITION_KEYS.values());
 
     public static int getPartitionByKey(String key) {
         return Utils.toPositive(Utils.murmur2(key.getBytes())) % NUM_PARTITIONS;

@@ -8,7 +8,6 @@ import lombok.val;
 import org.junit.Before;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.List;
@@ -20,28 +19,25 @@ import static org.assertj.core.api.Assertions.tuple;
 
 public class GroupVersionTest extends AbstractIntegrationTest {
 
+    private static final int PARTITION = 0;
+
     public static final int NUM_OF_RECORDS_PER_PARTITION = 10;
+
     private String topic;
 
     @Before
     public void setUpGroupVersionTest() throws Exception {
         topic = testName.getMethodName();
 
-        // Will create a topic and initialize every partition
-        Flux.fromIterable(PARTITION_UNIQUE_KEYS)
-                .flatMap(key -> Mono
-                        .defer(() -> stub
-                                .publish(
-                                        PublishRequest.newBuilder()
-                                                .setTopic(topic)
-                                                .setKey(ByteString.copyFromUtf8(key))
-                                                .setValue(ByteString.copyFromUtf8(UUID.randomUUID().toString()))
-                                                .build()
-                                )
-                        )
-                        .repeat(NUM_OF_RECORDS_PER_PARTITION)
-                )
-                .blockLast();
+        Flux.range(0, NUM_OF_RECORDS_PER_PARTITION)
+                .flatMap(__ -> stub.publish(
+                        PublishRequest.newBuilder()
+                                .setTopic(topic)
+                                .setKey(ByteString.copyFromUtf8(PARTITION_KEYS.get(PARTITION)))
+                                .setValue(ByteString.copyFromUtf8(UUID.randomUUID().toString()))
+                                .build()
+                ))
+                .blockLast(Duration.ofSeconds(10));
     }
 
     @Test
@@ -60,6 +56,7 @@ public class GroupVersionTest extends AbstractIntegrationTest {
         assertThat(getRecords(Optional.empty()).blockFirst(Duration.ofSeconds(10)).getOffset())
                 .isEqualTo(nextOffset);
     }
+
     @Test
     public void testReplayWithNoAck() throws Exception {
         assertThat(getAllRecords(0)).noneMatch(Record::getReplay);
