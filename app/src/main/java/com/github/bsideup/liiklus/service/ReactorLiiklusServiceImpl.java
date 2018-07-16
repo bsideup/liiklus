@@ -88,7 +88,19 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
     public Flux<SubscribeReply> subscribe(Mono<SubscribeRequest> requestFlux) {
         return requestFlux
                 .flatMapMany(subscribe -> {
-                    val groupId = GroupId.of(subscribe.getGroup(), subscribe.getGroupVersion());
+                    val groupVersion = subscribe.getGroupVersion();
+                    final GroupId groupId;
+                    if (groupVersion != 0) {
+                        groupId = GroupId.of(subscribe.getGroup(), groupVersion);
+                    } else {
+                        // Support legacy versioned groups
+                        String group = subscribe.getGroup();
+                        groupId = GroupId.ofString(group);
+
+                        groupId.getVersion().ifPresent(it -> {
+                            log.warn("Parsed a legacy group '{}' into {}", group, groupId);
+                        });
+                    }
                     val topic = subscribe.getTopic();
 
                     Optional<String> autoOffsetReset;

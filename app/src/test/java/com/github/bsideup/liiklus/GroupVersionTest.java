@@ -25,9 +25,12 @@ public class GroupVersionTest extends AbstractIntegrationTest {
 
     private String topic;
 
+    private String groupName;
+
     @Before
     public void setUpGroupVersionTest() throws Exception {
         topic = testName.getMethodName();
+        groupName = testName.getMethodName();
 
         Flux.range(0, NUM_OF_RECORDS_PER_PARTITION)
                 .flatMap(__ -> stub.publish(
@@ -105,12 +108,36 @@ public class GroupVersionTest extends AbstractIntegrationTest {
                 );
     }
 
+    @Test
+    public void testLegacyVersions() throws Exception {
+        val groupVersion = 2;
+        val groupId = groupName + "-v" + groupVersion;
+
+        ackOffset(groupVersion - 1, 5);
+        ackOffset(groupId, 0, 3);
+
+        assertThat(getRecords(groupName, Optional.of(groupVersion)).take(1).single().block(Duration.ofSeconds(10)))
+                .satisfies(it -> assertThat(it.getOffset()).as("offset").isEqualTo(4));
+
+        assertThat(getRecords(groupId, Optional.empty()).take(3).collectList().block(Duration.ofSeconds(10)))
+                .extracting(Record::getOffset, Record::getReplay)
+                .containsExactly(
+                        tuple(4L, true),
+                        tuple(5L, true),
+                        tuple(6L, false)
+                );
+    }
+
     private void ackOffset(int groupVersion, long offset) {
+        ackOffset(groupName, groupVersion, offset);
+    }
+
+    private void ackOffset(String groupName, int groupVersion, long offset) {
         stub
                 .subscribe(
                         SubscribeRequest.newBuilder()
                                 .setTopic(topic)
-                                .setGroup(testName.getMethodName())
+                                .setGroup(groupName)
                                 .setGroupVersion(groupVersion)
                                 .build()
                 )
@@ -127,11 +154,15 @@ public class GroupVersionTest extends AbstractIntegrationTest {
     }
 
     private Flux<Record> getRecords(Optional<Integer> groupVersion) {
+        return getRecords(groupName, groupVersion);
+    }
+
+    private Flux<Record> getRecords(String groupName, Optional<Integer> groupVersion) {
         return stub
                 .subscribe(
                         SubscribeRequest.newBuilder()
                                 .setTopic(topic)
-                                .setGroup(testName.getMethodName())
+                                .setGroup(groupName)
                                 .setGroupVersion(groupVersion.orElse(0))
                                 .setAutoOffsetReset(SubscribeRequest.AutoOffsetReset.EARLIEST)
                                 .build()
