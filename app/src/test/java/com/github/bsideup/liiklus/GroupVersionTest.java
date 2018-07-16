@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.tuple;
 
 public class GroupVersionTest extends AbstractIntegrationTest {
 
-    private static final int PARTITION = 0;
+    private static final int PARTITION = 1;
 
     public static final int NUM_OF_RECORDS_PER_PARTITION = 10;
 
@@ -133,18 +133,15 @@ public class GroupVersionTest extends AbstractIntegrationTest {
     }
 
     private void ackOffset(String groupName, int groupVersion, long offset) {
-        stub
-                .subscribe(
-                        SubscribeRequest.newBuilder()
-                                .setTopic(topic)
-                                .setGroup(groupName)
-                                .setGroupVersion(groupVersion)
-                                .build()
-                )
-                .map(SubscribeReply::getAssignment)
-                .filter(it -> it.getPartition() == 0)
-                .delayUntil(assignment -> stub.ack(AckRequest.newBuilder().setAssignment(assignment).setOffset(offset).build()))
-                .blockFirst(Duration.ofSeconds(10));
+        val ackRequest = AckRequest.newBuilder()
+                .setTopic(topic)
+                .setGroup(groupName)
+                .setGroupVersion(groupVersion)
+                .setOffset(offset)
+                .setPartition(PARTITION)
+                .build();
+
+        stub.ack(ackRequest).block(Duration.ofSeconds(10));
     }
 
     private List<Record> getAllRecords(Integer groupVersion) {
@@ -168,7 +165,7 @@ public class GroupVersionTest extends AbstractIntegrationTest {
                                 .build()
                 )
                 .map(SubscribeReply::getAssignment)
-                .filter(it -> it.getPartition() == 0)
+                .filter(it -> it.getPartition() == PARTITION)
                 .flatMap(assignment -> stub.receive(ReceiveRequest.newBuilder().setAssignment(assignment).build()))
                 .map(ReceiveReply::getRecord);
     }

@@ -76,7 +76,12 @@ message SubscribeReply {
 }
 
 message AckRequest {
-    Assignment assignment = 1;
+    Assignment assignment = 1 [deprecated=true];
+
+    string topic = 3;
+    string group = 4;
+    uint32 groupVersion = 5;
+    uint32 partition = 6;
 
     uint64 offset = 2;
 }
