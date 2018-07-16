@@ -1,0 +1,10 @@
+plugins {
+    id "java"
+}
+
+dependencies {
+    compile project(":protocol")
+
+    compile 'io.grpc:grpc-netty'
+    compile 'com.google.protobuf:protobuf-java-util'
+}

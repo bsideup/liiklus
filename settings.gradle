@@ -1,6 +1,7 @@
 include 'api'
 include 'app'
 include 'protocol'
+include 'client'
 
 include 'examples/java'
 include 'examples/plugin'

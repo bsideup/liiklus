@@ -48,9 +48,10 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
         dependencies {
             dependency 'org.lognet:grpc-spring-boot-starter:2.3.2'
 
-            dependencySet(group: 'com.google.protobuf', version: '3.5.1') {
+            dependencySet(group: 'com.google.protobuf', version: '3.6.0') {
                 entry 'protoc'
                 entry 'protobuf-java'
+                entry 'protobuf-java-util'
             }
 
             dependency 'com.google.auto.service:auto-service:1.0-rc4'
