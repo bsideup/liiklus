@@ -93,7 +93,7 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                     if (groupVersion != 0) {
                         groupId = GroupId.of(subscribe.getGroup(), groupVersion);
                     } else {
-                        // Support legacy non-versioned groups
+                        // Support legacy versioned groups
                         String group = subscribe.getGroup();
                         groupId = GroupId.ofString(group);
 
