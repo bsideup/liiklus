@@ -3,6 +3,7 @@ package com.github.bsideup.liiklus.records.tests;
 import com.github.bsideup.liiklus.records.RecordStorageTestSupport;
 import com.github.bsideup.liiklus.records.RecordsStorage;
 import lombok.val;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
@@ -22,7 +23,7 @@ public interface ConsumerGroupTest extends RecordStorageTestSupport {
     @Test
     default void testMultipleGroups() throws Exception {
         val numberOfPartitions = getNumberOfPartitions();
-        assertThat(numberOfPartitions).as("number of partitions").isGreaterThanOrEqualTo(2);
+        Assumptions.assumeTrue(numberOfPartitions > 1, "target supports more than 1 partition");
 
         val groupName = UUID.randomUUID().toString();
 

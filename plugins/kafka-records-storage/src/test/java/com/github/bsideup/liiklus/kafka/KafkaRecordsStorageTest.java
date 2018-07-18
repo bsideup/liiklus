@@ -14,7 +14,7 @@ import java.util.UUID;
 
 public class KafkaRecordsStorageTest implements RecordStorageTests {
 
-    private static final int NUM_OF_PARTITIONS = 32;
+    private static final int NUM_OF_PARTITIONS = 4;
 
     private static final KafkaContainer kafka = new KafkaContainer()
             .withEnv("KAFKA_NUM_PARTITIONS", NUM_OF_PARTITIONS + "")
