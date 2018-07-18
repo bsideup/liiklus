@@ -151,7 +151,7 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
 
                                                                     val lastAckedOffset = offsets.get(partition);
                                                                     if (lastAckedOffset != null) {
-                                                                        return Mono.fromCompletionStage(source.seekTo(lastAckedOffset));
+                                                                        return Mono.fromCompletionStage(source.seekTo(lastAckedOffset + 1));
                                                                     } else {
                                                                         return Mono.empty();
                                                                     }
