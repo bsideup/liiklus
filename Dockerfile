@@ -14,6 +14,6 @@ COPY --from=workspace /root/project/app/build/libs/app.jar app.jar
 COPY --from=workspace /root/project/plugins/*/build/libs/*.jar plugins/
 
 ENV JAVA_OPTS=""
-ENV JAVA_MEMORY_OPTS="-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap -XX:+UseG1GC"
+ENV JAVA_MEMORY_OPTS="-XX:+ExitOnOutOfMemoryError -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap -XX:+UseG1GC -XshowSettings:vm"
 
-CMD ["sh", "-c", "java $JAVA_OPTS $JAVA_MEMORY_OPTS -jar app.jar"]
+CMD ["sh", "-c", "java $JAVA_MEMORY_OPTS $JAVA_OPTS -jar app.jar"]
