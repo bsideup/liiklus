@@ -1,4 +1,4 @@
-FROM openjdk:8u151-jdk AS workspace
+FROM openjdk:8-jdk AS workspace
 
 COPY . /root/project
 
@@ -6,7 +6,7 @@ WORKDIR /root/project
 
 RUN ./gradlew --no-daemon build -x check
 
-FROM openjdk:8u151-jre
+FROM openjdk:8-jre
 
 WORKDIR /app
 

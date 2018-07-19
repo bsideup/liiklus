@@ -190,12 +190,13 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                     long lastKnownOffset = request.getLastKnownOffset();
 
                     val storedSource = sources.get(sessionId).get(partition);
-                    Flux<Record> records = storedSource.getRecords();
 
-                    if (records == null) {
+                    if (storedSource == null) {
                         log.warn("Source is null, returning empty Publisher. Request: {}", request.toString().replace("\n", "\\n"));
                         return Mono.empty();
                     }
+
+                    Flux<Record> records = storedSource.getRecords();
 
                     for (RecordPostProcessor processor : recordPostProcessorChain.getAll()) {
                         records = records.transform(processor::postProcess);
@@ -254,7 +255,7 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                                 getOffsets.getGroupVersion()
                         )
                 ))
-                .defaultIfEmpty(Collections.emptyMap())
+                .defaultIfEmpty(emptyMap())
                 .map(offsets -> GetOffsetsReply.newBuilder().putAllOffsets(offsets).build())
         );
     }
