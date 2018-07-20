@@ -1,0 +1,25 @@
+plugins {
+    id "java"
+}
+
+test.testLogging {
+    displayGranularity 1
+    showStackTraces = true
+    exceptionFormat = 'full'
+    events "STARTED", "PASSED", "FAILED", "SKIPPED"
+}
+
+dependencies {
+    compileOnly 'org.projectlombok:lombok'
+
+    compile 'org.testcontainers:testcontainers'
+    compile 'org.testcontainers:kafka'
+    
+    testCompileOnly 'org.projectlombok:lombok'
+    testCompile 'org.assertj:assertj-core'
+    testCompile 'org.awaitility:awaitility'
+}
+
+def plugins = rootProject.allprojects.findAll { it.projectDir.parentFile.name == "plugins" }
+
+tasks.classes.dependsOn(plugins.collect { it.getTasksByName("build", true) })

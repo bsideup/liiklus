@@ -43,7 +43,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
 
         imports {
             mavenBom 'org.springframework.boot:spring-boot-dependencies:2.0.2.RELEASE'
-            mavenBom 'org.testcontainers:testcontainers-bom:1.7.2'
+            mavenBom 'org.testcontainers:testcontainers-bom:1.8.0'
         }
 
         dependencies {
