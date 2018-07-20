@@ -34,6 +34,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
         resolutionStrategy.dependencySubstitution {
             // FIXME after 2.3.0 is out
             substitute module('org.pf4j:pf4j') with module('com.github.pf4j.pf4j:pf4j:f80bc959c1')
+            substitute module('io.projectreactor.kafka:reactor-kafka') with module('com.github.reactor:reactor-kafka:1653062')
         }
     }
 

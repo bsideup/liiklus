@@ -12,6 +12,7 @@ import com.github.bsideup.liiklus.config.LiiklusConfiguration;
 import com.github.bsideup.liiklus.dynamodb.DynamoDBPositionsStorage;
 import com.github.bsideup.liiklus.positions.PositionsStorage;
 import com.google.auto.service.AutoService;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,10 +22,12 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.validation.annotation.Validated;
+import reactor.core.scheduler.Schedulers;
 
 import javax.validation.constraints.NotEmpty;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.concurrent.Executors;
 
 @Slf4j
 @AutoService(LiiklusConfiguration.class)
@@ -49,7 +52,9 @@ public class DynamoDBConfiguration implements LiiklusConfiguration {
                 ))
                 .ifPresent(builder::setEndpointConfiguration);
 
-        AmazonDynamoDBAsync dynamoDB = builder.build();
+        AmazonDynamoDBAsync dynamoDB = builder
+                .withExecutorFactory(() -> Executors.newFixedThreadPool(Schedulers.DEFAULT_POOL_SIZE, new ThreadFactoryBuilder().setNameFormat("aws-dynamodb-%d").build()))
+                .build();
 
         if (dynamoDBProperties.isAutoCreateTable()) {
             log.info("Going to automatically create a table with name '{}'", dynamoDBProperties.getPositionsTable());
