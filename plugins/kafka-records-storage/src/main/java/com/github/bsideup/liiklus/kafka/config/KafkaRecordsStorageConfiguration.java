@@ -3,7 +3,6 @@ package com.github.bsideup.liiklus.kafka.config;
 import com.github.bsideup.liiklus.config.GatewayProfile;
 import com.github.bsideup.liiklus.config.LiiklusConfiguration;
 import com.github.bsideup.liiklus.kafka.KafkaRecordsStorage;
-import com.github.bsideup.liiklus.positions.PositionsStorage;
 import com.github.bsideup.liiklus.records.RecordsStorage;
 import com.google.auto.service.AutoService;
 import lombok.Data;
@@ -35,9 +34,6 @@ public class KafkaRecordsStorageConfiguration implements LiiklusConfiguration {
     @Autowired
     KafkaProperties kafkaProperties;
 
-    @Autowired
-    PositionsStorage positionsStorage;
-
     @Bean
     RecordsStorage reactorKafkaSource() {
         String bootstrapServers = kafkaProperties.getBootstrapServers();
@@ -54,7 +50,6 @@ public class KafkaRecordsStorageConfiguration implements LiiklusConfiguration {
 
         return new KafkaRecordsStorage(
                 bootstrapServers,
-                positionsStorage,
                 KafkaSender.create(senderOptions)
         );
     }

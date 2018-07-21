@@ -1,0 +1,16 @@
+plugins {
+    id "java"
+}
+
+dependencies {
+    compileOnly 'org.projectlombok:lombok'
+
+    compile project(":api")
+
+    compile 'org.junit.jupiter:junit-jupiter-api'
+    compile 'org.assertj:assertj-core'
+    compile 'org.slf4j:slf4j-simple'
+    compile 'io.projectreactor:reactor-core'
+    compile 'io.projectreactor:reactor-test'
+    compile 'org.awaitility:awaitility'
+}

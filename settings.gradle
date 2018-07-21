@@ -1,4 +1,5 @@
 include 'api'
+include 'tck'
 include 'app'
 include 'protocol'
 include 'client'
