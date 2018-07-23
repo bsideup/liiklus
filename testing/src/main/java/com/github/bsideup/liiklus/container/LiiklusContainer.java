@@ -24,4 +24,6 @@ public class LiiklusContainer extends GenericContainer<LiiklusContainer> {
         withEnv("kafka_bootstrapServers", bootstrapServers);
         return self();
     }
+
+    String getTarget() { return getContainerIpAddress() + ":" + getMappedPort(6565); }
 }
