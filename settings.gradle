@@ -2,7 +2,7 @@ include 'api'
 include 'app'
 include 'protocol'
 include 'client'
-include 'testing/container'
+include 'testing'
 
 include 'examples/java'
 include 'examples/plugin'

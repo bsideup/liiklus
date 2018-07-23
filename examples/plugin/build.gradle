@@ -32,7 +32,7 @@ dependencyManagement {
 
     imports {
         mavenBom 'org.springframework.boot:spring-boot-dependencies:2.0.0.RELEASE'
-        mavenBom 'org.testcontainers:testcontainers-bom:1.7.3'
+        mavenBom 'org.testcontainers:testcontainers-bom:1.8.1'
     }
 
     dependencies {

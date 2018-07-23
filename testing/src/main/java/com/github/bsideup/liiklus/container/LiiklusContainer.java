@@ -16,17 +16,12 @@ public class LiiklusContainer extends GenericContainer<LiiklusContainer> {
     }
 
     public LiiklusContainer withKafka(KafkaContainer kafkaContainer) {
-        withKafka(kafkaContainer.getNetwork(), kafkaContainer.getNetworkAliases().get(0) + ":9092");
-        return this;
+        return withKafka(kafkaContainer.getNetwork(), kafkaContainer.getNetworkAliases().get(0) + ":9092");
     }
 
     public LiiklusContainer withKafka(Network network, String bootstrapServers) {
         withNetwork(network);
         withEnv("kafka_bootstrapServers", bootstrapServers);
-        return this;
-    }
-
-    public String getEndpoint() {
-        return getContainerIpAddress() + ":" + getFirstMappedPort();
+        return self();
     }
 }
