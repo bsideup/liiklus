@@ -25,5 +25,7 @@ public class LiiklusContainer extends GenericContainer<LiiklusContainer> {
         return self();
     }
 
-    String getTarget() { return getContainerIpAddress() + ":" + getMappedPort(6565); }
+    public String getTarget() {
+        return getContainerIpAddress() + ":" + getMappedPort(6565);
+    }
 }
