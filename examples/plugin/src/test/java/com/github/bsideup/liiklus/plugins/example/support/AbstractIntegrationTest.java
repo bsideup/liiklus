@@ -28,7 +28,7 @@ public abstract class AbstractIntegrationTest {
         GenericContainer liiklus = new GenericContainer("bsideup/liiklus:0.3.0")
                 .withNetwork(kafka.getNetwork())
                 .withEnv("storage_positions_type", "MEMORY")
-                .withEnv("kafka_bootstrapServers", kafka.getNetworkAliases().get(0) + ":9093")
+                .withEnv("kafka_bootstrapServers", kafka.getNetworkAliases().get(0) + ":9092")
                 .withExposedPorts(6565)
                 .withClasspathResourceMapping("/example-plugin.jar", "/app/plugins/example-plugin.jar", BindMode.READ_ONLY)
                 .withLogConsumer(new ToStringConsumer() {
