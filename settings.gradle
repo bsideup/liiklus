@@ -3,6 +3,7 @@ include 'tck'
 include 'app'
 include 'protocol'
 include 'client'
+include 'testing'
 
 include 'examples/java'
 include 'examples/plugin'
