@@ -189,7 +189,7 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                     // TODO auto ack to the last known offset
                     long lastKnownOffset = request.getLastKnownOffset();
 
-                    val storedSource = sources.get(sessionId).get(partition);
+                    val storedSource = sources.containsKey(sessionId) ? sources.get(sessionId).get(partition) : null;
 
                     if (storedSource == null) {
                         log.warn("Source is null, returning empty Publisher. Request: {}", request.toString().replace("\n", "\\n"));
