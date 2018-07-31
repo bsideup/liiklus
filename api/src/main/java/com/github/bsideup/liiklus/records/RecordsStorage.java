@@ -1,5 +1,7 @@
 package com.github.bsideup.liiklus.records;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.experimental.Wither;
 import org.reactivestreams.Publisher;
@@ -8,6 +10,7 @@ import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 public interface RecordsStorage {
@@ -32,14 +35,81 @@ public interface RecordsStorage {
     }
 
     @Value
-    @Wither
+    @RequiredArgsConstructor
     class Envelope {
 
         String topic;
 
-        ByteBuffer key;
+        Object rawKey;
 
-        ByteBuffer value;
+        Function<Object, ByteBuffer> keyEncoder;
+
+        @Getter(lazy = true)
+        ByteBuffer key = keyEncoder.apply(rawKey);
+
+        Object rawValue;
+
+        Function<Object, ByteBuffer> valueEncoder;
+
+        @Getter(lazy = true)
+        ByteBuffer value = valueEncoder.apply(rawValue);
+
+        public Envelope(String topic, ByteBuffer key, ByteBuffer value) {
+            this.topic = topic;
+            this.rawKey = key;
+            this.rawValue = value;
+            this.keyEncoder = this.valueEncoder = it -> (ByteBuffer) it;
+        }
+
+        public Envelope withTopic(String topic) {
+            return new Envelope(
+                    topic,
+                    rawKey,
+                    keyEncoder,
+                    rawValue,
+                    valueEncoder
+            );
+        }
+
+        public Envelope withKey(ByteBuffer key) {
+            return new Envelope(
+                    topic,
+                    key,
+                    it -> (ByteBuffer) it,
+                    rawValue,
+                    valueEncoder
+            );
+        }
+
+        public Envelope withValue(ByteBuffer value) {
+            return new Envelope(
+                    topic,
+                    rawKey,
+                    keyEncoder,
+                    value,
+                    it -> (ByteBuffer) it
+            );
+        }
+
+        public <T> Envelope withKey(T rawKey, Function<T, ByteBuffer> keyEncoder) {
+            return new Envelope(
+                    topic,
+                    rawKey,
+                    (Function<Object, ByteBuffer>) keyEncoder,
+                    rawValue,
+                    valueEncoder
+            );
+        }
+
+        public <T> Envelope withValue(T rawValue, Function<T, ByteBuffer> valueEncoder) {
+            return new Envelope(
+                    topic,
+                    rawKey,
+                    keyEncoder,
+                    rawValue,
+                    (Function<Object, ByteBuffer>) valueEncoder
+            );
+        }
     }
 
     @Value
