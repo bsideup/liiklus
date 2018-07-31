@@ -37,4 +37,4 @@ dependencies {
 
 def plugins = rootProject.allprojects.findAll { it.projectDir.parentFile.name == "plugins" }
 
-tasks.classes.dependsOn(plugins.collect { it.getTasksByName("build", true) })
+tasks.test.dependsOn(plugins.collect { it.getTasksByName("jar", true) })
