@@ -13,7 +13,6 @@ public class RecordPreProcessorChain {
     Collection<RecordPreProcessor> processors;
 
     public Iterable<RecordPreProcessor> getAll() {
-        // TODO sort
         return processors;
     }
 }
