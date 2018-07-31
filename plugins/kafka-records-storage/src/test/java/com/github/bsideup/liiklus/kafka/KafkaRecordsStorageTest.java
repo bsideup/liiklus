@@ -17,8 +17,7 @@ public class KafkaRecordsStorageTest implements RecordStorageTests {
     private static final int NUM_OF_PARTITIONS = 4;
 
     private static final KafkaContainer kafka = new KafkaContainer()
-            .withEnv("KAFKA_NUM_PARTITIONS", NUM_OF_PARTITIONS + "")
-            .withEnv("KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS", "0");
+            .withEnv("KAFKA_NUM_PARTITIONS", NUM_OF_PARTITIONS + "");
 
     static {
         kafka.start();

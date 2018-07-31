@@ -45,8 +45,7 @@ public abstract class AbstractIntegrationTest {
     private static LocalStackContainer localstack = new LocalStackContainer();
 
     protected static KafkaContainer kafka = new KafkaContainer()
-            .withEnv("KAFKA_NUM_PARTITIONS", NUM_PARTITIONS + "")
-            .withEnv("KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS", "0"); // Speed up tests
+            .withEnv("KAFKA_NUM_PARTITIONS", NUM_PARTITIONS + "");
 
     protected static ReactorLiiklusServiceStub stub = ReactorLiiklusServiceGrpc.newReactorStub(
             InProcessChannelBuilder.forName("liiklus").build()
