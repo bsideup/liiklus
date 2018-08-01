@@ -2,6 +2,10 @@ plugins {
     id "java"
 }
 
+test {
+    useJUnitPlatform()
+}
+
 jar {
     manifest {
         attributes(
@@ -29,4 +33,7 @@ dependencies {
     }
 
     testCompileOnly 'org.projectlombok:lombok'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+    testCompile project(":tck")
+    testCompile 'org.testcontainers:localstack'
 }
