@@ -1,0 +1,29 @@
+events:
+  deprecatedEvent:
+    type: object
+    deprecated: true
+
+  withDeprecatedField:
+    type: object
+    additionalProperties: false
+    properties:
+      eventType: { type: string }
+      goodField: { type: string }
+      deprecatedField: { type: string, deprecated: true }
+
+  simpleEvent:
+    type: object
+    additionalProperties: false
+    required:
+      - requiredField
+    properties:
+      eventType: { type: string }
+      requiredField: { type: string }
+      intField: { type: integer }
+
+  "event/type/with/slashes":
+    type: object
+    additionalProperties: false
+    properties:
+      eventType: { type: string }
+      foo: { type: string }
