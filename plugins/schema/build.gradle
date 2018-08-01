@@ -1,0 +1,35 @@
+plugins {
+    id "java"
+}
+
+jar {
+    manifest {
+        attributes(
+                'Plugin-Id': "${project.name}",
+                'Plugin-Version': "${project.version}",
+        )
+    }
+
+    into('lib') {
+        from configurations.compile
+    }
+}
+
+dependencies {
+    compileOnly 'org.projectlombok:lombok'
+    compileOnly 'com.google.auto.service:auto-service'
+
+    compileOnly 'org.springframework.boot:spring-boot-starter'
+    compileOnly project(":api")
+
+    compileOnly 'com.fasterxml.jackson.core:jackson-databind'
+
+    compile 'com.networknt:json-schema-validator:0.1.19'
+    compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
+
+    testCompileOnly 'org.projectlombok:lombok'
+
+    testCompile project(":api")
+    testCompile 'junit:junit'
+    testCompile 'org.assertj:assertj-core'
+}
