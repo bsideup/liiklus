@@ -66,7 +66,14 @@ public class JsonSchemaPreProcessor implements RecordPreProcessor {
                     ? (ObjectNode) envelope.getRawValue()
                     : (ObjectNode) JSON_MAPPER.readTree(new ByteBufferBackedInputStream(envelope.getValue().duplicate()));
 
-            val eventType = event.at(eventTypePointer).asText();
+            val eventType = event.at(eventTypePointer).asText(null);
+
+            if (eventType == null) {
+                val result = new CompletableFuture<Envelope>();
+                result.completeExceptionally(new IllegalArgumentException(eventTypePointer.toString() + " is null"));
+                return result;
+            }
+
             JsonSchema eventSchema = schemas
                     .computeIfAbsent(eventType, key -> {
                         try {
@@ -75,7 +82,7 @@ public class JsonSchemaPreProcessor implements RecordPreProcessor {
                             val refSchema = jsonSchemaFactory.getSchema(refSchemaNode);
                             return Optional.of(refSchema);
                         } catch (Exception e) {
-                            e.printStackTrace();
+                            log.error("Failed to get schema for {}", key, e);
                             return Optional.empty();
                         }
                     })

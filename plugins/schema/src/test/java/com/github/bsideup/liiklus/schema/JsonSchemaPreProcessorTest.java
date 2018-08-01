@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.bsideup.liiklus.records.RecordsStorage.Envelope;
 import lombok.SneakyThrows;
 import lombok.val;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.URL;
 import java.nio.ByteBuffer;
@@ -15,10 +15,10 @@ import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class JsonSchemaPreProcessorTest {
+class JsonSchemaPreProcessorTest {
 
     @Test
-    public void testBasicValidation() {
+    void testBasicValidation() {
         val processor = getProcessor();
 
         assertThatThrownBy(() -> preProcess(processor, "simpleEvent"))
@@ -32,7 +32,7 @@ public class JsonSchemaPreProcessorTest {
     }
 
     @Test
-    public void testDeprecatedField() {
+    void testDeprecatedField() {
         preProcess(getProcessor(true), "withDeprecatedField", it -> it.put("deprecatedField", "boo"));
 
         assertThatThrownBy(() -> preProcess(getProcessor(false), "withDeprecatedField", it -> it.put("deprecatedField", "boo")))
@@ -40,7 +40,7 @@ public class JsonSchemaPreProcessorTest {
     }
 
     @Test
-    public void testDeprecatedEventNotAllowed() {
+    void testDeprecatedEventNotAllowed() {
         preProcess(getProcessor(true), "deprecatedEvent");
 
         assertThatThrownBy(() -> preProcess(getProcessor(false), "deprecatedEvent"))
@@ -48,13 +48,21 @@ public class JsonSchemaPreProcessorTest {
     }
 
     @Test
-    public void testTypeWithSlashes() {
+    void testTypeWithSlashes() {
         val processor = getProcessor();
 
         preProcess(processor, "event/type/with/slashes", it -> it.put("foo", "bar"));
 
         assertThatThrownBy(() -> preProcess(processor, "event/type/with/slashes", it -> it.put("foo", 123)))
                 .hasMessageContaining("$.foo: integer found, string expected");
+    }
+
+    @Test
+    void testMissingEventType() {
+        val processor = getProcessor();
+
+        assertThatThrownBy(() -> preProcess(processor, null))
+                .hasMessageContaining("/eventType is null");
     }
 
     private JsonSchemaPreProcessor getProcessor() {
