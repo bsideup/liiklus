@@ -1,21 +1,21 @@
 package com.github.bsideup.liiklus.positions;
 
-import reactor.core.publisher.Mono;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Supplier;
+import java.util.concurrent.TimeUnit;
 
 public interface PositionsStorageTestSupport {
 
     PositionsStorage getStorage();
 
-    String getTopic();
-
-    default <T> Mono<T> asDeferMono(Supplier<CompletionStage<T>> stageSupplier) {
-        return Mono.defer(() -> Mono.fromCompletionStage(stageSupplier.get()));
+    default <T> T await(CompletionStage<T> stage) {
+        try {
+            return stage.toCompletableFuture().get(10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     default <T, V> Map<T, V> mapOf(T key, V value) {

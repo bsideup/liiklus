@@ -60,13 +60,13 @@ public class DynamoDBConfiguration implements LiiklusConfiguration {
             log.info("Going to automatically create a table with name '{}'", dynamoDBProperties.getPositionsTable());
             dynamoDB.createTable(new CreateTableRequest(
                     Arrays.asList(
-                            new AttributeDefinition("topic", ScalarAttributeType.S),
-                            new AttributeDefinition("groupId", ScalarAttributeType.S)
+                            new AttributeDefinition(DynamoDBPositionsStorage.HASH_KEY_FIELD, ScalarAttributeType.S),
+                            new AttributeDefinition(DynamoDBPositionsStorage.RANGE_KEY_FIELD, ScalarAttributeType.S)
                     ),
                     dynamoDBProperties.getPositionsTable(),
                     Arrays.asList(
-                            new KeySchemaElement("topic", KeyType.HASH),
-                            new KeySchemaElement("groupId", KeyType.RANGE)
+                            new KeySchemaElement(DynamoDBPositionsStorage.HASH_KEY_FIELD, KeyType.HASH),
+                            new KeySchemaElement(DynamoDBPositionsStorage.RANGE_KEY_FIELD, KeyType.RANGE)
                     ),
                     new ProvisionedThroughput(10L, 10L)
             ));
