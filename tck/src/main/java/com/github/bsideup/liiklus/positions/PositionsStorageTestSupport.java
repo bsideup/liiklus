@@ -1,5 +1,7 @@
 package com.github.bsideup.liiklus.positions;
 
+import lombok.SneakyThrows;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -10,12 +12,9 @@ public interface PositionsStorageTestSupport {
 
     PositionsStorage getStorage();
 
+    @SneakyThrows
     default <T> T await(CompletionStage<T> stage) {
-        try {
-            return stage.toCompletableFuture().get(10, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        return stage.toCompletableFuture().get(10, TimeUnit.SECONDS);
     }
 
     default <T, V> Map<T, V> mapOf(T key, V value) {
