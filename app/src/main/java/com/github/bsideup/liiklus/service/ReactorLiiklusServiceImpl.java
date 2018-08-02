@@ -15,6 +15,8 @@ import com.github.bsideup.liiklus.records.RecordsStorage.Subscription;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
 import com.google.protobuf.Timestamp;
+import io.grpc.Status;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.experimental.FieldDefaults;
@@ -66,9 +68,10 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                     for (RecordPreProcessor processor : recordPreProcessorChain.getAll()) {
                         mono = mono.flatMap(envelope -> {
                             try {
-                                return Mono.fromCompletionStage(processor.preProcess(envelope));
+                                return Mono.fromCompletionStage(processor.preProcess(envelope))
+                                        .onErrorMap(e -> new PreProcessorException(processor, e));
                             } catch (Throwable e) {
-                                return Mono.error(new RuntimeException(processor + " failed", e));
+                                return Mono.error(new PreProcessorException(processor, e));
                             }
                         });
                     }
@@ -81,7 +84,8 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                         .setOffset(it.getOffset())
                         .build()
                 )
-                .log("publish", Level.SEVERE, SignalType.ON_ERROR);
+                .log("publish", Level.SEVERE, SignalType.ON_ERROR)
+                .onErrorMap(e -> Status.INTERNAL.withCause(e).withDescription(e.getMessage()).asException());
     }
 
     @Override
@@ -177,7 +181,8 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                                 subscriptions.remove(sessionId, storedSubscription);
                             });
                 })
-                .log("subscribe", Level.SEVERE, SignalType.ON_ERROR);
+                .log("subscribe", Level.SEVERE, SignalType.ON_ERROR)
+                .onErrorMap(e -> Status.INTERNAL.withCause(e).withDescription(e.getMessage()).asException());
     }
 
     @Override
@@ -220,7 +225,8 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                                     .build()
                             );
                 })
-                .log("receive", Level.SEVERE, SignalType.ON_ERROR);
+                .log("receive", Level.SEVERE, SignalType.ON_ERROR)
+                .onErrorMap(e -> Status.INTERNAL.withCause(e).withDescription(e.getMessage()).asException());
     }
 
     @Override
@@ -242,7 +248,8 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                     ));
                 })
                 .thenReturn(Empty.getDefaultInstance())
-                .log("ack", Level.SEVERE, SignalType.ON_ERROR);
+                .log("ack", Level.SEVERE, SignalType.ON_ERROR)
+                .onErrorMap(e -> Status.INTERNAL.withCause(e).withDescription(e.getMessage()).asException());
     }
 
     @Override
@@ -257,6 +264,8 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                 ))
                 .defaultIfEmpty(emptyMap())
                 .map(offsets -> GetOffsetsReply.newBuilder().putAllOffsets(offsets).build())
+                .log("getOffsets", Level.SEVERE, SignalType.ON_ERROR)
+                .onErrorMap(e -> Status.INTERNAL.withCause(e).withDescription(e.getMessage()).asException())
         );
     }
 
@@ -283,5 +292,12 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
         Map<Integer, Optional<Long>> latestAckedOffsets;
 
         Flux<Record> records;
+    }
+
+    private static class PreProcessorException extends RuntimeException {
+
+        public PreProcessorException(@NonNull RecordPreProcessor preProcessor, Throwable cause) {
+            super(preProcessor.getClass().getName() + ": " + cause.getMessage(), cause);
+        }
     }
 }
