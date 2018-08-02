@@ -28,7 +28,10 @@ dependencies {
 
     compileOnly 'com.fasterxml.jackson.core:jackson-databind'
 
-    compile 'com.networknt:json-schema-validator:0.1.19'
+    compile ('com.networknt:json-schema-validator:0.1.19') {
+        exclude group: "org.slf4j"
+    }
+
     compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
 
     testCompileOnly 'org.projectlombok:lombok'
@@ -37,4 +40,5 @@ dependencies {
 
     testCompile project(":api")
     testCompile 'org.assertj:assertj-core'
+    testCompile 'org.slf4j:slf4j-api'
 }
