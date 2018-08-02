@@ -11,7 +11,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public interface PersistentTest extends PositionsStorageTestSupport {
+public interface PersistenceTest extends PositionsStorageTestSupport {
 
 
     @Test
