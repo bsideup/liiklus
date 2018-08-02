@@ -1,16 +1,32 @@
 package com.github.bsideup.liiklus.dynamodb;
 
+import com.amazonaws.AmazonWebServiceRequest;
 import com.amazonaws.handlers.AsyncHandler;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsync;
-import com.amazonaws.services.dynamodbv2.model.*;
+import com.amazonaws.services.dynamodbv2.model.AttributeAction;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.AttributeValueUpdate;
+import com.amazonaws.services.dynamodbv2.model.Condition;
+import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
+import com.amazonaws.services.dynamodbv2.model.ExpectedAttributeValue;
+import com.amazonaws.services.dynamodbv2.model.GetItemRequest;
+import com.amazonaws.services.dynamodbv2.model.GetItemResult;
+import com.amazonaws.services.dynamodbv2.model.QueryRequest;
+import com.amazonaws.services.dynamodbv2.model.QueryResult;
+import com.amazonaws.services.dynamodbv2.model.ScanRequest;
+import com.amazonaws.services.dynamodbv2.model.ScanResult;
+import com.amazonaws.services.dynamodbv2.model.UpdateItemRequest;
+import com.amazonaws.services.dynamodbv2.model.UpdateItemResult;
 import com.amazonaws.util.ImmutableMapParameter;
 import com.github.bsideup.liiklus.positions.GroupId;
 import com.github.bsideup.liiklus.positions.PositionsStorage;
+import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.val;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.MonoSink;
 import reactor.core.publisher.SignalType;
 
 import java.time.Duration;
@@ -47,27 +63,20 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
         AtomicBoolean done = new AtomicBoolean(false);
 
         return Mono
-                .<List<Map<String, AttributeValue>>>create(sink -> dynamoDB.scanAsync(request, new AsyncHandler<ScanRequest, ScanResult>() {
-                    @Override
-                    public void onError(Exception exception) {
-                        sink.error(exception);
-                    }
-
-                    @Override
-                    public void onSuccess(ScanRequest request, ScanResult scanResult) {
-                        try {
-                            if (scanResult.getCount() <= 0) {
+                .<ScanResult>create(sink -> dynamoDB.scanAsync(request, new DefaultAsyncHandler<>(sink)))
+                .<List<Map<String, AttributeValue>>>handle(((scanResult, sink) -> {
+                    try {
+                        if (scanResult.getCount() <= 0) {
+                            done.set(true);
+                            sink.complete();
+                        } else {
+                            if (scanResult.getLastEvaluatedKey() == null || scanResult.getLastEvaluatedKey().isEmpty()) {
                                 done.set(true);
-                                sink.success();
-                            } else {
-                                if (scanResult.getLastEvaluatedKey() == null || scanResult.getLastEvaluatedKey().isEmpty()) {
-                                    done.set(true);
-                                }
-                                sink.success(scanResult.getItems());
                             }
-                        } catch (Exception e) {
-                            sink.error(e);
+                            sink.next(scanResult.getItems());
                         }
+                    } catch (Exception e) {
+                        sink.error(e);
                     }
                 }))
                 .repeat(() -> !done.get())
@@ -87,30 +96,22 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
                 .withKey(toKey(topic, groupId));
 
         return Mono
-                .<Map<Integer, Long>>create(sink -> {
-                    val future = dynamoDB.getItemAsync(request, new AsyncHandler<GetItemRequest, GetItemResult>() {
-                        @Override
-                        public void onError(Exception exception) {
-                            sink.error(exception);
-                        }
-
-                        @Override
-                        public void onSuccess(GetItemRequest request, GetItemResult getItemResult) {
-                            try {
-                                val positions = toPositions(getItemResult.getItem());
-
-                                if (positions == null) {
-                                    sink.success();
-                                } else {
-                                    sink.success(positions);
-                                }
-                            } catch (Exception e) {
-                                sink.error(e);
-                            }
-                        }
-                    });
-
+                .<GetItemResult>create(sink -> {
+                    val future = dynamoDB.getItemAsync(request, new DefaultAsyncHandler<>(sink));
                     sink.onCancel(() -> future.cancel(true));
+                })
+                .<Map<Integer, Long>>handle((result, sink) -> {
+                    try {
+                        val positions = toPositions(result.getItem());
+
+                        if (positions == null) {
+                            sink.complete();
+                        } else {
+                            sink.next(positions);
+                        }
+                    } catch (Exception e) {
+                        sink.error(e);
+                    }
                 })
                 .log(this.getClass().getName(), Level.WARNING, SignalType.ON_ERROR)
                 .retryWhen(it -> it.delayElements(Duration.ofSeconds(1)))
@@ -126,24 +127,17 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
         AtomicBoolean done = new AtomicBoolean(false);
 
         return Mono
-                .<List<Map<String, AttributeValue>>>create(sink -> dynamoDB.queryAsync(request, new AsyncHandler<QueryRequest, QueryResult>() {
-                    @Override
-                    public void onError(Exception exception) {
-                        sink.error(exception);
-                    }
-
-                    @Override
-                    public void onSuccess(QueryRequest request, QueryResult result) {
-                        try {
-                            if (result.getCount() <= 0 || result.getLastEvaluatedKey() == null || result.getLastEvaluatedKey().isEmpty()) {
-                                done.set(true);
-                            }
-                            sink.success(result.getItems());
-                        } catch (Exception e) {
-                            sink.error(e);
+                .<QueryResult>create(sink -> dynamoDB.queryAsync(request, new DefaultAsyncHandler<>(sink)))
+                .<List<Map<String, AttributeValue>>>handle((result, sink) -> {
+                    try {
+                        if (result.getCount() <= 0 || result.getLastEvaluatedKey() == null || result.getLastEvaluatedKey().isEmpty()) {
+                            done.set(true);
                         }
+                        sink.next(result.getItems());
+                    } catch (Exception e) {
+                        sink.error(e);
                     }
-                }))
+                })
                 .repeat(() -> !done.get())
                 .flatMapIterable(it -> it)
                 .map(item -> new AbstractMap.SimpleEntry<>(
@@ -163,7 +157,7 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
         Map<String, AttributeValue> key = toKey(topic, groupId);
 
         return Mono
-                .<Void>create(sink -> {
+                .<UpdateItemResult>create(sink -> {
                     val request = new UpdateItemRequest()
                             .withTableName(tableName)
                             .withKey(key)
@@ -176,56 +170,36 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
                                     ":pos", new AttributeValue().withN(Long.toString(position))
                             ));
 
-                    val future = dynamoDB.updateItemAsync(request, new AsyncHandler<UpdateItemRequest, UpdateItemResult>() {
-                        @Override
-                        public void onError(Exception exception) {
-                            sink.error(exception);
-                        }
-
-                        @Override
-                        public void onSuccess(UpdateItemRequest request, UpdateItemResult updateItemResult) {
-                            sink.success();
-                        }
-                    });
+                    val future = dynamoDB.updateItemAsync(request, new DefaultAsyncHandler<>(sink));
 
                     sink.onCancel(() -> future.cancel(true));
                 })
+                .then()
                 .retryWhen(it -> it.delayUntil(e -> {
                     if (!(e instanceof ConditionalCheckFailedException)) {
                         return Mono.error(e);
                     }
 
-                    return Mono.create(sink -> {
-                        // TODO find out how to do field UPSERT with DynamoDB's expressions
-                        val request = new UpdateItemRequest()
-                                .withTableName(tableName)
-                                .withKey(key)
-                                .withAttributeUpdates(singletonMap(
-                                        "positions",
-                                        new AttributeValueUpdate()
-                                                .withAction(AttributeAction.PUT)
-                                                .withValue(new AttributeValue().withM(emptyMap()))
-                                ))
-                                .withExpected(singletonMap("positions", new ExpectedAttributeValue(false)));
+                    return Mono
+                            .<UpdateItemResult>create(sink -> {
+                                // TODO find out how to do field UPSERT with DynamoDB's expressions
+                                val request = new UpdateItemRequest()
+                                        .withTableName(tableName)
+                                        .withKey(key)
+                                        .withAttributeUpdates(singletonMap(
+                                                "positions",
+                                                new AttributeValueUpdate()
+                                                        .withAction(AttributeAction.PUT)
+                                                        .withValue(new AttributeValue().withM(emptyMap()))
+                                        ))
+                                        .withExpected(singletonMap("positions", new ExpectedAttributeValue(false)));
 
-                        val future = dynamoDB.updateItemAsync(request, new AsyncHandler<UpdateItemRequest, UpdateItemResult>() {
-                            @Override
-                            public void onError(Exception exception) {
-                                if (exception instanceof ConditionalCheckFailedException) {
-                                    sink.success(true);
-                                } else {
-                                    sink.error(exception);
-                                }
-                            }
+                                val future = dynamoDB.updateItemAsync(request, new DefaultAsyncHandler<>(sink));
 
-                            @Override
-                            public void onSuccess(UpdateItemRequest request, UpdateItemResult updateItemResult) {
-                                sink.success(true);
-                            }
-                        });
-
-                        sink.onCancel(() -> future.cancel(true));
-                    });
+                                sink.onCancel(() -> future.cancel(true));
+                            })
+                            .map(__ -> true)
+                            .onErrorResume(ConditionalCheckFailedException.class, __ -> Mono.just(true));
                 }))
                 .log(this.getClass().getName(), Level.WARNING, SignalType.ON_ERROR)
                 .retryWhen(it -> it.delayElements(Duration.ofSeconds(1)))
@@ -255,5 +229,21 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
                         it -> Integer.parseInt(it.getKey()),
                         it -> Long.parseLong(it.getValue().getN())
                 ));
+    }
+
+
+    @AllArgsConstructor
+    public static class DefaultAsyncHandler<REQUEST extends AmazonWebServiceRequest, RESULT> implements AsyncHandler<REQUEST, RESULT> {
+        protected MonoSink<RESULT> sink;
+
+        @Override
+        public void onError(Exception exception) {
+            sink.error(exception);
+        }
+
+        @Override
+        public void onSuccess(REQUEST request, RESULT result) {
+            sink.success(result);
+        }
     }
 }
