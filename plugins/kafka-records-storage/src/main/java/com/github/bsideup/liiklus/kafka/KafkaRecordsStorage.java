@@ -17,7 +17,6 @@ import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteBufferDeserializer;
 import org.apache.kafka.common.serialization.ByteBufferSerializer;
 import org.reactivestreams.Publisher;
-import reactor.core.Disposable;
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
@@ -196,31 +195,27 @@ public class KafkaRecordsStorage implements RecordsStorage {
 
                                     @Override
                                     public Publisher<Record> getPublisher() {
-                                        return Flux.create(sink -> {
-                                            sink.onRequest(request -> pausedPartitions.put(topicPartition, request <= 0));
-
-                                            Disposable disposable = records
-                                                    .flatMapIterable(it -> {
-                                                        val recordsOfPartition = it.records(topicPartition);
-                                                        if (!recordsOfPartition.isEmpty()) {
-                                                            pausedPartitions.put(topicPartition, sink.requestedFromDownstream() <= recordsOfPartition.size());
-                                                        }
-                                                        return recordsOfPartition;
-                                                    })
-                                                    .map(record -> new Record(
-                                                            new Envelope(
-                                                                    topic,
-                                                                    record.key(),
-                                                                    record.value()
-                                                            ),
-                                                            Instant.ofEpochMilli(record.timestamp()),
-                                                            record.partition(),
-                                                            record.offset()
-                                                    ))
-                                                    .takeUntilOther(revocations.get(topicPartition.partition()))
-                                                    .subscribe(sink::next, sink::error, sink::complete);
-                                            sink.onDispose(disposable);
-                                        }, FluxSink.OverflowStrategy.BUFFER);
+                                        return records
+                                                .flatMapIterable(it -> {
+                                                    val recordsOfPartition = it.records(topicPartition);
+                                                    if (!recordsOfPartition.isEmpty()) {
+                                                        pausedPartitions.put(topicPartition, sink.requestedFromDownstream() <= recordsOfPartition.size());
+                                                    }
+                                                    return recordsOfPartition;
+                                                })
+                                                .doOnRequest(request -> pausedPartitions.put(topicPartition, request <= 0))
+                                                .onBackpressureBuffer()
+                                                .map(record -> new Record(
+                                                        new Envelope(
+                                                                topic,
+                                                                record.key(),
+                                                                record.value()
+                                                        ),
+                                                        Instant.ofEpochMilli(record.timestamp()),
+                                                        record.partition(),
+                                                        record.offset()
+                                                ))
+                                                .takeUntilOther(revocations.get(topicPartition.partition()));
                                     }
                                 }));
                             }
