@@ -1,78 +1,92 @@
 package com.github.bsideup.liiklus.kafka;
 
 import com.github.bsideup.liiklus.records.RecordsStorage;
-import lombok.RequiredArgsConstructor;
-import lombok.ToString;
+import lombok.SneakyThrows;
 import lombok.Value;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteBufferDeserializer;
-import org.reactivestreams.Processor;
+import org.apache.kafka.common.serialization.ByteBufferSerializer;
 import org.reactivestreams.Publisher;
+import reactor.core.Disposable;
+import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.ReplayProcessor;
-import reactor.kafka.receiver.KafkaReceiver;
-import reactor.kafka.receiver.ReceiverOptions;
-import reactor.kafka.receiver.internals.DefaultKafkaReceiver;
-import reactor.kafka.receiver.internals.DefaultKafkaReceiverAccessor;
-import reactor.kafka.sender.KafkaSender;
-import reactor.kafka.sender.SenderRecord;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
+import reactor.util.concurrent.Queues;
 
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import static java.util.Collections.singletonList;
-
-@RequiredArgsConstructor
 @FieldDefaults(makeFinal = true)
 @Slf4j
 public class KafkaRecordsStorage implements RecordsStorage {
 
+    private static final Scheduler KAFKA_POLL_SCHEDULER = Schedulers.elastic();
+
     String bootstrapServers;
 
-    KafkaSender<ByteBuffer, ByteBuffer> sender;
+    private final KafkaProducer<ByteBuffer, ByteBuffer> producer;
+
+    public KafkaRecordsStorage(String bootstrapServers) {
+        this.bootstrapServers = bootstrapServers;
+
+        Map<String, Object> props = new HashMap<>();
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        props.put(ProducerConfig.CLIENT_ID_CONFIG, "liiklus-" + UUID.randomUUID().toString());
+        props.put(ProducerConfig.ACKS_CONFIG, "all");
+
+        this.producer = new KafkaProducer<>(
+                props,
+                new ByteBufferSerializer(),
+                new ByteBufferSerializer()
+        );
+    }
 
     @Override
     public CompletionStage<OffsetInfo> publish(Envelope envelope) {
         String topic = envelope.getTopic();
-        return sender.send(Mono.just(SenderRecord.create(new ProducerRecord<>(topic, envelope.getKey(), envelope.getValue()), UUID.randomUUID())))
-                .single()
-                .<OffsetInfo>handle((it, sink) -> {
-                    if (it.exception() != null) {
-                        sink.error(it.exception());
-                    } else {
-                        sink.next(new OffsetInfo(topic, it.recordMetadata().partition(), it.recordMetadata().offset()));
-                    }
-                })
-                .toFuture();
+
+        val producerRecord = new ProducerRecord<ByteBuffer, ByteBuffer>(topic, envelope.getKey(), envelope.getValue());
+
+        return Mono.<OffsetInfo>create(sink -> {
+            val future = producer.send(producerRecord, (metadata, exception) -> {
+                if (exception != null) {
+                    sink.error(exception);
+                } else {
+                    sink.success(new OffsetInfo(
+                            topic,
+                            metadata.partition(),
+                            metadata.offset()
+                    ));
+                }
+            });
+
+            sink.onCancel(() -> future.cancel(true));
+        }).toFuture();
     }
 
     @Override
     public Subscription subscribe(String topic, String groupName, Optional<String> autoOffsetReset) {
         return new KafkaSubscription(topic, groupName, autoOffsetReset);
-    }
-
-    protected ReceiverOptions<ByteBuffer, ByteBuffer> createReceiverOptions(String groupName, Optional<String> autoOffsetReset) {
-        val props = new HashMap<String, Object>();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, groupName);
-        autoOffsetReset.ifPresent(it -> props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, it));
-        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, ByteBufferDeserializer.class);
-        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteBufferDeserializer.class);
-        props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
-        props.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, "0");
-        return ReceiverOptions.create(props);
     }
 
     @Value
@@ -85,132 +99,151 @@ public class KafkaRecordsStorage implements RecordsStorage {
         Optional<String> autoOffsetReset;
 
         @Override
-        public Publisher<Stream<? extends PartitionSource>> getPublisher() {
-            return Flux.create(assignmentsSink -> {
-                val revocations = new ConcurrentHashMap<Integer, Processor<TopicPartition, TopicPartition>>();
+        public Publisher<Stream<? extends PartitionSource>> getPublisher(
+                Supplier<CompletionStage<Map<Integer, Long>>> offsetsProvider
+        ) {
+            return Flux.create(sink -> {
+                try {
+                    val properties = new HashMap<String, Object>();
+                    properties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+                    properties.put(ConsumerConfig.GROUP_ID_CONFIG, groupName);
+                    properties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
+                    properties.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, "0");
+                    properties.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, Queues.SMALL_BUFFER_SIZE + "");
+                    autoOffsetReset.ifPresent(it -> properties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, it));
 
-                val receiverRef = new AtomicReference<DefaultKafkaReceiver<ByteBuffer, ByteBuffer>>();
-                val recordsFluxRef = new AtomicReference<Flux<Record>>();
+                    val consumer = new KafkaConsumer<ByteBuffer, ByteBuffer>(
+                            properties,
+                            new ByteBufferDeserializer(),
+                            new ByteBufferDeserializer()
+                    );
 
-                val receiverOptions = createReceiverOptions(groupName, autoOffsetReset)
-                        .subscription(singletonList(topic))
-                        .addRevokeListener(partitions -> {
-                            for (val partition : partitions) {
-                                val topicPartition = partition.topicPartition();
-                                revocations.get(topicPartition.partition()).onNext(topicPartition);
+                    val topics = Arrays.asList(topic);
+
+                    if (!sink.isCancelled()) {
+                        val pausedPartitions = new ConcurrentHashMap<TopicPartition, Boolean>();
+
+                        val records = Flux
+                                .<ConsumerRecords<ByteBuffer, ByteBuffer>>create(recordsSink -> {
+                                    try {
+                                        while (!sink.isCancelled() && !recordsSink.isCancelled()) {
+                                            for (val entry : pausedPartitions.entrySet()) {
+                                                val topicPartition = entry.getKey();
+                                                if (!consumer.assignment().contains(topicPartition)) {
+                                                    continue;
+                                                }
+
+                                                val partitions = Arrays.asList(topicPartition);
+                                                if (entry.getValue()) {
+                                                    consumer.pause(partitions);
+                                                } else {
+                                                    consumer.resume(partitions);
+                                                }
+                                            }
+
+                                            val consumerRecords = consumer.poll(Duration.ofMillis(10));
+                                            if (!consumerRecords.isEmpty()) {
+                                                recordsSink.next(consumerRecords);
+                                            }
+                                        }
+
+                                        try {
+                                            consumer.unsubscribe();
+                                        } catch (Exception e) {
+                                            log.warn("Failed to unsubscribe", e);
+                                        }
+                                        try {
+                                            consumer.close();
+                                        } catch (Exception e) {
+                                            log.warn("Failed to close", e);
+                                        }
+
+                                        recordsSink.complete();
+                                    } catch (Exception e) {
+                                        recordsSink.error(e);
+                                    }
+                                }, FluxSink.OverflowStrategy.ERROR)
+                                .subscribeOn(KAFKA_POLL_SCHEDULER)
+                                .publish(1);
+
+                        val revocations = new HashMap<Integer, DirectProcessor<Boolean>>();
+                        consumer.subscribe(topics, new ConsumerRebalanceListener() {
+
+                            @Override
+                            @SneakyThrows
+                            public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
+                                for (val topicPartition : partitions) {
+                                    revocations.putIfAbsent(topicPartition.partition(), DirectProcessor.create());
+                                    pausedPartitions.put(topicPartition, true);
+                                }
+
+                                val offsets = offsetsProvider.get().toCompletableFuture().get(10, TimeUnit.SECONDS);
+
+                                for (val topicPartition : consumer.assignment()) {
+                                    int partition = topicPartition.partition();
+                                    if (offsets.containsKey(partition)) {
+                                        Long offset = offsets.get(partition);
+                                        consumer.seek(topicPartition, offset);
+                                    }
+                                }
+
+                                sink.next(partitions.stream().map(topicPartition -> new PartitionSource() {
+
+                                    @Override
+                                    public int getPartition() {
+                                        return topicPartition.partition();
+                                    }
+
+                                    @Override
+                                    public Publisher<Record> getPublisher() {
+                                        return Flux.create(sink -> {
+                                            sink.onRequest(request -> pausedPartitions.put(topicPartition, request <= 0));
+
+                                            Disposable disposable = records
+                                                    .flatMapIterable(it -> {
+                                                        val recordsOfPartition = it.records(topicPartition);
+                                                        if (!recordsOfPartition.isEmpty()) {
+                                                            pausedPartitions.put(topicPartition, sink.requestedFromDownstream() <= recordsOfPartition.size());
+                                                        }
+                                                        return recordsOfPartition;
+                                                    })
+                                                    .map(record -> new Record(
+                                                            new Envelope(
+                                                                    topic,
+                                                                    record.key(),
+                                                                    record.value()
+                                                            ),
+                                                            Instant.ofEpochMilli(record.timestamp()),
+                                                            record.partition(),
+                                                            record.offset()
+                                                    ))
+                                                    .takeUntilOther(revocations.get(topicPartition.partition()))
+                                                    .subscribe(sink::next, sink::error, sink::complete);
+                                            sink.onDispose(disposable);
+                                        }, FluxSink.OverflowStrategy.BUFFER);
+                                    }
+                                }));
                             }
-                        })
-                        .addAssignListener(partitions -> {
-                            val kafkaReceiver = receiverRef.get();
-                            val recordFlux = recordsFluxRef.get();
 
-                            for (val partition : partitions) {
-                                DefaultKafkaReceiverAccessor.pause(kafkaReceiver, partition.topicPartition());
+                            @Override
+                            public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
+                                for (val partition : partitions) {
+                                    revocations.get(partition.partition()).onNext(true);
+                                }
                             }
-
-                            assignmentsSink.next(
-                                    partitions.stream()
-                                            .map(partition -> {
-                                                val topicPartition = partition.topicPartition();
-                                                val partitionSource = new KafkaPartitionSource(recordFlux, kafkaReceiver, topicPartition);
-                                                revocations.put(topicPartition.partition(), partitionSource.getRevocation());
-                                                return partitionSource;
-                                            })
-                            );
                         });
 
-                val kafkaReceiver = (DefaultKafkaReceiver<ByteBuffer, ByteBuffer>) KafkaReceiver.create(receiverOptions);
-                receiverRef.set(kafkaReceiver);
-
-                recordsFluxRef.set(
-                        Flux
-                                .defer(kafkaReceiver::receive)
-                                .map(record -> new Record(
-                                        new Envelope(
-                                                topic,
-                                                record.key(),
-                                                record.value()
-                                        ),
-                                        Instant.ofEpochMilli(record.timestamp()),
-                                        record.partition(),
-                                        record.offset()
-                                ))
-                                .share()
-                );
-
-                val disposable = recordsFluxRef.get().subscribe(
-                        null,
-                        assignmentsSink::error,
-                        assignmentsSink::complete
-                );
-
-                assignmentsSink.onDispose(() -> {
-                    disposable.dispose();
-                    DefaultKafkaReceiverAccessor.close(kafkaReceiver);
-                });
+                        records.connect();
+                    }
+                } catch (Exception e) {
+                    sink.error(e);
+                }
             });
         }
 
         @Override
         public boolean equals(Object o) {
             return this == o;
-        }
-    }
-
-    @Value
-    @ToString(of = "topicPartition")
-    private static class KafkaPartitionSource implements PartitionSource {
-
-        Flux<Record> recordFlux;
-
-        DefaultKafkaReceiver<ByteBuffer, ByteBuffer> kafkaReceiver;
-
-        TopicPartition topicPartition;
-
-        ReplayProcessor<TopicPartition> revocation = ReplayProcessor.create(1);
-
-        AtomicLong requests = new AtomicLong();
-
-        @Override
-        public int getPartition() {
-            return topicPartition.partition();
-        }
-
-        @Override
-        public Publisher<Record> getPublisher() {
-            val partitionList = Arrays.asList(topicPartition);
-            return recordFlux
-                    .filter(it -> it.getPartition() == topicPartition.partition())
-                    .delayUntil(record -> {
-                        if (requests.decrementAndGet() < 0) {
-                            return kafkaReceiver.doOnConsumer(consumer -> {
-                                if (requests.get() < 0) {
-                                    consumer.pause(partitionList);
-                                }
-                                return true;
-                            });
-                        } else {
-                            return Mono.empty();
-                        }
-                    })
-                    .doOnRequest(requested -> {
-                        if (requests.addAndGet(requested) > 0) {
-                            DefaultKafkaReceiverAccessor.resume(kafkaReceiver, topicPartition);
-                        }
-                    })
-                    .takeUntilOther(revocation)
-                    .doFinally(__ -> DefaultKafkaReceiverAccessor.pause(kafkaReceiver, topicPartition));
-        }
-
-        @Override
-        public CompletionStage<Void> seekTo(long position) {
-            return kafkaReceiver
-                    .doOnConsumer(consumer -> {
-                        consumer.seek(topicPartition, position);
-                        return true;
-                    })
-                    .then()
-                    .toFuture();
         }
     }
 }

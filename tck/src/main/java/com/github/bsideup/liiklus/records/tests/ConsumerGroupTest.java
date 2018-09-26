@@ -9,9 +9,11 @@ import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.ReplayProcessor;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,7 +34,7 @@ public interface ConsumerGroupTest extends RecordStorageTestSupport {
         val disposeAll = ReplayProcessor.<Boolean>create(1);
 
         Function<RecordsStorage.Subscription, Disposable> subscribeAndAssign = subscription -> {
-            return Flux.from(subscription.getPublisher())
+            return Flux.from(subscription.getPublisher(() -> CompletableFuture.completedFuture(Collections.emptyMap())))
                     .flatMap(Flux::fromStream)
                     .takeUntilOther(disposeAll)
                     .subscribe(source -> assignments.put(source.getPartition(), subscription));

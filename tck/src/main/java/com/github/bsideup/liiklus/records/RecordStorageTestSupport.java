@@ -7,10 +7,11 @@ import reactor.core.publisher.Mono;
 
 import java.nio.ByteBuffer;
 import java.time.Duration;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import static org.awaitility.Awaitility.await;
 
@@ -63,7 +64,15 @@ public interface RecordStorageTestSupport {
     }
 
     default Flux<? extends RecordsStorage.PartitionSource> subscribeToPartition(int partition, Optional<String> offsetReset) {
-        return Flux.from(getTarget().subscribe(getTopic(), UUID.randomUUID().toString(), offsetReset).getPublisher())
+        return subscribeToPartition(partition, offsetReset, () -> CompletableFuture.completedFuture(Collections.emptyMap()));
+    }
+
+    default Flux<? extends RecordsStorage.PartitionSource> subscribeToPartition(
+            int partition,
+            Optional<String> offsetReset,
+            Supplier<CompletionStage<Map<Integer, Long>>> offsetsProvider
+    ) {
+        return Flux.from(getTarget().subscribe(getTopic(), UUID.randomUUID().toString(), offsetReset).getPublisher(offsetsProvider))
                 .flatMapIterable(it -> it::iterator)
                 .filter(it -> partition == it.getPartition());
     }

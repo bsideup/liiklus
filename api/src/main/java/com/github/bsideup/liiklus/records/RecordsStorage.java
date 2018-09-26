@@ -8,9 +8,11 @@ import org.reactivestreams.Publisher;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 public interface RecordsStorage {
@@ -21,7 +23,9 @@ public interface RecordsStorage {
 
     interface Subscription {
 
-        Publisher<Stream<? extends PartitionSource>> getPublisher();
+        Publisher<Stream<? extends PartitionSource>> getPublisher(
+                Supplier<CompletionStage<Map<Integer, Long>>> offsetsProvider
+        );
     }
 
     @Value
@@ -130,7 +134,5 @@ public interface RecordsStorage {
         int getPartition();
 
         Publisher<Record> getPublisher();
-
-        CompletionStage<Void> seekTo(long position);
     }
 }

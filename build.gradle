@@ -34,7 +34,6 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
         resolutionStrategy.dependencySubstitution {
             // FIXME after 2.3.0 is out
             substitute module('org.pf4j:pf4j') with module('com.github.pf4j.pf4j:pf4j:f80bc959c1')
-            substitute module('io.projectreactor.kafka:reactor-kafka') with module('com.github.reactor:reactor-kafka:v1.0.1.RELEASE')
         }
     }
 
@@ -58,9 +57,8 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
 
             dependency 'com.google.auto.service:auto-service:1.0-rc4'
 
-            dependency 'io.projectreactor.kafka:reactor-kafka:1.0.0.RELEASE'
-            // Override kafka-clients to 1.1.1, comes from Spring Boot otherwise
-            dependency 'org.apache.kafka:kafka-clients:1.1.1'
+            // Override kafka-clients' version, otherwise it comes from Spring Boot
+            dependency 'org.apache.kafka:kafka-clients:2.0.0'
 
             dependencySet(group: 'io.grpc', version: '1.13.1') {
                 entry 'grpc-netty'

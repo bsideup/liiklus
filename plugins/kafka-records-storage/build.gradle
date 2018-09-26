@@ -28,8 +28,7 @@ dependencies {
     compileOnly project(":api")
     compileOnly 'io.projectreactor:reactor-core'
 
-    compile ('io.projectreactor.kafka:reactor-kafka:1.0.0.RELEASE') {
-        exclude group: "io.projectreactor", module: "reactor-core"
+    compile 'org.apache.kafka:kafka-clients', {
         exclude group: "org.slf4j"
     }
 

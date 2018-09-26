@@ -5,12 +5,10 @@ import com.github.bsideup.liiklus.records.RecordsStorage;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.DirectProcessor;
-import reactor.core.publisher.Mono;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -107,13 +105,12 @@ public interface SubscribeTest extends RecordStorageTestSupport {
     }
 
     @Test
-    default void testSeekTo() throws Exception {
+    default void testInitialOffsets() throws Exception {
         val offsetInfos = publishMany("key".getBytes(), 10);
         val partition = offsetInfos.get(0).getPartition();
 
         val position = 7L;
-        val receivedRecords = subscribeToPartition(partition, "earliest")
-                .delayUntil(it -> Mono.fromCompletionStage(it.seekTo(position)))
+        val receivedRecords = subscribeToPartition(partition, Optional.of("earliest"), () -> CompletableFuture.completedFuture(Collections.singletonMap(partition, position)))
                 .flatMap(RecordsStorage.PartitionSource::getPublisher)
                 .take(3)
                 .collectList()
