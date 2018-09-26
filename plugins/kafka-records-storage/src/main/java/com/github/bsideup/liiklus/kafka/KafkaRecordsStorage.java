@@ -32,6 +32,7 @@ import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -195,16 +196,16 @@ public class KafkaRecordsStorage implements RecordsStorage {
 
                                     @Override
                                     public Publisher<Record> getPublisher() {
+                                        AtomicLong requests = new AtomicLong();
                                         return records
                                                 .flatMapIterable(it -> {
                                                     val recordsOfPartition = it.records(topicPartition);
                                                     if (!recordsOfPartition.isEmpty()) {
-                                                        pausedPartitions.put(topicPartition, sink.requestedFromDownstream() <= recordsOfPartition.size());
+                                                        pausedPartitions.put(topicPartition, requests.addAndGet(-recordsOfPartition.size()) <= 0);
                                                     }
                                                     return recordsOfPartition;
                                                 })
-                                                .doOnRequest(request -> pausedPartitions.put(topicPartition, request <= 0))
-                                                .onBackpressureBuffer()
+                                                .doOnRequest(request -> pausedPartitions.put(topicPartition, requests.addAndGet(request) <= 0))
                                                 .map(record -> new Record(
                                                         new Envelope(
                                                                 topic,
