@@ -60,6 +60,36 @@ public class AckTest extends AbstractIntegrationTest {
     }
 
     @Test
+    public void testStatelessAck() throws Exception {
+        int partition = 1;
+        int groupVersion = 1;
+        AckRequest ackRequest = AckRequest.newBuilder()
+                .setTopic(subscribeRequest.getTopic())
+                .setGroup(subscribeRequest.getGroup())
+                .setGroupVersion(groupVersion)
+                .setPartition(partition)
+                .setOffset(100)
+                .build();
+
+        stub.ack(ackRequest).block(Duration.ofSeconds(10));
+
+        Map<Integer, Long> positions = stub
+                .getOffsets(
+                        GetOffsetsRequest.newBuilder()
+                                .setTopic(subscribeRequest.getTopic())
+                                .setGroup(subscribeRequest.getGroup())
+                                .setGroupVersion(groupVersion)
+                                .build()
+                )
+                .map(GetOffsetsReply::getOffsetsMap)
+                .block(Duration.ofSeconds(10));
+
+        assertThat(positions)
+                .isNotNull()
+                .containsEntry(partition, 100L);
+    }
+
+    @Test
     public void testAlwaysLatest() throws Exception {
         Integer partition = stub.subscribe(subscribeRequest)
                 .map(SubscribeReply::getAssignment)

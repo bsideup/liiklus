@@ -233,17 +233,31 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
     public Mono<Empty> ack(Mono<AckRequest> request) {
         return request
                 .flatMap(ack -> {
-                    val subscription = subscriptions.get(ack.getAssignment().getSessionId());
+                    String topic;
+                    GroupId groupId;
+                    int partition;
 
-                    if (subscription == null) {
-                        log.warn("Subscription is null, returning empty Publisher. Request: {}", ack.toString().replace("\n", "\\n"));
-                        return Mono.empty();
+                    if (ack.hasAssignment()) {
+                        val subscription = subscriptions.get(ack.getAssignment().getSessionId());
+
+                        if (subscription == null) {
+                            log.warn("Subscription is null, returning empty Publisher. Request: {}", ack.toString().replace("\n", "\\n"));
+                            return Mono.empty();
+                        }
+
+                        topic = subscription.getTopic();
+                        groupId = subscription.getGroupId();
+                        partition = ack.getAssignment().getPartition();
+                    } else {
+                        topic = ack.getTopic();
+                        groupId = GroupId.of(ack.getGroup(), ack.getGroupVersion());
+                        partition = ack.getPartition();
                     }
 
                     return Mono.fromCompletionStage(positionsStorage.update(
-                            subscription.getTopic(),
-                            subscription.getGroupId(),
-                            ack.getAssignment().getPartition(),
+                            topic,
+                            groupId,
+                            partition,
                             ack.getOffset()
                     ));
                 })
