@@ -3,13 +3,8 @@ package com.github.bsideup.liiklus.kafka;
 import com.github.bsideup.liiklus.records.RecordStorageTests;
 import com.github.bsideup.liiklus.records.RecordsStorage;
 import lombok.Getter;
-import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.common.serialization.ByteBufferSerializer;
 import org.testcontainers.containers.KafkaContainer;
-import reactor.kafka.sender.KafkaSender;
-import reactor.kafka.sender.SenderOptions;
 
-import java.nio.ByteBuffer;
 import java.util.UUID;
 
 public class KafkaRecordsStorageTest implements RecordStorageTests {
@@ -25,15 +20,7 @@ public class KafkaRecordsStorageTest implements RecordStorageTests {
 
     @Getter
     RecordsStorage target = new KafkaRecordsStorage(
-            kafka.getBootstrapServers(),
-            KafkaSender.create(
-                    SenderOptions.<ByteBuffer, ByteBuffer>create()
-                            .stopOnError(false)
-                            .producerProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers())
-                            .producerProperty(ProducerConfig.CLIENT_ID_CONFIG, "liiklus-" + UUID.randomUUID().toString())
-                            .producerProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, ByteBufferSerializer.class)
-                            .producerProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteBufferSerializer.class)
-            )
+            kafka.getBootstrapServers()
     );
 
     @Getter

@@ -15,6 +15,7 @@ import com.github.bsideup.liiklus.records.RecordsStorage.Subscription;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
 import com.google.protobuf.Timestamp;
+import com.salesforce.reactorgrpc.stub.SubscribeOnlyOnceLifter;
 import io.grpc.Status;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -25,11 +26,14 @@ import lombok.val;
 import org.lognet.springboot.grpc.GRpcService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Operators;
 import reactor.core.publisher.SignalType;
 
 import java.util.*;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
@@ -128,54 +132,45 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
 
                     val sourcesByPartition = sources.computeIfAbsent(sessionId, __ -> new ConcurrentHashMap<>());
 
-                    return Flux.from(subscription.getPublisher())
-                            .switchMap(sources -> getOffsetsByGroupName(topic, groupId.getName())
-                                    .flatMapMany(ackedOffsets -> Flux.fromStream(sources).map(source -> {
-                                        val partition = source.getPartition();
+                    Supplier<CompletionStage<Map<Integer, Long>>> offsetsProvider = () -> {
+                        return getOffsetsByGroupName(topic, groupId.getName())
+                                .map(ackedOffsets -> {
+                                    return groupId.getVersion()
+                                            .map(version -> ackedOffsets.getOrDefault(version, emptyMap()))
+                                            .orElse(ackedOffsets.isEmpty() ? emptyMap() : ackedOffsets.firstEntry().getValue());
+                                })
+                                .map(latestAckedOffsets -> latestAckedOffsets
+                                        .entrySet()
+                                        .stream()
+                                        .collect(Collectors.toMap(it -> it.getKey(), it -> it.getValue() + 1))
+                                )
+                                .toFuture();
+                    };
 
-                                        val latestAckedOffsets = ackedOffsets.values().stream()
-                                                .flatMap(it -> it.entrySet().stream())
-                                                .collect(Collectors.groupingBy(
-                                                        Map.Entry::getKey,
-                                                        Collectors.mapping(
-                                                                Map.Entry::getValue,
-                                                                Collectors.maxBy(Comparator.comparingLong(it -> it))
-                                                        )
-                                                ));
+                    return Flux.from(subscription.getPublisher(offsetsProvider))
+                            .flatMap(sources -> Flux.fromStream(sources).map(source -> {
+                                val partition = source.getPartition();
 
-                                        sourcesByPartition.put(
-                                                partition,
-                                                new StoredSource(
-                                                        latestAckedOffsets,
-                                                        Mono
-                                                                .defer(() -> {
-                                                                    val offsets = groupId.getVersion()
-                                                                            .map(version -> ackedOffsets.getOrDefault(version, emptyMap()))
-                                                                            .orElse(ackedOffsets.isEmpty() ? emptyMap() : ackedOffsets.firstEntry().getValue());
+                                sourcesByPartition.put(
+                                        partition,
+                                        new StoredSource(
+                                                topic,
+                                                groupId,
+                                                Flux.from(source.getPublisher())
+                                                        .log("partition-" + partition, Level.WARNING, SignalType.ON_ERROR)
+                                                        .doFinally(__ -> sourcesByPartition.remove(partition))
+                                                        .transform(Operators.lift(new SubscribeOnlyOnceLifter<Record>()))
+                                        )
+                                );
 
-                                                                    val lastAckedOffset = offsets.get(partition);
-                                                                    if (lastAckedOffset != null) {
-                                                                        return Mono.fromCompletionStage(source.seekTo(lastAckedOffset + 1));
-                                                                    } else {
-                                                                        return Mono.empty();
-                                                                    }
-                                                                })
-                                                                .cache()
-                                                                .thenMany(source.getPublisher())
-                                                                .log("partition-" + partition, Level.WARNING, SignalType.ON_ERROR)
-                                                                .doFinally(__ -> sourcesByPartition.remove(partition))
-                                                )
-                                        );
-
-                                        return SubscribeReply.newBuilder()
-                                                .setAssignment(
-                                                        Assignment.newBuilder()
-                                                                .setPartition(partition)
-                                                                .setSessionId(sessionId)
-                                                )
-                                                .build();
-                                    }))
-                            )
+                                return SubscribeReply.newBuilder()
+                                        .setAssignment(
+                                                Assignment.newBuilder()
+                                                        .setPartition(partition)
+                                                        .setSessionId(sessionId)
+                                        )
+                                        .build();
+                            }))
                             .doFinally(__ -> {
                                 sources.remove(sessionId, sourcesByPartition);
                                 subscriptions.remove(sessionId, storedSubscription);
@@ -201,29 +196,28 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                         return Mono.empty();
                     }
 
-                    Flux<Record> records = storedSource.getRecords();
+                    return getLatestOffsetsOfGroup(storedSource.getTopic(), storedSource.getGroupId().getName()).flatMapMany(latestAckedOffsets -> {
+                        Flux<Record> records = storedSource.getRecords();
 
-                    for (RecordPostProcessor processor : recordPostProcessorChain.getAll()) {
-                        records = records.transform(processor::postProcess);
-                    }
-
-                    Long lastSeenOffset = storedSource.getLatestAckedOffsets().getOrDefault(partition, Optional.empty()).orElse(-1L);
-
-                    return records
-                            .map(consumerRecord -> ReceiveReply.newBuilder()
-                                    .setRecord(
-                                            ReceiveReply.Record.newBuilder()
-                                                    .setOffset(consumerRecord.getOffset())
-                                                    .setReplay(consumerRecord.getOffset() <= lastSeenOffset)
-                                                    .setKey(ByteString.copyFrom(consumerRecord.getEnvelope().getKey()))
-                                                    .setValue(ByteString.copyFrom(consumerRecord.getEnvelope().getValue()))
-                                                    .setTimestamp(Timestamp.newBuilder()
-                                                            .setSeconds(consumerRecord.getTimestamp().getEpochSecond())
-                                                            .setNanos(consumerRecord.getTimestamp().getNano())
-                                                    )
-                                    )
-                                    .build()
-                            );
+                        for (RecordPostProcessor processor : recordPostProcessorChain.getAll()) {
+                            records = records.transform(processor::postProcess);
+                        }
+                        return records
+                                .map(consumerRecord -> ReceiveReply.newBuilder()
+                                        .setRecord(
+                                                ReceiveReply.Record.newBuilder()
+                                                        .setOffset(consumerRecord.getOffset())
+                                                        .setReplay(consumerRecord.getOffset() <= latestAckedOffsets.getOrDefault(partition, Optional.empty()).orElse(-1L))
+                                                        .setKey(ByteString.copyFrom(consumerRecord.getEnvelope().getKey()))
+                                                        .setValue(ByteString.copyFrom(consumerRecord.getEnvelope().getValue()))
+                                                        .setTimestamp(Timestamp.newBuilder()
+                                                                .setSeconds(consumerRecord.getTimestamp().getEpochSecond())
+                                                                .setNanos(consumerRecord.getTimestamp().getNano())
+                                                        )
+                                        )
+                                        .build()
+                                );
+                    });
                 })
                 .log("receive", Level.SEVERE, SignalType.ON_ERROR)
                 .onErrorMap(e -> Status.INTERNAL.withCause(e).withDescription(e.getMessage()).asException());
@@ -283,6 +277,20 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
         );
     }
 
+    private Mono<Map<Integer, Optional<Long>>> getLatestOffsetsOfGroup(String topic, String groupName) {
+        return getOffsetsByGroupName(topic, groupName)
+                .map(ackedOffsets -> ackedOffsets.values().stream()
+                        .flatMap(it -> it.entrySet().stream())
+                        .collect(Collectors.groupingBy(
+                                Map.Entry::getKey,
+                                Collectors.mapping(
+                                        Map.Entry::getValue,
+                                        Collectors.maxBy(Comparator.comparingLong(it -> it))
+                                )
+                        ))
+                );
+    }
+
     private Mono<NavigableMap<Integer, Map<Integer, Long>>> getOffsetsByGroupName(String topic, String groupName) {
         return Mono
                 .fromCompletionStage(positionsStorage.findAllVersionsByGroup(topic, groupName))
@@ -303,7 +311,9 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
     @Value
     private static class StoredSource {
 
-        Map<Integer, Optional<Long>> latestAckedOffsets;
+        String topic;
+
+        GroupId groupId;
 
         Flux<Record> records;
     }
