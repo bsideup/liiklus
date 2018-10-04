@@ -166,7 +166,7 @@ public class KafkaRecordsStorage implements RecordsStorage {
                                 .subscribeOn(KAFKA_POLL_SCHEDULER)
                                 .publish(1);
 
-                        val revocations = new HashMap<Integer, DirectProcessor<Boolean>>();
+                        val revocations = new ConcurrentHashMap<Integer, DirectProcessor<Boolean>>();
                         consumer.subscribe(topics, new ConsumerRebalanceListener() {
 
                             @Override
