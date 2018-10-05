@@ -4,7 +4,6 @@ import com.github.bsideup.liiklus.records.RecordStorageTests;
 import com.github.bsideup.liiklus.records.RecordsStorage;
 import lombok.Getter;
 import lombok.SneakyThrows;
-import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
@@ -48,17 +47,5 @@ class InMemoryRecordsStorageTest implements RecordStorageTests {
     @Override
     public int getNumberOfPartitions() {
         return NUM_OF_PARTITIONS;
-    }
-
-    @Override
-    @Test
-    public void testMultipleGroups() throws Exception {
-        RecordStorageTests.super.testMultipleGroups();
-    }
-
-    @Override
-    @Test
-    public void testExclusiveRecordDistribution() throws Exception {
-        RecordStorageTests.super.testExclusiveRecordDistribution();
     }
 }
