@@ -36,7 +36,7 @@ dependencyManagement {
     }
 
     dependencies {
-        dependency 'com.github.bsideup.liiklus:api:0.3.0'
+        dependency 'com.github.bsideup.liiklus:api:0.6.0'
         dependency 'com.github.bsideup.liiklus:protocol:0.3.0'
         dependency 'io.grpc:grpc-netty:1.15.1'
 
