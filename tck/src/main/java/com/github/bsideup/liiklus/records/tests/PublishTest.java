@@ -45,4 +45,13 @@ public interface PublishTest extends RecordStorageTestSupport {
 
         assertThat(offsetInfos).extracting(RecordsStorage.OffsetInfo::getPartition).containsOnly(partition);
     }
+
+    @Test
+    default void testPublishOffsetIsGrowing() {
+        RecordsStorage.OffsetInfo first = publish("key".getBytes(), "value1".getBytes());
+        RecordsStorage.OffsetInfo second = publish("key".getBytes(), "value2".getBytes());
+
+        assertThat(first.getPartition()).isEqualTo(second.getPartition());
+        assertThat(second.getOffset()).isGreaterThan(first.getOffset());
+    }
 }

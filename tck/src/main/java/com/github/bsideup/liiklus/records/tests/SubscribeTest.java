@@ -107,9 +107,10 @@ public interface SubscribeTest extends RecordStorageTestSupport {
     @Test
     default void testInitialOffsets() throws Exception {
         val offsetInfos = publishMany("key".getBytes(), 10);
-        val partition = offsetInfos.get(0).getPartition();
+        val offsetInfo = offsetInfos.get(7);
+        val partition = offsetInfo.getPartition();
+        val position = offsetInfo.getOffset();
 
-        val position = 7L;
         val receivedRecords = subscribeToPartition(partition, Optional.of("earliest"), () -> CompletableFuture.completedFuture(Collections.singletonMap(partition, position)))
                 .flatMap(RecordsStorage.PartitionSource::getPublisher)
                 .take(3)
@@ -117,9 +118,9 @@ public interface SubscribeTest extends RecordStorageTestSupport {
                 .block(Duration.ofSeconds(10));
 
         assertThat(receivedRecords).extracting(RecordsStorage.Record::getOffset).containsExactly(
-                position + 0,
-                position + 1,
-                position + 2
+                offsetInfos.get(7).getOffset(),
+                offsetInfos.get(8).getOffset(),
+                offsetInfos.get(9).getOffset()
         );
     }
 }
