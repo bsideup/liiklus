@@ -69,11 +69,9 @@ public interface ConsumerGroupTest extends RecordStorageTestSupport {
         try {
             val firstSubscription = getTarget().subscribe(getTopic(), groupName, Optional.of("latest"));
             val secondSubscription = getTarget().subscribe(getTopic(), groupName, Optional.of("latest"));
-
-            val firstDisposable = subscribeAndAssign.apply(firstSubscription);
-
             val lastOffsets = new HashMap<Integer, Long>();
 
+            val firstDisposable = subscribeAndAssign.apply(firstSubscription);
             await.untilAsserted(() -> {
                 try {
                     assertThat(receivedOffsets).hasEntrySatisfying(firstSubscription, it -> assertThat(it).isEqualTo(lastOffsets));
@@ -86,7 +84,6 @@ public interface ConsumerGroupTest extends RecordStorageTestSupport {
             receivedOffsets.clear();
 
             val secondDisposable = subscribeAndAssign.apply(secondSubscription);
-
             await.untilAsserted(() -> {
                 try {
                     assertThat(receivedOffsets).hasEntrySatisfying(firstSubscription, it -> assertThat(it).isNotEmpty());
@@ -99,7 +96,6 @@ public interface ConsumerGroupTest extends RecordStorageTestSupport {
             receivedOffsets.clear();
 
             secondDisposable.dispose();
-
             await.untilAsserted(() -> {
                 try {
                     assertThat(receivedOffsets).hasEntrySatisfying(firstSubscription, it -> assertThat(it).isEqualTo(lastOffsets));
@@ -113,7 +109,6 @@ public interface ConsumerGroupTest extends RecordStorageTestSupport {
 
             subscribeAndAssign.apply(secondSubscription);
             firstDisposable.dispose();
-
             await.untilAsserted(() -> {
                 try {
                     assertThat(receivedOffsets).doesNotContainKey(firstSubscription);
