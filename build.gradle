@@ -33,7 +33,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
     configurations.all {
         resolutionStrategy.dependencySubstitution {
             // FIXME after 2.3.0 is out
-            substitute module('org.pf4j:pf4j') with module('com.github.pf4j.pf4j:pf4j:f80bc959c1')
+            substitute module('org.pf4j:pf4j') with module('com.github.pf4j.pf4j:pf4j:release-2.4.0')
         }
     }
 
