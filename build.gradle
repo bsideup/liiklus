@@ -34,7 +34,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
         overriddenByDependencies = false
 
         imports {
-            mavenBom 'org.junit:junit-bom:5.2.0'
+            mavenBom 'org.junit:junit-bom:5.3.1'
             mavenBom 'org.springframework.boot:spring-boot-dependencies:2.0.5.RELEASE'
             mavenBom 'org.testcontainers:testcontainers-bom:1.9.1'
         }
