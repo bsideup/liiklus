@@ -1,5 +1,5 @@
 plugins {
-    id "org.springframework.boot" version "2.0.2.RELEASE" apply false
+    id "org.springframework.boot" version "2.0.5.RELEASE" apply false
     id "com.google.protobuf" version "0.8.4" apply false
 }
 
@@ -30,24 +30,21 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
         project.tasks.findByName("install")?.dependsOn(tasks.findByName("assemble"))
     }
 
-    configurations.all {
-        resolutionStrategy.dependencySubstitution {
-            // FIXME after 2.3.0 is out
-            substitute module('org.pf4j:pf4j') with module('com.github.pf4j.pf4j:pf4j:f80bc959c1')
-        }
-    }
-
     dependencyManagement {
         overriddenByDependencies = false
 
         imports {
             mavenBom 'org.junit:junit-bom:5.2.0'
-            mavenBom 'org.springframework.boot:spring-boot-dependencies:2.0.2.RELEASE'
+            mavenBom 'org.springframework.boot:spring-boot-dependencies:2.0.5.RELEASE'
             mavenBom 'org.testcontainers:testcontainers-bom:1.9.1'
         }
 
         dependencies {
+            dependency 'org.projectlombok:lombok:1.18.2'
+
             dependency 'org.lognet:grpc-spring-boot-starter:2.3.2'
+
+            dependency 'org.pf4j:pf4j:2.4.0'
 
             dependencySet(group: 'com.google.protobuf', version: '3.6.0') {
                 entry 'protoc'
@@ -60,7 +57,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
             // Override kafka-clients' version, otherwise it comes from Spring Boot
             dependency 'org.apache.kafka:kafka-clients:2.0.0'
 
-            dependencySet(group: 'io.grpc', version: '1.13.1') {
+            dependencySet(group: 'io.grpc', version: '1.15.1') {
                 entry 'grpc-netty'
                 entry 'grpc-core'
                 entry 'grpc-services'
@@ -71,7 +68,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
 
             dependency 'com.salesforce.servicelibs:reactor-grpc-stub:0.9.0'
 
-            dependency 'org.awaitility:awaitility:3.0.0'
+            dependency 'org.awaitility:awaitility:3.1.2'
         }
     }
 }
