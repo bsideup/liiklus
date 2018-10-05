@@ -1,4 +1,4 @@
-FROM openjdk:8-jdk AS workspace
+FROM openjdk:10.0.2-jdk AS workspace
 
 COPY . /root/project
 
