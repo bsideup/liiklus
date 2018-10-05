@@ -53,7 +53,7 @@ dependencies {
     compileOnly 'org.springframework.boot:spring-boot-starter'
     compileOnly 'io.projectreactor:reactor-core'
 
-    compile 'org.apache.commons:commons-lang3:3.7'
+    compile 'org.apache.commons:commons-lang3:3.8.1'
 
     testCompile 'org.testcontainers:kafka'
     testCompile 'ch.qos.logback:logback-classic:'
