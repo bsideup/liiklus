@@ -46,7 +46,7 @@ repositories {
 }
 
 dependencies {
-    compileOnly 'org.projectlombok:lombok:1.16.20'
+    compileOnly 'org.projectlombok:lombok:1.18.2'
 
     compile 'org.testcontainers:kafka:1.7.3'
 
