@@ -1,4 +1,4 @@
-package com.github.bsideup.liiklus.inmemory;
+package com.github.bsideup.liiklus.positions.inmemory;
 
 import com.github.bsideup.liiklus.positions.GroupId;
 import com.github.bsideup.liiklus.positions.PositionsStorage;

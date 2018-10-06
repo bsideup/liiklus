@@ -1,17 +1,4 @@
 # Liiklus config defaults
-storage:
-  positions:
-    type: DYNAMODB
-
-  records:
-    type: KAFKA
-
-kafka:
-  bootstrapServers: # Required
-
-dynamodb:
-  positionsTable: # Required
-
 grpc:
   port: 6565
 

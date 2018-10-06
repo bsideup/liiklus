@@ -1,10 +1,9 @@
-package com.github.bsideup.liiklus.inmemory.config;
+package com.github.bsideup.liiklus.records.inmemory.config;
 
-import com.github.bsideup.liiklus.config.ExporterProfile;
 import com.github.bsideup.liiklus.config.GatewayProfile;
 import com.github.bsideup.liiklus.config.LiiklusConfiguration;
-import com.github.bsideup.liiklus.inmemory.InMemoryPositionsStorage;
-import com.github.bsideup.liiklus.positions.PositionsStorage;
+import com.github.bsideup.liiklus.records.inmemory.InMemoryRecordsStorage;
+import com.github.bsideup.liiklus.records.RecordsStorage;
 import com.google.auto.service.AutoService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -14,23 +13,22 @@ import org.springframework.context.annotation.Configuration;
 @AutoService(LiiklusConfiguration.class)
 @Slf4j
 @Configuration
-@ExporterProfile
 @GatewayProfile
-@ConditionalOnProperty(value = "storage.positions.type", havingValue = "MEMORY")
-public class InMemoryConfiguration implements LiiklusConfiguration {
+@ConditionalOnProperty(value = "storage.records.type", havingValue = "MEMORY")
+public class InMemoryRecordsConfiguration implements LiiklusConfiguration {
 
     @Bean
-    PositionsStorage inMemoryPositionsStorage() {
+    RecordsStorage inMemoryRecordsStorage() {
         log.warn("\n" +
                 String.format("%0106d", 0).replace("0", "=") + "\n" +
                 String.format("%0106d", 0).replace("0", "=") + "\n" +
                 String.format("%0106d", 0).replace("0", "=") + "\n" +
-                "=== In-memory position storage is used. Please, DO NOT run it in production if you ACK your positions. ===\n" +
+                "=== In-memory records storage is used. Please, DO NOT run it in production. ===\n" +
                 String.format("%0106d", 0).replace("0", "=") + "\n" +
                 String.format("%0106d", 0).replace("0", "=") + "\n" +
                 String.format("%0106d", 0).replace("0", "=")
         );
-        return new InMemoryPositionsStorage();
+        return new InMemoryRecordsStorage(32);
     }
 
 }

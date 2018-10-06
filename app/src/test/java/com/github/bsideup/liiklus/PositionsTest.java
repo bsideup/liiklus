@@ -2,21 +2,14 @@ package com.github.bsideup.liiklus;
 
 import com.github.bsideup.liiklus.protocol.*;
 import com.github.bsideup.liiklus.test.AbstractIntegrationTest;
-import com.google.common.collect.ImmutableMap;
 import com.google.protobuf.ByteString;
 import lombok.val;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.clients.consumer.OffsetAndMetadata;
-import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.common.serialization.StringDeserializer;
 import org.junit.Before;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -48,41 +41,6 @@ public class PositionsTest extends AbstractIntegrationTest {
                         .repeat(10)
                 )
                 .blockLast();
-    }
-
-    @Test
-    public void testExternalPositions() {
-        val topicPartition = new TopicPartition(subscribeRequest.getTopic(), 0);
-
-        val props = new HashMap<String, Object>();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers());
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, subscribeRequest.getGroup());
-
-        try (val kafkaConsumer = new KafkaConsumer<>(props, new StringDeserializer(), new StringDeserializer())) {
-            kafkaConsumer.commitSync(ImmutableMap.of(topicPartition, new OffsetAndMetadata(5)));
-        }
-
-        ReceiveReply reply = stub
-                .subscribe(subscribeRequest)
-                .map(SubscribeReply::getAssignment)
-                .filter(it -> it.getPartition() == topicPartition.partition())
-                .flatMap(assignment -> stub
-                        .receive(ReceiveRequest.newBuilder().setAssignment(assignment).build())
-                        .delayUntil(it -> stub.ack(AckRequest.newBuilder().setAssignment(assignment).setOffset(it.getRecord().getOffset()).build()))
-                )
-                .blockFirst(Duration.ofSeconds(10));
-
-        assertThat(reply.getRecord().getOffset())
-                .isEqualTo(5);
-
-        reply = stub
-                .subscribe(subscribeRequest)
-                .filter(it -> it.getAssignment().getPartition() == topicPartition.partition())
-                .flatMap(it -> stub.receive(ReceiveRequest.newBuilder().setAssignment(it.getAssignment()).build()))
-                .blockFirst(Duration.ofSeconds(10));
-
-        assertThat(reply.getRecord().getOffset())
-                .isEqualTo(6);
     }
 
     @Test
