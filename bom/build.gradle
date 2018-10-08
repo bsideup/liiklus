@@ -1,7 +1,3 @@
-plugins {
-    id "java"
-}
-
 publishing {
     publications {
         mavenJava(MavenPublication) { publication ->
@@ -12,13 +8,16 @@ publishing {
                 asNode().dependencyManagement.replaceNode {}
                 def dependencyManagementNode = asNode().appendNode('dependencyManagement').appendNode('dependencies')
 
-                rootProject.subprojects.findAll { it != project }.each { subProject ->
-                    dependencyManagementNode.appendNode('dependency').with {
-                        appendNode('groupId', subProject.group)
-                        appendNode('artifactId',subProject.name)
-                        appendNode('version', subProject.version)
-                    }
-                }
+                rootProject.subprojects
+                        .findAll { it != project }
+                        .findAll { !it.name.startsWith("examples/") }
+                        .each { subProject ->
+                            dependencyManagementNode.appendNode('dependency').with {
+                                appendNode('groupId', subProject.group)
+                                appendNode('artifactId', subProject.name)
+                                appendNode('version', subProject.version)
+                            }
+                        }
             }
         }
     }
