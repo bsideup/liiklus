@@ -5,6 +5,7 @@ publishing {
             artifacts = []
 
             pom.withXml {
+                asNode().dependencyManagement.replaceNode {}
                 def dependencyManagementNode = asNode().appendNode('dependencyManagement').appendNode('dependencies')
 
                 rootProject.subprojects.findAll { it != project }.each { subProject ->
