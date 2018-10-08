@@ -1,7 +1,7 @@
 publishing {
     publications {
         mavenJava(MavenPublication) { publication ->
-            artifactId = "testcontainers-bom"
+            artifactId = "liiklus-bom"
             artifacts = []
 
             pom.withXml {

@@ -4,6 +4,7 @@ import com.github.bsideup.liiklus.records.RecordStorageTests;
 import com.github.bsideup.liiklus.records.RecordsStorage;
 import lombok.Getter;
 import org.apache.kafka.common.utils.Utils;
+import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.KafkaContainer;
 import reactor.core.publisher.Mono;
 
@@ -52,5 +53,11 @@ public class KafkaRecordsStorageTest implements RecordStorageTests {
     @Override
     public String keyByPartition(int partition) {
         return PARTITION_KEYS.get(partition);
+    }
+
+    @Override
+    @Test
+    public void testMultipleGroups() throws Exception {
+        RecordStorageTests.super.testMultipleGroups();
     }
 }
