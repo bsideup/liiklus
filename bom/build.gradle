@@ -1,3 +1,9 @@
+plugins {
+    id "base"
+}
+
+task install(dependsOn: publishToMavenLocal)
+
 publishing {
     publications {
         mavenJava(MavenPublication) { publication ->
