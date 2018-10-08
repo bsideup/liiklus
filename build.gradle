@@ -20,6 +20,7 @@ allprojects {
 configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
     apply plugin: 'io.spring.dependency-management'
     apply plugin: 'maven'
+    apply plugin: 'maven-publish'
 
     repositories {
         jcenter()
