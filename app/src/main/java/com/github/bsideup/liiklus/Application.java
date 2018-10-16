@@ -5,7 +5,6 @@ import com.github.bsideup.liiklus.config.LayersConfiguration;
 import com.github.bsideup.liiklus.config.MetricsConfiguration;
 import com.github.bsideup.liiklus.monitoring.MetricsCollector;
 import com.github.bsideup.liiklus.plugins.LiiklusPluginManager;
-import com.github.bsideup.liiklus.plugins.LiiklusResourceLoader;
 import io.prometheus.client.exporter.common.TextFormat;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -90,7 +89,6 @@ public class Application {
         application.setWebApplicationType(WebApplicationType.REACTIVE);
         application.setApplicationContextClass(ReactiveWebServerApplicationContext.class);
         application.setEnvironment(environment);
-        application.setResourceLoader(new LiiklusResourceLoader(pluginManager));
 
         application.addInitializers(
                 new StringCodecInitializer(false),
