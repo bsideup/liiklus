@@ -1,5 +1,15 @@
+buildscript {
+    repositories {
+        jcenter()
+        maven { url "https://repo.spring.io/snapshot" }
+        maven { url "https://repo.spring.io/milestone" }
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:2.1.0.M4")
+    }
+}
+
 plugins {
-    id "org.springframework.boot" version "2.0.5.RELEASE" apply false
     id "com.google.protobuf" version "0.8.4" apply false
 }
 
@@ -20,10 +30,20 @@ allprojects {
 configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
     apply plugin: 'io.spring.dependency-management'
     apply plugin: 'maven'
+    apply plugin: 'java'
 
     repositories {
         jcenter()
+        maven { url "https://repo.spring.io/snapshot" }
+        maven { url "https://repo.spring.io/milestone" }
         maven { url 'https://jitpack.io' }
+    }
+
+    test.testLogging {
+        displayGranularity 1
+        showStackTraces = true
+        exceptionFormat = 'full'
+        events "STARTED", "PASSED", "FAILED", "SKIPPED"
     }
 
     project.afterEvaluate {
@@ -35,16 +55,18 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
 
         imports {
             mavenBom 'org.junit:junit-bom:5.3.1'
-            mavenBom 'org.springframework.boot:spring-boot-dependencies:2.0.5.RELEASE'
+            mavenBom "org.springframework.boot:spring-boot-dependencies:2.1.0.M4"
             mavenBom 'org.testcontainers:testcontainers-bom:1.9.1'
         }
 
         dependencies {
             dependency 'org.projectlombok:lombok:1.18.2'
 
-            dependency 'org.lognet:grpc-spring-boot-starter:2.4.2'
-
             dependency 'org.pf4j:pf4j:2.4.0'
+
+            dependency 'io.prometheus:simpleclient_common:0.5.0'
+
+            dependency 'org.springframework.fu:spring-fu-jafu:0.0.3.BUILD-SNAPSHOT'
 
             dependencySet(group: 'com.google.protobuf', version: '3.6.0') {
                 entry 'protoc'

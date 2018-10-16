@@ -1,23 +1,17 @@
 package com.github.bsideup.liiklus.records.inmemory.config;
 
-import com.github.bsideup.liiklus.config.GatewayProfile;
-import com.github.bsideup.liiklus.config.LiiklusConfiguration;
-import com.github.bsideup.liiklus.records.inmemory.InMemoryRecordsStorage;
 import com.github.bsideup.liiklus.records.RecordsStorage;
+import com.github.bsideup.liiklus.records.inmemory.InMemoryRecordsStorage;
 import com.google.auto.service.AutoService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.context.ApplicationContextInitializer;
+import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.core.env.Profiles;
 
-@AutoService(LiiklusConfiguration.class)
+@AutoService(ApplicationContextInitializer.class)
 @Slf4j
-@Configuration
-@GatewayProfile
-@ConditionalOnProperty(value = "storage.records.type", havingValue = "MEMORY")
-public class InMemoryRecordsConfiguration implements LiiklusConfiguration {
+public class InMemoryRecordsConfiguration implements ApplicationContextInitializer<GenericApplicationContext> {
 
-    @Bean
     RecordsStorage inMemoryRecordsStorage() {
         log.warn("\n" +
                 String.format("%0106d", 0).replace("0", "=") + "\n" +
@@ -31,4 +25,14 @@ public class InMemoryRecordsConfiguration implements LiiklusConfiguration {
         return new InMemoryRecordsStorage(32);
     }
 
+    @Override
+    public void initialize(GenericApplicationContext applicationContext) {
+        if (!applicationContext.getEnvironment().acceptsProfiles(Profiles.of("gateway"))) {
+            return;
+        }
+        String type = applicationContext.getEnvironment().getProperty("storage.records.type");
+        if ("MEMORY".equals(type)) {
+            applicationContext.registerBean(RecordsStorage.class, this::inMemoryRecordsStorage);
+        }
+    }
 }

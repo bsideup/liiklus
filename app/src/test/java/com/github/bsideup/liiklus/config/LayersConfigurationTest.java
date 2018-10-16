@@ -1,20 +1,16 @@
 package com.github.bsideup.liiklus.config;
 
-import com.github.bsideup.liiklus.config.LayersConfiguration.LayersProperties;
 import com.github.bsideup.liiklus.records.RecordPostProcessor;
 import com.github.bsideup.liiklus.records.RecordPreProcessor;
 import com.github.bsideup.liiklus.records.RecordsStorage;
-import com.google.common.collect.ImmutableMap;
 import lombok.ToString;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.reactivestreams.Publisher;
-import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.StaticApplicationContext;
+import org.springframework.mock.env.MockEnvironment;
 
 import java.util.concurrent.CompletionStage;
 
@@ -23,37 +19,35 @@ import static org.assertj.core.api.Assertions.assertThat;
 @RunWith(MockitoJUnitRunner.class)
 public class LayersConfigurationTest {
 
-    @Mock
-    ApplicationContext applicationContext;
+    MockEnvironment environment;
 
-    @Mock
-    LayersProperties layersProperties;
+    StaticApplicationContext applicationContext;
 
-    @InjectMocks
-    LayersConfiguration layersConfiguration;
+    final LayersConfiguration layersConfiguration = new LayersConfiguration();
 
     @Before
     public void setUp() throws Exception {
-        Mockito.when(applicationContext.getBeansOfType(RecordPreProcessor.class)).thenReturn(ImmutableMap.of(
-                "p1", P1.INSTANCE,
-                "p2", P2.INSTANCE,
-                "p3", P3.INSTANCE
-        ));
-        Mockito.when(applicationContext.getBeansOfType(RecordPostProcessor.class)).thenReturn(ImmutableMap.of(
-                "p1", P1.INSTANCE,
-                "p2", P2.INSTANCE,
-                "p3", P3.INSTANCE
-        ));
+        environment = new MockEnvironment();
+        environment.setActiveProfiles("gateway");
+
+        applicationContext = new StaticApplicationContext();
+        applicationContext.setEnvironment(environment);
+
+        applicationContext.registerBean(P1.class, () -> P1.INSTANCE);
+        applicationContext.registerBean(P2.class, () -> P2.INSTANCE);
+        applicationContext.registerBean(P3.class, () -> P3.INSTANCE);
     }
 
     @Test
     public void testOrderWithEmptyOrders() throws Exception {
-        assertThat(layersConfiguration.recordPreProcessorChain().getAll()).containsExactly(
+        layersConfiguration.initialize(applicationContext);
+
+        assertThat(applicationContext.getBean(RecordPreProcessorChain.class).getAll()).containsExactly(
                 P1.INSTANCE,
                 P2.INSTANCE,
                 P3.INSTANCE
         );
-        assertThat(layersConfiguration.recordPostProcessorChain().getAll()).containsExactly(
+        assertThat(applicationContext.getBean(RecordPostProcessorChain.class).getAll()).containsExactly(
                 P3.INSTANCE,
                 P2.INSTANCE,
                 P1.INSTANCE
@@ -62,15 +56,15 @@ public class LayersConfigurationTest {
 
     @Test
     public void testOrderWithDefaultOrder() throws Exception {
-        Mockito.when(layersProperties.getOrders()).thenReturn(ImmutableMap.of(
-                P2.class.getName(), 0
-        ));
-        assertThat(layersConfiguration.recordPreProcessorChain().getAll()).containsExactly(
+        setOrder(P2.class, 0);
+
+        layersConfiguration.initialize(applicationContext);
+        assertThat(applicationContext.getBean(RecordPreProcessorChain.class).getAll()).containsExactly(
                 P1.INSTANCE,
                 P2.INSTANCE,
                 P3.INSTANCE
         );
-        assertThat(layersConfiguration.recordPostProcessorChain().getAll()).containsExactly(
+        assertThat(applicationContext.getBean(RecordPostProcessorChain.class).getAll()).containsExactly(
                 P3.INSTANCE,
                 P2.INSTANCE,
                 P1.INSTANCE
@@ -79,18 +73,17 @@ public class LayersConfigurationTest {
 
     @Test
     public void testNegativeOrders() throws Exception {
-        Mockito.when(layersProperties.getOrders()).thenReturn(ImmutableMap.of(
-                P2.class.getName(), -100,
-                P3.class.getName(), -50
-        ));
+        setOrder(P2.class, -100);
+        setOrder(P3.class, -50);
+        layersConfiguration.initialize(applicationContext);
 
-        assertThat(layersConfiguration.recordPreProcessorChain().getAll()).containsExactly(
+        assertThat(applicationContext.getBean(RecordPreProcessorChain.class).getAll()).containsExactly(
                 P2.INSTANCE,
                 P3.INSTANCE,
                 P1.INSTANCE
         );
 
-        assertThat(layersConfiguration.recordPostProcessorChain().getAll()).containsExactly(
+        assertThat(applicationContext.getBean(RecordPostProcessorChain.class).getAll()).containsExactly(
                 P1.INSTANCE,
                 P3.INSTANCE,
                 P2.INSTANCE
@@ -99,18 +92,17 @@ public class LayersConfigurationTest {
 
     @Test
     public void testPositiveOrders() throws Exception {
-        Mockito.when(layersProperties.getOrders()).thenReturn(ImmutableMap.of(
-                P2.class.getName(), 100,
-                P3.class.getName(), 50
-        ));
+        setOrder(P2.class, 100);
+        setOrder(P3.class, 50);
+        layersConfiguration.initialize(applicationContext);
 
-        assertThat(layersConfiguration.recordPreProcessorChain().getAll()).containsExactly(
+        assertThat(applicationContext.getBean(RecordPreProcessorChain.class).getAll()).containsExactly(
                 P1.INSTANCE,
                 P3.INSTANCE,
                 P2.INSTANCE
         );
 
-        assertThat(layersConfiguration.recordPostProcessorChain().getAll()).containsExactly(
+        assertThat(applicationContext.getBean(RecordPostProcessorChain.class).getAll()).containsExactly(
                 P2.INSTANCE,
                 P3.INSTANCE,
                 P1.INSTANCE
@@ -119,22 +111,25 @@ public class LayersConfigurationTest {
 
     @Test
     public void testOrderClashing() throws Exception {
-        Mockito.when(layersProperties.getOrders()).thenReturn(ImmutableMap.of(
-                P3.class.getName(), -100,
-                P2.class.getName(), -100
-        ));
+        setOrder(P3.class, -100);
+        setOrder(P2.class, -100);
+        layersConfiguration.initialize(applicationContext);
 
-        assertThat(layersConfiguration.recordPreProcessorChain().getAll()).containsExactly(
+        assertThat(applicationContext.getBean(RecordPreProcessorChain.class).getAll()).containsExactly(
                 P2.INSTANCE,
                 P3.INSTANCE,
                 P1.INSTANCE
         );
 
-        assertThat(layersConfiguration.recordPostProcessorChain().getAll()).containsExactly(
+        assertThat(applicationContext.getBean(RecordPostProcessorChain.class).getAll()).containsExactly(
                 P1.INSTANCE,
                 P3.INSTANCE,
                 P2.INSTANCE
         );
+    }
+
+    private void setOrder(Class<?> layer, int order) {
+        environment.setProperty("layers.orders[" + layer.getName() + "]", order + "");
     }
 
     @ToString

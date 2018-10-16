@@ -1,18 +1,43 @@
 package com.github.bsideup.liiklus;
 
-import com.github.bsideup.liiklus.config.LiiklusConfiguration;
+import com.github.bsideup.liiklus.config.GRPCConfiguration;
+import com.github.bsideup.liiklus.config.LayersConfiguration;
+import com.github.bsideup.liiklus.config.MetricsConfiguration;
+import com.github.bsideup.liiklus.monitoring.MetricsCollector;
 import com.github.bsideup.liiklus.plugins.LiiklusPluginManager;
+import com.github.bsideup.liiklus.plugins.LiiklusResourceLoader;
+import io.prometheus.client.exporter.common.TextFormat;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.web.ResourceProperties;
+import org.springframework.boot.autoconfigure.web.ServerProperties;
+import org.springframework.boot.autoconfigure.web.reactive.ReactiveWebServerInitializer;
+import org.springframework.boot.autoconfigure.web.reactive.ResourceCodecInitializer;
+import org.springframework.boot.autoconfigure.web.reactive.StringCodecInitializer;
+import org.springframework.boot.autoconfigure.web.reactive.WebFluxProperties;
+import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.boot.web.embedded.netty.NettyReactiveWebServerFactory;
+import org.springframework.boot.web.reactive.context.ReactiveWebServerApplicationContext;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.core.env.Profiles;
 import org.springframework.core.env.SimpleCommandLinePropertySource;
 import org.springframework.core.env.StandardEnvironment;
-import org.springframework.core.io.DefaultResourceLoader;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.web.reactive.function.server.RouterFunctions;
+import org.springframework.web.reactive.function.server.ServerResponse;
+import org.springframework.web.reactive.function.server.support.RouterFunctionMapping;
 
-import java.nio.file.*;
-import java.util.stream.Stream;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.nio.file.Paths;
+import java.util.Collections;
 
 @Slf4j
 @SpringBootApplication
@@ -47,7 +72,7 @@ public class Application {
         val pluginsDir = environment.getProperty("plugins.dir", String.class, "./plugins");
         val pathMatcher = environment.getProperty("plugins.pathMatcher", String.class, "*.jar");
 
-        Path pluginsRoot = Paths.get(pluginsDir).toAbsolutePath().normalize();
+        val pluginsRoot = Paths.get(pluginsDir).toAbsolutePath().normalize();
         log.info("Loading plugins from '{}' with matcher: '{}'", pluginsRoot, pathMatcher);
 
         val pluginManager = new LiiklusPluginManager(pluginsRoot, pathMatcher);
@@ -55,39 +80,69 @@ public class Application {
         pluginManager.loadPlugins();
         pluginManager.startPlugins();
 
-        val application = new SpringApplication(
-                new DefaultResourceLoader() {
-                    @Override
-                    public ClassLoader getClassLoader() {
-                        return new ClassLoader(Thread.currentThread().getContextClassLoader()) {
-                            @Override
-                            protected Class<?> findClass(String name) throws ClassNotFoundException {
-                                try {
-                                    return super.findClass(name);
-                                } catch (ClassNotFoundException e) {
-                                    // FIXME X_X
-                                    for (val pluginWrapper : pluginManager.getResolvedPlugins()) {
-                                        try {
-                                            return pluginWrapper.getPluginClassLoader().loadClass(name);
-                                        } catch (ClassNotFoundException __) {
-                                            continue;
-                                        }
-                                    }
-
-                                    throw e;
-                                }
-                            }
-                        };
-                    }
-                },
-                Stream
-                        .concat(
-                                pluginManager.getExtensionClasses(LiiklusConfiguration.class).stream(),
-                                Stream.of(Application.class)
-                        )
-                        .toArray(Class[]::new)
-        );
+        val binder = Binder.get(environment);
+        val application = new SpringApplication(Application.class) {
+            @Override
+            protected void load(ApplicationContext context, Object[] sources) {
+                // We don't want the annotation bean definition reader
+            }
+        };
+        application.setWebApplicationType(WebApplicationType.REACTIVE);
+        application.setApplicationContextClass(ReactiveWebServerApplicationContext.class);
         application.setEnvironment(environment);
+        application.setResourceLoader(new LiiklusResourceLoader(pluginManager));
+
+        application.addInitializers(
+                new StringCodecInitializer(false),
+                new ResourceCodecInitializer(false),
+                new ReactiveWebServerInitializer(
+                        binder.bind("server", ServerProperties.class).orElseGet(ServerProperties::new),
+                        binder.bind("spring.resources", ResourceProperties.class).orElseGet(ResourceProperties::new),
+                        binder.bind("spring.webflux", WebFluxProperties.class).orElseGet(WebFluxProperties::new),
+                        new NettyReactiveWebServerFactory()
+                ),
+                new GRPCConfiguration(),
+                new LayersConfiguration(),
+                new MetricsConfiguration(),
+                (GenericApplicationContext applicationContext) -> {
+                    applicationContext.registerBean(RouterFunctionMapping.class, () -> {
+                        val router = RouterFunctions.route();
+                        router.GET("/health", __ -> ServerResponse.ok().syncBody("OK"));
+
+                        if (environment.acceptsProfiles(Profiles.of("exporter"))) {
+                            val metricsCollector = applicationContext.getBean(MetricsCollector.class);
+                            router.GET("/prometheus", __ -> {
+                                return metricsCollector.collect()
+                                        .collectList()
+                                        .flatMap(metrics -> {
+                                            try {
+                                                val writer = new StringWriter();
+                                                TextFormat.write004(writer, Collections.enumeration(metrics));
+                                                return ServerResponse.ok()
+                                                        .contentType(MediaType.valueOf(TextFormat.CONTENT_TYPE_004))
+                                                        .syncBody(writer.toString());
+                                            } catch (IOException e) {
+                                                return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+                                            }
+                                        });
+                            });
+                        }
+                        return new RouterFunctionMapping(router.build());
+                    });
+                }
+        );
+
+        application.addInitializers(
+                pluginManager.getExtensionClasses(ApplicationContextInitializer.class).stream()
+                        .map(it -> {
+                            try {
+                                return it.newInstance();
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
+                        })
+                        .toArray(ApplicationContextInitializer[]::new)
+        );
 
         return application;
     }
