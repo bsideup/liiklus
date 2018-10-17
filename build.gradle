@@ -1,11 +1,12 @@
 buildscript {
+    ext.springBootVersion = "2.1.0.RC1"
     repositories {
         jcenter()
         maven { url "https://repo.spring.io/snapshot" }
         maven { url "https://repo.spring.io/milestone" }
     }
     dependencies {
-        classpath("org.springframework.boot:spring-boot-gradle-plugin:2.1.0.M4")
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
     }
 }
 
@@ -55,7 +56,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
 
         imports {
             mavenBom 'org.junit:junit-bom:5.3.1'
-            mavenBom "org.springframework.boot:spring-boot-dependencies:2.1.0.M4"
+            mavenBom "org.springframework.boot:spring-boot-dependencies:${springBootVersion}"
             mavenBom 'org.testcontainers:testcontainers-bom:1.9.1'
         }
 
