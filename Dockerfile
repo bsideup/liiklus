@@ -24,6 +24,6 @@ COPY --from=workspace /root/project/app/build/libs/app.jar app.jar
 COPY --from=workspace /root/project/plugins/*/build/libs/*.jar plugins/
 
 ENV JAVA_OPTS=""
-ENV JAVA_MEMORY_OPTS="-XX:+ExitOnOutOfMemoryError -XshowSettings:vm"
+ENV JAVA_MEMORY_OPTS="-XX:+ExitOnOutOfMemoryError -XshowSettings:vm -noverify"
 
 CMD ["sh", "-c", "java -Xshare:on $JAVA_MEMORY_OPTS $JAVA_OPTS -jar app.jar"]
