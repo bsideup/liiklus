@@ -63,12 +63,12 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
             dependency 'org.projectlombok:lombok:1.18.2'
 
             dependency 'org.pf4j:pf4j:2.4.0'
-
+            
             dependency 'io.prometheus:simpleclient_common:0.5.0'
 
             dependency 'org.springframework.fu:spring-fu-jafu:0.0.3.BUILD-SNAPSHOT'
 
-            dependencySet(group: 'com.google.protobuf', version: '3.6.0') {
+            dependencySet(group: 'com.google.protobuf', version: 'com.google.protobuf:protoc:3.6.1'.split(":")[2]) {
                 entry 'protoc'
                 entry 'protobuf-java'
                 entry 'protobuf-java-util'
@@ -79,7 +79,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
             // Override kafka-clients' version, otherwise it comes from Spring Boot
             dependency 'org.apache.kafka:kafka-clients:2.0.0'
 
-            dependencySet(group: 'io.grpc', version: '1.15.1') {
+            dependencySet(group: 'io.grpc', version: 'io.grpc:grpc-core:1.15.1'.split(":")[2]) {
                 entry 'grpc-netty'
                 entry 'grpc-core'
                 entry 'grpc-services'
