@@ -31,7 +31,7 @@ dependencyManagement {
     overriddenByDependencies = false
 
     imports {
-        mavenBom 'org.springframework.boot:spring-boot-dependencies:2.0.5.RELEASE'
+        mavenBom 'org.springframework.boot:spring-boot-dependencies:2.0.6.RELEASE'
         mavenBom 'org.testcontainers:testcontainers-bom:1.9.1'
     }
 
