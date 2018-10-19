@@ -35,7 +35,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
 
         imports {
             mavenBom 'org.junit:junit-bom:5.3.1'
-            mavenBom 'org.springframework.boot:spring-boot-dependencies:2.0.5.RELEASE'
+            mavenBom org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES
             mavenBom 'org.testcontainers:testcontainers-bom:1.9.1'
         }
 
