@@ -79,7 +79,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
             // Override kafka-clients' version, otherwise it comes from Spring Boot
             dependency 'org.apache.kafka:kafka-clients:2.0.0'
 
-            dependencySet(group: 'io.grpc', version: '1.15.1') {
+            dependencySet(group: 'io.grpc', version: '1.16.0') {
                 entry 'grpc-netty'
                 entry 'grpc-core'
                 entry 'grpc-services'
