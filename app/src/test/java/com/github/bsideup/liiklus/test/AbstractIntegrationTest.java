@@ -7,6 +7,7 @@ import io.grpc.inprocess.InProcessChannelBuilder;
 import lombok.val;
 import org.junit.Rule;
 import org.junit.rules.TestName;
+import org.springframework.context.ApplicationContext;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 
@@ -41,6 +42,8 @@ public abstract class AbstractIntegrationTest {
             InProcessChannelBuilder.forName("liiklus").build()
     );
 
+    protected static final ApplicationContext applicationContext;
+
     static {
         System.setProperty("server.port", "0");
         System.setProperty("grpc.enabled", "false");
@@ -53,7 +56,7 @@ public abstract class AbstractIntegrationTest {
                 "storage.records.type=MEMORY"
         );
 
-        Application.start(args.stream().map(it -> "--" + it).toArray(String[]::new));
+        applicationContext = Application.start(args.stream().map(it -> "--" + it).toArray(String[]::new));
 
         Hooks.onOperatorDebug();
     }

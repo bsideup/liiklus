@@ -1,43 +1,46 @@
 package com.github.bsideup.liiklus.schema;
 
 import com.fasterxml.jackson.core.JsonPointer;
-import com.github.bsideup.liiklus.config.GatewayProfile;
-import com.github.bsideup.liiklus.config.LiiklusConfiguration;
+import com.github.bsideup.liiklus.records.RecordPreProcessor;
 import com.google.auto.service.AutoService;
 import lombok.Data;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import lombok.val;
+import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.context.ApplicationContextInitializer;
+import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.core.env.Profiles;
 import org.springframework.validation.annotation.Validated;
 
 import java.net.URL;
 
-@AutoService(LiiklusConfiguration.class)
-@GatewayProfile
-@Configuration
-@EnableConfigurationProperties(SchemaPluginConfiguration.SchemaProperties.class)
-@ConditionalOnProperty(value = "schema.enabled", havingValue = "true")
-public class SchemaPluginConfiguration implements LiiklusConfiguration {
+@AutoService(ApplicationContextInitializer.class)
+public class SchemaPluginConfiguration implements ApplicationContextInitializer<GenericApplicationContext> {
 
-    @Autowired
-    SchemaProperties schemaProperties;
+    @Override
+    public void initialize(GenericApplicationContext applicationContext) {
+        if (!applicationContext.getEnvironment().acceptsProfiles(Profiles.of("gateway"))) {
+            return;
+        }
 
-    @Bean
-    JsonSchemaPreProcessor jsonSchemaPreProcessor() {
-        return new JsonSchemaPreProcessor(
-                schemaProperties.getSchemaURL(),
-                JsonPointer.compile(schemaProperties.getEventTypeJsonPointer()),
-                schemaProperties.isAllowDeprecatedProperties()
-        );
+        val binder = Binder.get(applicationContext.getEnvironment());
+        val schemaProperties = binder.bind("schema", SchemaProperties.class).orElseGet(SchemaProperties::new);
+
+        if (schemaProperties.isEnabled()) {
+            applicationContext.registerBean(RecordPreProcessor.class, () -> {
+                return new JsonSchemaPreProcessor(
+                        schemaProperties.getSchemaURL(),
+                        JsonPointer.compile(schemaProperties.getEventTypeJsonPointer()),
+                        schemaProperties.isAllowDeprecatedProperties()
+                );
+            });
+        }
     }
 
     @Data
-    @ConfigurationProperties("schema")
     @Validated
     public static class SchemaProperties {
+
+        boolean enabled;
 
         SchemaType type = SchemaType.JSON;
 

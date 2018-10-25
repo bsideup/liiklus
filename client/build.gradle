@@ -1,7 +1,3 @@
-plugins {
-    id "java"
-}
-
 dependencies {
     compile project(":protocol")
 

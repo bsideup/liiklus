@@ -1,14 +1,3 @@
-plugins {
-    id "java"
-}
-
-test.testLogging {
-    displayGranularity 1
-    showStackTraces = true
-    exceptionFormat = 'full'
-    events "STARTED", "PASSED", "FAILED", "SKIPPED"
-}
-
 dependencies {
     compileOnly 'org.projectlombok:lombok'
 

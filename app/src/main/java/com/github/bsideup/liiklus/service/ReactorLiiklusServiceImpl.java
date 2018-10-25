@@ -1,6 +1,5 @@
 package com.github.bsideup.liiklus.service;
 
-import com.github.bsideup.liiklus.config.GatewayProfile;
 import com.github.bsideup.liiklus.config.RecordPostProcessorChain;
 import com.github.bsideup.liiklus.config.RecordPreProcessorChain;
 import com.github.bsideup.liiklus.positions.GroupId;
@@ -23,7 +22,6 @@ import lombok.Value;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.lognet.springboot.grpc.GRpcService;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Operators;
@@ -42,8 +40,6 @@ import static java.util.Collections.emptyMap;
 @RequiredArgsConstructor
 @FieldDefaults(makeFinal = true)
 @Slf4j
-@GRpcService
-@GatewayProfile
 public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.LiiklusServiceImplBase {
 
     private static final NavigableMap<Integer, Map<Integer, Long>> EMPTY_ACKED_OFFSETS = Collections.unmodifiableNavigableMap(new TreeMap<>());
