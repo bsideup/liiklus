@@ -15,3 +15,9 @@ jobs:
           when: always
       - store_test_results:
           path: ~/junit
+
+workflows:
+  version: 2
+  test_all:
+    jobs:
+      - build
