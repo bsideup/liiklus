@@ -5,7 +5,24 @@ jobs:
     steps:
       - checkout
 
-      - run: ./gradlew check
+      - run: ./gradlew build
+
+  test_app:
+    steps:
+      - run: ./gradlew :app:check
+
+      - run:
+          name: Save test results
+          command: |
+            mkdir -p ~/junit/
+            find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} ~/junit/ \;
+          when: always
+      - store_test_results:
+          path: ~/junit
+
+  test_plugins:
+    steps:
+      - run: ./gradlew check -x :app:check
 
       - run:
           name: Save test results
@@ -21,3 +38,7 @@ workflows:
   test_all:
     jobs:
       - build
+      - test_app:
+          requires: [build]
+      - test_plugins:
+          requires: [build]
