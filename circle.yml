@@ -1,14 +1,10 @@
 version: 2
 executorType: machine
 jobs:
-  build:
+  test_app:
     steps:
       - checkout
 
-      - run: ./gradlew build -x check
-
-  test_app:
-    steps:
       - run: ./gradlew :app:check
 
       - run:
@@ -22,6 +18,8 @@ jobs:
 
   test_plugins:
     steps:
+      - checkout
+
       - run: ./gradlew check -x :app:check
 
       - run:
@@ -37,8 +35,5 @@ workflows:
   version: 2
   test_all:
     jobs:
-      - build
-      - test_app:
-          requires: [build]
-      - test_plugins:
-          requires: [build]
+      - test_app
+      - test_plugins
