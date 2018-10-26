@@ -5,7 +5,7 @@ jobs:
     steps:
       - checkout
 
-      - run: ./gradlew build
+      - run: ./gradlew build -x check
 
   test_app:
     steps:
