@@ -3,6 +3,7 @@ package com.github.bsideup.liiklus;
 import com.github.bsideup.liiklus.config.GRPCConfiguration;
 import com.github.bsideup.liiklus.config.LayersConfiguration;
 import com.github.bsideup.liiklus.config.MetricsConfiguration;
+import com.github.bsideup.liiklus.config.RSocketConfiguration;
 import com.github.bsideup.liiklus.monitoring.MetricsCollector;
 import com.github.bsideup.liiklus.plugins.LiiklusPluginManager;
 import io.prometheus.client.exporter.common.TextFormat;
@@ -100,6 +101,7 @@ public class Application {
                         new NettyReactiveWebServerFactory()
                 ),
                 new GRPCConfiguration(),
+                new RSocketConfiguration(),
                 new LayersConfiguration(),
                 new MetricsConfiguration(),
                 (GenericApplicationContext applicationContext) -> {

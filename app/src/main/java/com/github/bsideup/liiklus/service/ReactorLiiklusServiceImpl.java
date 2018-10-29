@@ -16,6 +16,7 @@ import com.google.protobuf.Empty;
 import com.google.protobuf.Timestamp;
 import com.salesforce.reactorgrpc.stub.SubscribeOnlyOnceLifter;
 import io.grpc.Status;
+import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
@@ -40,7 +41,7 @@ import static java.util.Collections.emptyMap;
 @RequiredArgsConstructor
 @FieldDefaults(makeFinal = true)
 @Slf4j
-public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.LiiklusServiceImplBase {
+public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.LiiklusServiceImplBase implements LiiklusService {
 
     private static final NavigableMap<Integer, Map<Integer, Long>> EMPTY_ACKED_OFFSETS = Collections.unmodifiableNavigableMap(new TreeMap<>());
 
@@ -55,6 +56,11 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
     RecordPreProcessorChain recordPreProcessorChain;
 
     RecordPostProcessorChain recordPostProcessorChain;
+
+    @Override
+    public Mono<PublishReply> publish(PublishRequest message, ByteBuf metadata) {
+        return publish(Mono.just(message));
+    }
 
     @Override
     public Mono<PublishReply> publish(Mono<PublishRequest> requestMono) {
@@ -86,6 +92,11 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                 )
                 .log("publish", Level.SEVERE, SignalType.ON_ERROR)
                 .onErrorMap(e -> Status.INTERNAL.withCause(e).withDescription(e.getMessage()).asException());
+    }
+
+    @Override
+    public Flux<SubscribeReply> subscribe(SubscribeRequest message, ByteBuf metadata) {
+        return subscribe(Mono.just(message));
     }
 
     @Override
@@ -177,6 +188,11 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
     }
 
     @Override
+    public Flux<ReceiveReply> receive(ReceiveRequest message, ByteBuf metadata) {
+        return receive(Mono.just(message));
+    }
+
+    @Override
     public Flux<ReceiveReply> receive(Mono<ReceiveRequest> requestMono) {
         return requestMono
                 .flatMapMany(request -> {
@@ -220,6 +236,11 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
     }
 
     @Override
+    public Mono<Empty> ack(AckRequest message, ByteBuf metadata) {
+        return ack(Mono.just(message));
+    }
+
+    @Override
     public Mono<Empty> ack(Mono<AckRequest> request) {
         return request
                 .flatMap(ack -> {
@@ -254,6 +275,11 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                 .thenReturn(Empty.getDefaultInstance())
                 .log("ack", Level.SEVERE, SignalType.ON_ERROR)
                 .onErrorMap(e -> Status.INTERNAL.withCause(e).withDescription(e.getMessage()).asException());
+    }
+
+    @Override
+    public Mono<GetOffsetsReply> getOffsets(GetOffsetsRequest message, ByteBuf metadata) {
+        return getOffsets(Mono.just(message));
     }
 
     @Override
