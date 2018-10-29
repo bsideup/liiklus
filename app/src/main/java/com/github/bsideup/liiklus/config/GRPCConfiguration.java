@@ -1,8 +1,7 @@
 package com.github.bsideup.liiklus.config;
 
 import com.github.bsideup.liiklus.service.ReactorLiiklusServiceImpl;
-import io.grpc.Server;
-import io.grpc.ServerBuilder;
+import io.grpc.*;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -49,6 +48,13 @@ public class GRPCConfiguration implements ApplicationContextInitializer<GenericA
 
                     return serverBuilder
                             .directExecutor()
+                            .intercept(new ServerInterceptor() {
+                                @Override
+                                public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call, Metadata headers, ServerCallHandler<ReqT, RespT> next) {
+                                    call.setCompression("gzip");
+                                    return next.startCall(call, headers);
+                                }
+                            })
                             .addService(applicationContext.getBean(ReactorLiiklusServiceImpl.class))
                             .build();
                 },
