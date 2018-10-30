@@ -63,7 +63,17 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
             dependency 'org.projectlombok:lombok:1.18.2'
 
             dependency 'org.pf4j:pf4j:2.4.0'
-            
+
+            dependencySet(group: 'io.rsocket', version: '0.11.8') {
+                entry 'rsocket-transport-netty'
+                entry 'rsocket-core'
+            }
+
+            dependencySet(group: 'io.rsocket.rpc', version: '0.2.4') {
+                entry 'rsocket-rpc-core'
+                entry 'rsocket-rpc-protobuf'
+            }
+
             dependency 'io.prometheus:simpleclient_common:0.5.0'
 
             dependency 'org.springframework.fu:spring-fu-jafu:0.0.3.BUILD-SNAPSHOT'

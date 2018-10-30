@@ -1,4 +1,6 @@
 dependencies {
+    compileOnly 'org.projectlombok:lombok'
+
     compile project(":protocol")
 
     compile 'io.grpc:grpc-netty'

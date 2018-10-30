@@ -1,9 +1,13 @@
 package com.github.bsideup.liiklus.test;
 
 import com.github.bsideup.liiklus.Application;
-import com.github.bsideup.liiklus.protocol.ReactorLiiklusServiceGrpc;
-import com.github.bsideup.liiklus.protocol.ReactorLiiklusServiceGrpc.ReactorLiiklusServiceStub;
+import com.github.bsideup.liiklus.GRPCLiiklusClient;
+import com.github.bsideup.liiklus.LiiklusClient;
+import com.github.bsideup.liiklus.RSocketLiiklusClient;
 import io.grpc.inprocess.InProcessChannelBuilder;
+import io.rsocket.RSocketFactory;
+import io.rsocket.transport.netty.client.TcpClientTransport;
+import io.rsocket.transport.netty.server.CloseableChannel;
 import lombok.val;
 import org.junit.Rule;
 import org.junit.rules.TestName;
@@ -38,9 +42,7 @@ public abstract class AbstractIntegrationTest {
         return Math.abs(ByteBuffer.wrap(key.getBytes()).hashCode()) % NUM_PARTITIONS;
     }
 
-    protected static ReactorLiiklusServiceStub stub = ReactorLiiklusServiceGrpc.newReactorStub(
-            InProcessChannelBuilder.forName("liiklus").build()
-    );
+    protected static LiiklusClient stub;
 
     protected static final ApplicationContext applicationContext;
 
@@ -53,10 +55,20 @@ public abstract class AbstractIntegrationTest {
         val args = Arrays.asList(
                 "grpc.inProcessServerName=liiklus",
                 "storage.positions.type=MEMORY",
-                "storage.records.type=MEMORY"
+                "storage.records.type=MEMORY",
+                "rsocket.port=0"
         );
 
         applicationContext = Application.start(args.stream().map(it -> "--" + it).toArray(String[]::new));
+
+        boolean useGrpc = false;
+        if (useGrpc) {
+            stub = new GRPCLiiklusClient(InProcessChannelBuilder.forName("liiklus").build());
+        } else {
+            val transport = TcpClientTransport.create(applicationContext.getBean(CloseableChannel.class).address());
+            val rSocket = RSocketFactory.connect().transport(transport).start().block();
+            stub = new RSocketLiiklusClient(rSocket);
+        }
 
         Hooks.onOperatorDebug();
     }
