@@ -40,7 +40,7 @@ public class RSocketConfiguration implements ApplicationContextInitializer<Gener
                     val liiklusService = applicationContext.getBean(ReactorLiiklusServiceImpl.class);
                     return RSocketFactory.receive()
                             .acceptor((setup, sendingSocket) -> Mono.just(new RequestHandlingRSocket(new LiiklusServiceServer(liiklusService, Optional.empty(), Optional.empty()))))
-                            .transport(TcpServerTransport.create(serverProperties.getPort()))
+                            .transport(TcpServerTransport.create(serverProperties.getHost(), serverProperties.getPort()))
                             .start()
                             .block();
                 },
@@ -53,6 +53,8 @@ public class RSocketConfiguration implements ApplicationContextInitializer<Gener
 
     @Data
     static class RSocketServerProperties {
+
+        String host = "0.0.0.0";
 
         int port = 8081;
 
