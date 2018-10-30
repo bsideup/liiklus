@@ -60,7 +60,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
         }
 
         dependencies {
-            dependency 'org.projectlombok:lombok:1.18.2'
+            dependency 'org.projectlombok:lombok:1.18.4'
 
             dependency 'org.pf4j:pf4j:2.4.0'
 
