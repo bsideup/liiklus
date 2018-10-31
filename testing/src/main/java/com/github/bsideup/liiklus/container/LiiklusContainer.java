@@ -12,6 +12,7 @@ public class LiiklusContainer extends GenericContainer<LiiklusContainer> {
 
         withEnv("spring_profiles_active", "gateway");
         withEnv("storage_positions_type", "MEMORY");
+        withEnv("storage_records_type", "MEMORY");
         withExposedPorts(6565);
     }
 
@@ -22,6 +23,7 @@ public class LiiklusContainer extends GenericContainer<LiiklusContainer> {
     public LiiklusContainer withKafka(Network network, String bootstrapServers) {
         withNetwork(network);
         withEnv("kafka_bootstrapServers", bootstrapServers);
+        withEnv("storage_records_type", "KAFKA");
         return self();
     }
 
