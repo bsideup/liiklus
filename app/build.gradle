@@ -12,6 +12,7 @@ dependencies {
     compile 'io.grpc:grpc-netty'
     compile 'io.prometheus:simpleclient_common'
     compile 'org.pf4j:pf4j'
+    compile 'io.rsocket:rsocket-transport-netty'
 
     testCompileOnly 'org.projectlombok:lombok'
     testCompile 'org.springframework.boot:spring-boot-starter-test'
