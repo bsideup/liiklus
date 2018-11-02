@@ -11,10 +11,10 @@ install:
 
 jobs:
   include:
-    - stage: app
+    - stage: test
       env: [ NAME=app ]
       script: ./gradlew :app:check
 
-    - stage: plugins
+    - stage: test
       env: [ NAME=plugins ]
       script: ./gradlew check -x :app:check
