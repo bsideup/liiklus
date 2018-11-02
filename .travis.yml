@@ -1,6 +1,6 @@
 language: java
 jdk:
-  - openjdk11
+  - openjdk10
 
 sudo: required
 services:
