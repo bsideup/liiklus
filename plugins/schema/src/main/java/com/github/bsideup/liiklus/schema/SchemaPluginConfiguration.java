@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonPointer;
 import com.github.bsideup.liiklus.records.RecordPreProcessor;
 import com.google.auto.service.AutoService;
 import lombok.Data;
-import lombok.val;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.support.GenericApplicationContext;
@@ -22,8 +21,8 @@ public class SchemaPluginConfiguration implements ApplicationContextInitializer<
             return;
         }
 
-        val binder = Binder.get(applicationContext.getEnvironment());
-        val schemaProperties = binder.bind("schema", SchemaProperties.class).orElseGet(SchemaProperties::new);
+        var binder = Binder.get(applicationContext.getEnvironment());
+        var schemaProperties = binder.bind("schema", SchemaProperties.class).orElseGet(SchemaProperties::new);
 
         if (schemaProperties.isEnabled()) {
             applicationContext.registerBean(RecordPreProcessor.class, () -> {

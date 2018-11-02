@@ -10,7 +10,6 @@ import com.google.auto.service.AutoService;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.support.GenericApplicationContext;
@@ -28,18 +27,18 @@ public class DynamoDBConfiguration implements ApplicationContextInitializer<Gene
 
     @Override
     public void initialize(GenericApplicationContext applicationContext) {
-        val environment = applicationContext.getEnvironment();
+        var environment = applicationContext.getEnvironment();
 
         if (!"DYNAMODB".equals(environment.getProperty("storage.positions.type"))) {
             return;
         }
 
-        val binder = Binder.get(environment);
-        val dynamoDBProperties = binder.bind("dynamodb", DynamoDBProperties.class).orElseGet(DynamoDBProperties::new);
+        var binder = Binder.get(environment);
+        var dynamoDBProperties = binder.bind("dynamodb", DynamoDBProperties.class).orElseGet(DynamoDBProperties::new);
 
 
         applicationContext.registerBean(PositionsStorage.class, () -> {
-            val builder = AmazonDynamoDBAsyncClient.asyncBuilder();
+            var builder = AmazonDynamoDBAsyncClient.asyncBuilder();
 
             dynamoDBProperties.getEndpoint()
                     .map(endpoint -> new AwsClientBuilder.EndpointConfiguration(
@@ -48,7 +47,7 @@ public class DynamoDBConfiguration implements ApplicationContextInitializer<Gene
                     ))
                     .ifPresent(builder::setEndpointConfiguration);
 
-            val dynamoDB = builder
+            var dynamoDB = builder
                     .withExecutorFactory(() -> Executors.newFixedThreadPool(Schedulers.DEFAULT_POOL_SIZE, new ThreadFactoryBuilder().setNameFormat("aws-dynamodb-%d").build()))
                     .build();
 

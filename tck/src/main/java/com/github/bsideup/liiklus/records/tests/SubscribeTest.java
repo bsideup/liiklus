@@ -2,7 +2,6 @@ package com.github.bsideup.liiklus.records.tests;
 
 import com.github.bsideup.liiklus.records.RecordStorageTestSupport;
 import com.github.bsideup.liiklus.records.RecordsStorage;
-import lombok.val;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.DirectProcessor;
 
@@ -17,17 +16,17 @@ public interface SubscribeTest extends RecordStorageTestSupport {
 
     @Test
     default void testSubscribeWithEarliest() throws Exception {
-        val numRecords = 5;
-        val key = UUID.randomUUID().toString().getBytes();
+        var numRecords = 5;
+        var key = UUID.randomUUID().toString().getBytes();
 
-        val offsetInfos = publishMany(key, numRecords);
+        var offsetInfos = publishMany(key, numRecords);
 
-        val partition = offsetInfos.get(0).getPartition();
+        var partition = offsetInfos.get(0).getPartition();
 
-        val disposeAll = DirectProcessor.<Boolean>create();
+        var disposeAll = DirectProcessor.<Boolean>create();
 
         try {
-            val recordsSoFar = new ArrayList<RecordsStorage.Record>();
+            var recordsSoFar = new ArrayList<RecordsStorage.Record>();
 
             subscribeToPartition(partition, "earliest")
                     .flatMap(RecordsStorage.PartitionSource::getPublisher)
@@ -50,17 +49,17 @@ public interface SubscribeTest extends RecordStorageTestSupport {
 
     @Test
     default void testSubscribeWithLatest() throws Exception {
-        val key = UUID.randomUUID().toString().getBytes();
+        var key = UUID.randomUUID().toString().getBytes();
 
-        val offsetInfos = publishMany(key, 5);
+        var offsetInfos = publishMany(key, 5);
 
-        val partition = offsetInfos.get(0).getPartition();
+        var partition = offsetInfos.get(0).getPartition();
 
-        val disposeAll = DirectProcessor.<Boolean>create();
+        var disposeAll = DirectProcessor.<Boolean>create();
 
         try {
-            val recordsSoFar = new ArrayList<RecordsStorage.Record>();
-            val assigned = new AtomicBoolean(false);
+            var recordsSoFar = new ArrayList<RecordsStorage.Record>();
+            var assigned = new AtomicBoolean(false);
 
             subscribeToPartition(partition, "latest")
                     .doOnNext(__ -> assigned.set(true))
@@ -70,8 +69,8 @@ public interface SubscribeTest extends RecordStorageTestSupport {
 
             await.untilTrue(assigned);
 
-            val envelope = createEnvelope(key);
-            val offsetInfo = publish(envelope);
+            var envelope = createEnvelope(key);
+            var offsetInfo = publish(envelope);
 
             await.untilAsserted(() -> {
                 assertThat(recordsSoFar)
@@ -89,12 +88,12 @@ public interface SubscribeTest extends RecordStorageTestSupport {
 
     @Test
     default void testSubscribeSorting() {
-        val numRecords = 5;
+        var numRecords = 5;
 
-        val offsetInfos = publishMany("key".getBytes(), numRecords);
-        val partition = offsetInfos.get(0).getPartition();
+        var offsetInfos = publishMany("key".getBytes(), numRecords);
+        var partition = offsetInfos.get(0).getPartition();
 
-        val records = subscribeToPartition(partition, "earliest")
+        var records = subscribeToPartition(partition, "earliest")
                 .flatMap(RecordsStorage.PartitionSource::getPublisher)
                 .take(numRecords)
                 .collectList()
@@ -106,12 +105,12 @@ public interface SubscribeTest extends RecordStorageTestSupport {
 
     @Test
     default void testInitialOffsets() throws Exception {
-        val offsetInfos = publishMany("key".getBytes(), 10);
-        val offsetInfo = offsetInfos.get(7);
-        val partition = offsetInfo.getPartition();
-        val position = offsetInfo.getOffset();
+        var offsetInfos = publishMany("key".getBytes(), 10);
+        var offsetInfo = offsetInfos.get(7);
+        var partition = offsetInfo.getPartition();
+        var position = offsetInfo.getOffset();
 
-        val receivedRecords = subscribeToPartition(partition, Optional.of("earliest"), () -> CompletableFuture.completedFuture(Collections.singletonMap(partition, position)))
+        var receivedRecords = subscribeToPartition(partition, Optional.of("earliest"), () -> CompletableFuture.completedFuture(Collections.singletonMap(partition, position)))
                 .flatMap(RecordsStorage.PartitionSource::getPublisher)
                 .take(3)
                 .collectList()
