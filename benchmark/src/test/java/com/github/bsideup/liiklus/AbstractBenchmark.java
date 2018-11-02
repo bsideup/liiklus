@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-public class AbstractBenchmark {
+public abstract class AbstractBenchmark {
 
     protected final MetricRegistry metrics = new MetricRegistry();
 
