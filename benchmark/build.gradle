@@ -1,0 +1,14 @@
+dependencies {
+    testCompileOnly 'org.projectlombok:lombok'
+
+    testCompile project(path: ":app", configuration: 'runtime')
+    testCompile project(":client")
+
+    testCompile 'org.testcontainers:kafka'
+    testCompile 'org.apache.kafka:kafka-clients'
+    testCompile 'io.dropwizard.metrics:metrics-core'
+}
+
+def plugins = rootProject.allprojects.findAll { it.projectDir.parentFile.name == "plugins" }
+
+tasks.testClasses.dependsOn(plugins.collect { it.getTasksByName("jar", true) })

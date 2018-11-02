@@ -37,6 +37,8 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
     apply plugin: 'maven'
     apply plugin: 'java'
 
+    sourceCompatibility = targetCompatibility = 10
+
     test.testLogging {
         displayGranularity 1
         showStackTraces = true

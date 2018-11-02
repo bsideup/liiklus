@@ -4,6 +4,7 @@ include 'app'
 include 'protocol'
 include 'client'
 include 'testing'
+include 'benchmark'
 
 include 'examples/java'
 include 'examples/plugin'
