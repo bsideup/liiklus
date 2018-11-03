@@ -2,7 +2,6 @@ package com.github.bsideup.liiklus;
 
 import com.github.bsideup.liiklus.test.AbstractIntegrationTest;
 import com.google.common.collect.Sets;
-import lombok.val;
 import org.assertj.core.api.AbstractThrowableAssert;
 import org.junit.After;
 import org.junit.Test;
@@ -88,7 +87,7 @@ public class ProfilesTest extends AbstractIntegrationTest {
         }
 
         return assertThatCode(() -> {
-            val args = Stream.of(props)
+            var args = Stream.of(props)
                     .flatMap(Collection::stream)
                     .map(it -> "--" + it)
                     .toArray(String[]::new);

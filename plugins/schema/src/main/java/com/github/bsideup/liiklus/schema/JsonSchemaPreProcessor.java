@@ -14,7 +14,6 @@ import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.ValidationMessage;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 
 import java.io.ByteArrayInputStream;
 import java.net.URL;
@@ -43,9 +42,9 @@ public class JsonSchemaPreProcessor implements RecordPreProcessor {
     public JsonSchemaPreProcessor(URL schemaURL, JsonPointer eventTypePointer, boolean allowDeprecatedProperties) {
         this.eventTypePointer = eventTypePointer;
 
-        val jsonSchemaFactoryBuilder = JsonSchemaFactory.builder(JsonSchemaFactory.getInstance());
+        var jsonSchemaFactoryBuilder = JsonSchemaFactory.builder(JsonSchemaFactory.getInstance());
 
-        val jsonMetaSchemaBuilder = JsonMetaSchema.builder(JsonMetaSchema.getDraftV4().getUri(), JsonMetaSchema.getDraftV4());
+        var jsonMetaSchemaBuilder = JsonMetaSchema.builder(JsonMetaSchema.getDraftV4().getUri(), JsonMetaSchema.getDraftV4());
         if (!allowDeprecatedProperties) {
             jsonMetaSchemaBuilder.addKeyword(new DeprecatedKeyword());
         }
@@ -62,14 +61,14 @@ public class JsonSchemaPreProcessor implements RecordPreProcessor {
     @Override
     public CompletionStage<Envelope> preProcess(Envelope envelope) {
         try {
-            val event = envelope.getRawValue() instanceof ObjectNode
+            var event = envelope.getRawValue() instanceof ObjectNode
                     ? (ObjectNode) envelope.getRawValue()
                     : (ObjectNode) JSON_MAPPER.readTree(new ByteBufferBackedInputStream(envelope.getValue().duplicate()));
 
-            val eventType = event.at(eventTypePointer).asText(null);
+            var eventType = event.at(eventTypePointer).asText(null);
 
             if (eventType == null) {
-                val result = new CompletableFuture<Envelope>();
+                var result = new CompletableFuture<Envelope>();
                 result.completeExceptionally(new IllegalArgumentException(eventTypePointer.toString() + " is null"));
                 return result;
             }
@@ -77,9 +76,9 @@ public class JsonSchemaPreProcessor implements RecordPreProcessor {
             JsonSchema eventSchema = schemas
                     .computeIfAbsent(eventType, key -> {
                         try {
-                            val refSchemaNode = (ObjectNode) schema.getRefSchemaNode("#/events/" + URLEncoder.encode(key, "utf-8"));
+                            var refSchemaNode = (ObjectNode) schema.getRefSchemaNode("#/events/" + URLEncoder.encode(key, "utf-8"));
 
-                            val refSchema = jsonSchemaFactory.getSchema(refSchemaNode);
+                            var refSchema = jsonSchemaFactory.getSchema(refSchemaNode);
                             return Optional.of(refSchema);
                         } catch (Exception e) {
                             log.error("Failed to get schema for {}", key, e);
@@ -88,18 +87,18 @@ public class JsonSchemaPreProcessor implements RecordPreProcessor {
                     })
                     .orElseThrow(() -> new IllegalStateException("No schema for '" + eventType + "'"));
 
-            val validationMessages = eventSchema.validate(event);
+            var validationMessages = eventSchema.validate(event);
 
             if (validationMessages.isEmpty()) {
                 return CompletableFuture.completedFuture(envelope);
             } else {
-                val result = new CompletableFuture<Envelope>();
-                val message = validationMessages.stream().map(ValidationMessage::toString).collect(Collectors.joining("\n"));
+                var result = new CompletableFuture<Envelope>();
+                var message = validationMessages.stream().map(ValidationMessage::toString).collect(Collectors.joining("\n"));
                 result.completeExceptionally(new IllegalStateException(message));
                 return result;
             }
         } catch (Exception e) {
-            val result = new CompletableFuture<Envelope>();
+            var result = new CompletableFuture<Envelope>();
             result.completeExceptionally(e);
             return result;
         }

@@ -4,7 +4,6 @@ import com.github.bsideup.liiklus.records.RecordStorageTestSupport;
 import com.github.bsideup.liiklus.records.RecordsStorage.OffsetInfo;
 import com.github.bsideup.liiklus.records.RecordsStorage.PartitionSource;
 import com.github.bsideup.liiklus.records.RecordsStorage.Subscription;
-import lombok.val;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import reactor.core.Disposable;
@@ -45,14 +44,14 @@ public interface ConsumerGroupTest extends RecordStorageTestSupport {
 
     @Test
     default void testMultipleGroups() throws Exception {
-        val numberOfPartitions = getNumberOfPartitions();
+        var numberOfPartitions = getNumberOfPartitions();
         Assumptions.assumeTrue(numberOfPartitions > 1, "target supports more than 1 partition");
 
-        val groupName = UUID.randomUUID().toString();
+        var groupName = UUID.randomUUID().toString();
 
-        val receivedOffsets = new HashMap<Subscription, Map<Integer, Long>>();
+        var receivedOffsets = new HashMap<Subscription, Map<Integer, Long>>();
 
-        val disposeAll = ReplayProcessor.<Boolean>create(1);
+        var disposeAll = ReplayProcessor.<Boolean>create(1);
 
         Function<Subscription, Disposable> subscribeAndAssign = subscription -> {
             return Flux.from(subscription.getPublisher(() -> CompletableFuture.completedFuture(Collections.emptyMap())))
@@ -67,11 +66,11 @@ public interface ConsumerGroupTest extends RecordStorageTestSupport {
         };
 
         try {
-            val firstSubscription = getTarget().subscribe(getTopic(), groupName, Optional.of("latest"));
-            val secondSubscription = getTarget().subscribe(getTopic(), groupName, Optional.of("latest"));
-            val lastOffsets = new HashMap<Integer, Long>();
+            var firstSubscription = getTarget().subscribe(getTopic(), groupName, Optional.of("latest"));
+            var secondSubscription = getTarget().subscribe(getTopic(), groupName, Optional.of("latest"));
+            var lastOffsets = new HashMap<Integer, Long>();
 
-            val firstDisposable = subscribeAndAssign.apply(firstSubscription);
+            var firstDisposable = subscribeAndAssign.apply(firstSubscription);
             await.untilAsserted(() -> {
                 try {
                     assertThat(receivedOffsets).hasEntrySatisfying(firstSubscription, it -> assertThat(it).isEqualTo(lastOffsets));
@@ -83,7 +82,7 @@ public interface ConsumerGroupTest extends RecordStorageTestSupport {
             });
             receivedOffsets.clear();
 
-            val secondDisposable = subscribeAndAssign.apply(secondSubscription);
+            var secondDisposable = subscribeAndAssign.apply(secondSubscription);
             await.untilAsserted(() -> {
                 try {
                     assertThat(receivedOffsets).hasEntrySatisfying(firstSubscription, it -> assertThat(it).isNotEmpty());
@@ -125,14 +124,14 @@ public interface ConsumerGroupTest extends RecordStorageTestSupport {
 
     @Test
     default void testExclusiveRecordDistribution() throws Exception {
-        val numberOfPartitions = getNumberOfPartitions();
+        var numberOfPartitions = getNumberOfPartitions();
         Assumptions.assumeTrue(numberOfPartitions > 1, "target supports more than 1 partition");
 
-        val groupName = UUID.randomUUID().toString();
+        var groupName = UUID.randomUUID().toString();
 
-        val receivedOffsets = new HashMap<Subscription, Set<Tuple2<Integer, Long>>>();
+        var receivedOffsets = new HashMap<Subscription, Set<Tuple2<Integer, Long>>>();
 
-        val disposeAll = ReplayProcessor.<Boolean>create(1);
+        var disposeAll = ReplayProcessor.<Boolean>create(1);
 
         Function<Subscription, Disposable> subscribeAndAssign = subscription -> {
             return Flux.from(subscription.getPublisher(() -> CompletableFuture.completedFuture(Collections.emptyMap())))
@@ -147,8 +146,8 @@ public interface ConsumerGroupTest extends RecordStorageTestSupport {
         };
 
         try {
-            val firstSubscription = getTarget().subscribe(getTopic(), groupName, Optional.of("earliest"));
-            val secondSubscription = getTarget().subscribe(getTopic(), groupName, Optional.of("earliest"));
+            var firstSubscription = getTarget().subscribe(getTopic(), groupName, Optional.of("earliest"));
+            var secondSubscription = getTarget().subscribe(getTopic(), groupName, Optional.of("earliest"));
 
             subscribeAndAssign.apply(firstSubscription);
             subscribeAndAssign.apply(secondSubscription);

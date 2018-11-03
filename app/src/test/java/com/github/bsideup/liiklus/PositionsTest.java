@@ -3,7 +3,6 @@ package com.github.bsideup.liiklus;
 import com.github.bsideup.liiklus.protocol.*;
 import com.github.bsideup.liiklus.test.AbstractIntegrationTest;
 import com.google.protobuf.ByteString;
-import lombok.val;
 import org.junit.Before;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
@@ -45,10 +44,10 @@ public class PositionsTest extends AbstractIntegrationTest {
 
     @Test
     public void testGetOffsets() throws Exception {
-        val key = UUID.randomUUID().toString();
-        val partition = getPartitionByKey(key);
+        var key = UUID.randomUUID().toString();
+        var partition = getPartitionByKey(key);
 
-        val publishReply = stub.publish(
+        var publishReply = stub.publish(
                 PublishRequest.newBuilder()
                         .setTopic(subscribeRequest.getTopic())
                         .setKey(ByteString.copyFromUtf8(key))
@@ -59,7 +58,7 @@ public class PositionsTest extends AbstractIntegrationTest {
         assertThat(publishReply)
                 .hasFieldOrPropertyWithValue("partition", partition);
 
-        val reportedOffset = publishReply.getOffset();
+        var reportedOffset = publishReply.getOffset();
 
         stub
                 .subscribe(subscribeRequest)
@@ -76,7 +75,7 @@ public class PositionsTest extends AbstractIntegrationTest {
                 )
                 .blockFirst(Duration.ofSeconds(10));
 
-        val getOffsetsReply = stub
+        var getOffsetsReply = stub
                 .getOffsets(
                         GetOffsetsRequest.newBuilder()
                                 .setTopic(subscribeRequest.getTopic())
@@ -91,7 +90,7 @@ public class PositionsTest extends AbstractIntegrationTest {
 
     @Test
     public void testGetEmptyOffsets() throws Exception {
-        val getOffsetsReply = stub
+        var getOffsetsReply = stub
                 .getOffsets(
                         GetOffsetsRequest.newBuilder()
                                 .setTopic(subscribeRequest.getTopic())

@@ -8,7 +8,6 @@ import com.github.bsideup.liiklus.monitoring.MetricsCollector;
 import com.github.bsideup.liiklus.plugins.LiiklusPluginManager;
 import io.prometheus.client.exporter.common.TextFormat;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -65,23 +64,23 @@ public class Application {
     }
 
     public static SpringApplication createSpringApplication(String[] args) {
-        val environment = new StandardEnvironment();
+        var environment = new StandardEnvironment();
         environment.setDefaultProfiles("exporter", "gateway");
         environment.getPropertySources().addFirst(new SimpleCommandLinePropertySource(args));
 
-        val pluginsDir = environment.getProperty("plugins.dir", String.class, "./plugins");
-        val pathMatcher = environment.getProperty("plugins.pathMatcher", String.class, "*.jar");
+        var pluginsDir = environment.getProperty("plugins.dir", String.class, "./plugins");
+        var pathMatcher = environment.getProperty("plugins.pathMatcher", String.class, "*.jar");
 
-        val pluginsRoot = Paths.get(pluginsDir).toAbsolutePath().normalize();
+        var pluginsRoot = Paths.get(pluginsDir).toAbsolutePath().normalize();
         log.info("Loading plugins from '{}' with matcher: '{}'", pluginsRoot, pathMatcher);
 
-        val pluginManager = new LiiklusPluginManager(pluginsRoot, pathMatcher);
+        var pluginManager = new LiiklusPluginManager(pluginsRoot, pathMatcher);
 
         pluginManager.loadPlugins();
         pluginManager.startPlugins();
 
-        val binder = Binder.get(environment);
-        val application = new SpringApplication(Application.class) {
+        var binder = Binder.get(environment);
+        var application = new SpringApplication(Application.class) {
             @Override
             protected void load(ApplicationContext context, Object[] sources) {
                 // We don't want the annotation bean definition reader
@@ -106,17 +105,17 @@ public class Application {
                 new MetricsConfiguration(),
                 (GenericApplicationContext applicationContext) -> {
                     applicationContext.registerBean(RouterFunctionMapping.class, () -> {
-                        val router = RouterFunctions.route();
+                        var router = RouterFunctions.route();
                         router.GET("/health", __ -> ServerResponse.ok().syncBody("OK"));
 
                         if (environment.acceptsProfiles(Profiles.of("exporter"))) {
-                            val metricsCollector = applicationContext.getBean(MetricsCollector.class);
+                            var metricsCollector = applicationContext.getBean(MetricsCollector.class);
                             router.GET("/prometheus", __ -> {
                                 return metricsCollector.collect()
                                         .collectList()
                                         .flatMap(metrics -> {
                                             try {
-                                                val writer = new StringWriter();
+                                                var writer = new StringWriter();
                                                 TextFormat.write004(writer, Collections.enumeration(metrics));
                                                 return ServerResponse.ok()
                                                         .contentType(MediaType.valueOf(TextFormat.CONTENT_TYPE_004))

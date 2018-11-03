@@ -3,7 +3,6 @@ package com.github.bsideup.liiklus.schema.internal;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.networknt.schema.*;
 import lombok.Getter;
-import lombok.val;
 
 import java.text.MessageFormat;
 import java.util.Set;
@@ -20,7 +19,7 @@ public class DeprecatedKeyword extends AbstractKeyword {
             @Override
             public Set<ValidationMessage> validate(JsonNode node, JsonNode rootNode, String at) {
                 if (schemaNode.asBoolean()) {
-                    val message = new ErrorMessageType() {
+                    var message = new ErrorMessageType() {
 
                         @Getter
                         String errorCode = "deprecated";

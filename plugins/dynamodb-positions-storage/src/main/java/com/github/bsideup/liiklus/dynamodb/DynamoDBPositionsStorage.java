@@ -23,7 +23,6 @@ import com.github.bsideup.liiklus.positions.PositionsStorage;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import lombok.val;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
@@ -58,7 +57,7 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
 
     @Override
     public Publisher<Positions> findAll() {
-        val request = new ScanRequest(tableName);
+        var request = new ScanRequest(tableName);
 
         AtomicBoolean done = new AtomicBoolean(false);
 
@@ -90,19 +89,19 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
 
     @Override
     public CompletionStage<Map<Integer, Long>> findAll(String topic, GroupId groupId) {
-        val request = new GetItemRequest()
+        var request = new GetItemRequest()
                 .withTableName(tableName)
                 .withConsistentRead(true)
                 .withKey(toKey(topic, groupId));
 
         return Mono
                 .<GetItemResult>create(sink -> {
-                    val future = dynamoDB.getItemAsync(request, new DefaultAsyncHandler<>(sink));
+                    var future = dynamoDB.getItemAsync(request, new DefaultAsyncHandler<>(sink));
                     sink.onCancel(() -> future.cancel(true));
                 })
                 .<Map<Integer, Long>>handle((result, sink) -> {
                     try {
-                        val positions = toPositions(result.getItem());
+                        var positions = toPositions(result.getItem());
 
                         if (positions == null) {
                             sink.complete();
@@ -120,7 +119,7 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
 
     @Override
     public CompletionStage<Map<Integer, Map<Integer, Long>>> findAllVersionsByGroup(String topic, String groupName) {
-        val request = new QueryRequest(tableName)
+        var request = new QueryRequest(tableName)
                 .addKeyConditionsEntry(HASH_KEY_FIELD, new Condition().withComparisonOperator(EQ).withAttributeValueList(new AttributeValue(topic)))
                 .addKeyConditionsEntry(RANGE_KEY_FIELD, new Condition().withComparisonOperator(BEGINS_WITH).withAttributeValueList(new AttributeValue(groupName)));
 
@@ -158,7 +157,7 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
 
         return Mono
                 .<UpdateItemResult>create(sink -> {
-                    val request = new UpdateItemRequest()
+                    var request = new UpdateItemRequest()
                             .withTableName(tableName)
                             .withKey(key)
                             .withConditionExpression("attribute_exists(positions)")
@@ -170,7 +169,7 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
                                     ":pos", new AttributeValue().withN(Long.toString(position))
                             ));
 
-                    val future = dynamoDB.updateItemAsync(request, new DefaultAsyncHandler<>(sink));
+                    var future = dynamoDB.updateItemAsync(request, new DefaultAsyncHandler<>(sink));
 
                     sink.onCancel(() -> future.cancel(true));
                 })
@@ -183,7 +182,7 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
                     return Mono
                             .<UpdateItemResult>create(sink -> {
                                 // TODO find out how to do field UPSERT with DynamoDB's expressions
-                                val request = new UpdateItemRequest()
+                                var request = new UpdateItemRequest()
                                         .withTableName(tableName)
                                         .withKey(key)
                                         .withAttributeUpdates(singletonMap(
@@ -194,7 +193,7 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
                                         ))
                                         .withExpected(singletonMap("positions", new ExpectedAttributeValue(false)));
 
-                                val future = dynamoDB.updateItemAsync(request, new DefaultAsyncHandler<>(sink));
+                                var future = dynamoDB.updateItemAsync(request, new DefaultAsyncHandler<>(sink));
 
                                 sink.onCancel(() -> future.cancel(true));
                             })
@@ -207,7 +206,7 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
     }
 
     Map<String, AttributeValue> toKey(String topic, GroupId groupId) {
-        val result = new HashMap<String, AttributeValue>();
+        var result = new HashMap<String, AttributeValue>();
         result.put(HASH_KEY_FIELD, new AttributeValue(topic));
         result.put(RANGE_KEY_FIELD, new AttributeValue(groupId.asString()));
         return result;

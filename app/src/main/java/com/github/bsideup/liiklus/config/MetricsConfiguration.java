@@ -1,7 +1,6 @@
 package com.github.bsideup.liiklus.config;
 
 import com.github.bsideup.liiklus.monitoring.MetricsCollector;
-import lombok.val;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.env.Profiles;
@@ -10,7 +9,7 @@ public class MetricsConfiguration implements ApplicationContextInitializer<Gener
 
     @Override
     public void initialize(GenericApplicationContext applicationContext) {
-        val environment = applicationContext.getEnvironment();
+        var environment = applicationContext.getEnvironment();
 
         if (!environment.acceptsProfiles(Profiles.of("exporter"))) {
             return;

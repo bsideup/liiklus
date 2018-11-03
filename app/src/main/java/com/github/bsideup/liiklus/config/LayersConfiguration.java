@@ -3,7 +3,6 @@ package com.github.bsideup.liiklus.config;
 import com.github.bsideup.liiklus.records.RecordPostProcessor;
 import com.github.bsideup.liiklus.records.RecordPreProcessor;
 import lombok.Data;
-import lombok.val;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.support.GenericApplicationContext;
@@ -18,15 +17,15 @@ public class LayersConfiguration implements ApplicationContextInitializer<Generi
 
     @Override
     public void initialize(GenericApplicationContext applicationContext) {
-        val environment = applicationContext.getEnvironment();
+        var environment = applicationContext.getEnvironment();
         if (!environment.acceptsProfiles(Profiles.of("gateway"))) {
             return;
         }
 
-        val binder = Binder.get(environment);
-        val layersProperties = binder.bind("layers", LayersProperties.class).orElseGet(LayersProperties::new);
+        var binder = Binder.get(environment);
+        var layersProperties = binder.bind("layers", LayersProperties.class).orElseGet(LayersProperties::new);
 
-        val comparator = Comparator
+        var comparator = Comparator
                 .comparingInt(it -> layersProperties.getOrders().getOrDefault(it.getClass().getName(), 0))
                 .thenComparing(it -> it.getClass().getName());
 

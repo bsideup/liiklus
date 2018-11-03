@@ -1,0 +1,20 @@
+language: java
+jdk:
+  - openjdk10
+
+sudo: required
+services:
+  - docker
+
+install:
+  - ./gradlew build -x check
+
+jobs:
+  include:
+    - stage: test
+      env: [ NAME=app ]
+      script: ./gradlew :app:check
+
+    - stage: test
+      env: [ NAME=plugins ]
+      script: ./gradlew check -x :app:check

@@ -4,7 +4,6 @@ import com.github.bsideup.liiklus.positions.PositionsStorage;
 import com.github.bsideup.liiklus.positions.inmemory.InMemoryPositionsStorage;
 import com.google.auto.service.AutoService;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.support.GenericApplicationContext;
 
@@ -14,7 +13,7 @@ public class InMemoryPositionsConfiguration implements ApplicationContextInitial
 
     @Override
     public void initialize(GenericApplicationContext applicationContext) {
-        val type = applicationContext.getEnvironment().getProperty("storage.positions.type");
+        var type = applicationContext.getEnvironment().getProperty("storage.positions.type");
         if ("MEMORY".equals(type)) {
             log.warn("\n" +
                     String.format("%0106d", 0).replace("0", "=") + "\n" +

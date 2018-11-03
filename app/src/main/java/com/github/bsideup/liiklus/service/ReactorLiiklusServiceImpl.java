@@ -22,7 +22,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Operators;
@@ -103,7 +102,7 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
     public Flux<SubscribeReply> subscribe(Mono<SubscribeRequest> requestFlux) {
         return requestFlux
                 .flatMapMany(subscribe -> {
-                    val groupVersion = subscribe.getGroupVersion();
+                    var groupVersion = subscribe.getGroupVersion();
                     final GroupId groupId;
                     if (groupVersion != 0) {
                         groupId = GroupId.of(subscribe.getGroup(), groupVersion);
@@ -116,7 +115,7 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                             log.warn("Parsed a legacy group '{}' into {}", group, groupId);
                         });
                     }
-                    val topic = subscribe.getTopic();
+                    var topic = subscribe.getTopic();
 
                     Optional<String> autoOffsetReset;
                     switch (subscribe.getAutoOffsetReset()) {
@@ -130,14 +129,14 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                             autoOffsetReset = Optional.empty();
                     }
 
-                    val subscription = recordsStorage.subscribe(topic, groupId.getName(), autoOffsetReset);
+                    var subscription = recordsStorage.subscribe(topic, groupId.getName(), autoOffsetReset);
 
-                    val sessionId = UUID.randomUUID().toString();
+                    var sessionId = UUID.randomUUID().toString();
 
-                    val storedSubscription = new StoredSubscription(subscription, topic, groupId);
+                    var storedSubscription = new StoredSubscription(subscription, topic, groupId);
                     subscriptions.put(sessionId, storedSubscription);
 
-                    val sourcesByPartition = sources.computeIfAbsent(sessionId, __ -> new ConcurrentHashMap<>());
+                    var sourcesByPartition = sources.computeIfAbsent(sessionId, __ -> new ConcurrentHashMap<>());
 
                     Supplier<CompletionStage<Map<Integer, Long>>> offsetsProvider = () -> {
                         return getOffsetsByGroupName(topic, groupId.getName())
@@ -156,7 +155,7 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
 
                     return Flux.from(subscription.getPublisher(offsetsProvider))
                             .flatMap(sources -> Flux.fromStream(sources).map(source -> {
-                                val partition = source.getPartition();
+                                var partition = source.getPartition();
 
                                 sourcesByPartition.put(
                                         partition,
@@ -201,7 +200,7 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                     // TODO auto ack to the last known offset
                     long lastKnownOffset = request.getLastKnownOffset();
 
-                    val storedSource = sources.containsKey(sessionId) ? sources.get(sessionId).get(partition) : null;
+                    var storedSource = sources.containsKey(sessionId) ? sources.get(sessionId).get(partition) : null;
 
                     if (storedSource == null) {
                         log.warn("Source is null, returning empty Publisher. Request: {}", request.toString().replace("\n", "\\n"));
@@ -255,7 +254,7 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                     int partition;
 
                     if (ack.hasAssignment()) {
-                        val subscription = subscriptions.get(ack.getAssignment().getSessionId());
+                        var subscription = subscriptions.get(ack.getAssignment().getSessionId());
 
                         if (subscription == null) {
                             log.warn("Subscription is null, returning empty Publisher. Request: {}", ack.toString().replace("\n", "\\n"));
