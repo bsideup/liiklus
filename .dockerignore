@@ -6,3 +6,5 @@ Dockerfile
 
 /protocol/generated/
 /examples/**
+
+/benchmark/data.txt*

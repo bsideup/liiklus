@@ -17,4 +17,4 @@ jobs:
 
     - stage: test
       env: [ NAME=plugins ]
-      script: ./gradlew check -x :app:check
+      script: ./gradlew check -x :app:check -x :benchmark:check
