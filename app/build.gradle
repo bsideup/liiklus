@@ -1,5 +1,13 @@
 apply plugin: 'org.springframework.boot'
 
+jar {
+    enabled = true
+}
+
+bootJar {
+    classifier = 'boot'
+}
+
 dependencies {
     compileOnly 'org.projectlombok:lombok'
 

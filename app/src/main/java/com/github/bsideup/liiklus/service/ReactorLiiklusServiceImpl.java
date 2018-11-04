@@ -215,9 +215,9 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                         }
                         return records
                                 .map(consumerRecord -> {
-                                    val envelope = consumerRecord.getEnvelope();
+                                    var envelope = consumerRecord.getEnvelope();
 
-                                    val replyBuilder = ReceiveReply.Record.newBuilder()
+                                    var replyBuilder = ReceiveReply.Record.newBuilder()
                                             .setOffset(consumerRecord.getOffset())
                                             .setReplay(consumerRecord.getOffset() <= latestAckedOffsets.getOrDefault(partition, Optional.empty()).orElse(-1L))
                                             .setTimestamp(Timestamp.newBuilder()

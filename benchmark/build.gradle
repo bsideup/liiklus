@@ -1,7 +1,7 @@
 dependencies {
     testCompileOnly 'org.projectlombok:lombok'
 
-    testCompile project(path: ":app", configuration: 'runtime')
+    testCompile project(":app")
     testCompile project(":client")
 
     testCompile 'org.testcontainers:kafka'

@@ -182,6 +182,7 @@ public class BenchmarkTest extends AbstractBenchmark {
                 ImmutableMap.of(
                         ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers,
                         ProducerConfig.RETRIES_CONFIG, Integer.MAX_VALUE,
+                        ProducerConfig.COMPRESSION_TYPE_CONFIG, "snappy",
                         ProducerConfig.CLIENT_ID_CONFIG, UUID.randomUUID().toString()
                 ),
                 new StringSerializer(),
