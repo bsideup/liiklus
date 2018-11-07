@@ -5,7 +5,10 @@ import com.google.protobuf.Empty;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-public interface LiiklusClient {
+import java.io.Closeable;
+import java.io.IOException;
+
+public interface LiiklusClient extends Closeable {
 
     Mono<PublishReply> publish(PublishRequest message);
 
@@ -16,4 +19,9 @@ public interface LiiklusClient {
     Mono<Empty> ack(AckRequest message);
 
     Mono<GetOffsetsReply> getOffsets(GetOffsetsRequest message);
+
+    @Override
+    default void close() throws IOException {
+
+    }
 }

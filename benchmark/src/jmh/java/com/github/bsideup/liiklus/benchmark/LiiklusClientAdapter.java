@@ -1,5 +1,6 @@
-package com.github.bsideup.liiklus;
+package com.github.bsideup.liiklus.benchmark;
 
+import com.github.bsideup.liiklus.LiiklusClient;
 import com.github.bsideup.liiklus.protocol.*;
 import com.github.bsideup.liiklus.service.ReactorLiiklusServiceImpl;
 import com.google.protobuf.Empty;

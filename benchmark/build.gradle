@@ -1,4 +1,19 @@
+plugins {
+    id "me.champeau.gradle.jmh" version "0.4.7"
+}
+
+jmh {
+    humanOutputFile = null
+}
+
 dependencies {
+    compileOnly 'org.projectlombok:lombok'
+    compileOnly 'com.google.auto.service:auto-service'
+
+    compileOnly project(":api")
+    compileOnly 'org.springframework.boot:spring-boot-starter'
+    compileOnly 'io.projectreactor:reactor-core'
+
     testCompileOnly 'org.projectlombok:lombok'
 
     testCompile project(":app")
@@ -6,9 +21,10 @@ dependencies {
 
     testCompile 'org.testcontainers:kafka'
     testCompile 'org.apache.kafka:kafka-clients'
-    testCompile 'io.dropwizard.metrics:metrics-core'
+
+    jmhCompileOnly 'org.projectlombok:lombok'
 }
 
 def plugins = rootProject.allprojects.findAll { it.projectDir.parentFile.name == "plugins" }
 
-tasks.testClasses.dependsOn(plugins.collect { it.getTasksByName("jar", true) })
+tasks.jmh.dependsOn(plugins.collect { it.getTasksByName("jar", true) })

@@ -4,13 +4,11 @@ import com.github.bsideup.liiklus.service.ReactorLiiklusServiceImpl;
 import io.grpc.*;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.netty.NettyServerBuilder;
-import io.netty.channel.nio.NioEventLoopGroup;
 import lombok.Data;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.env.Profiles;
-import reactor.core.scheduler.Schedulers;
 
 import java.util.concurrent.TimeUnit;
 
@@ -38,22 +36,25 @@ public class GRPCConfiguration implements ApplicationContextInitializer<GenericA
                     if (serverProperties.isEnabled()) {
                         serverBuilder = NettyServerBuilder
                                 .forPort(serverProperties.getPort())
-                                .workerEventLoopGroup(new NioEventLoopGroup(Schedulers.DEFAULT_POOL_SIZE))
+                                // .workerEventLoopGroup(new NioEventLoopGroup(Schedulers.DEFAULT_POOL_SIZE))
                                 .permitKeepAliveTime(150, TimeUnit.SECONDS)
                                 .permitKeepAliveWithoutCalls(true);
                     } else {
                         serverBuilder = InProcessServerBuilder.forName(serverProperties.getInProcessServerName());
                     }
 
+                    var compression = serverProperties.getCompression();
+                    if (compression != null) {
+                        serverBuilder.intercept(new ServerInterceptor() {
+                            @Override
+                            public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call, Metadata headers, ServerCallHandler<ReqT, RespT> next) {
+                                call.setCompression(compression);
+                                return next.startCall(call, headers);
+                            }
+                        });
+                    }
+
                     return serverBuilder
-                            .directExecutor()
-                            .intercept(new ServerInterceptor() {
-                                @Override
-                                public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call, Metadata headers, ServerCallHandler<ReqT, RespT> next) {
-                                    call.setCompression("gzip");
-                                    return next.startCall(call, headers);
-                                }
-                            })
                             .addService(applicationContext.getBean(ReactorLiiklusServiceImpl.class))
                             .build();
                 },
@@ -70,6 +71,8 @@ public class GRPCConfiguration implements ApplicationContextInitializer<GenericA
         int port = 6565;
 
         boolean enabled = true;
+
+        String compression = null;
 
         String inProcessServerName;
 

@@ -1,0 +1,7 @@
+<configuration>
+
+    <include resource="org/springframework/boot/logging/logback/base.xml"/>
+
+    <logger name="org.apache.kafka" level="WARN" />
+    <logger name="io.grpc.netty.NettyServerHandler" level="ERROR" />
+</configuration>
