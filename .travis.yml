@@ -5,6 +5,10 @@ jdk:
 sudo: required
 services:
   - docker
+  
+env:
+  global:
+    - JAVA_TOOL_OPTIONS=-Dhttps.protocols=TLSv1.2
 
 install:
   - ./gradlew build -x check
