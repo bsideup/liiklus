@@ -5,6 +5,7 @@ import org.testcontainers.containers.KafkaContainer;
 
 public class LiiklusContainerTest {
 
+    static final String LATEST_VERSION = "0.7.0";
     static KafkaContainer kafka = new KafkaContainer();
 
     static {
@@ -12,10 +13,18 @@ public class LiiklusContainerTest {
     }
 
     @Test
-    public void shouldStart() {
-        try (LiiklusContainer liiklusContainer = new LiiklusContainer("0.4.5")) {
+    public void shouldStartWithKafkaRecordStorage() {
+        try (LiiklusContainer liiklusContainer = new LiiklusContainer(LATEST_VERSION)) {
 
             liiklusContainer.withKafka(kafka).start();
+        }
+    }
+
+    @Test
+    public void shouldStartDefaultMemoryRecordStorage() {
+        try (LiiklusContainer liiklusContainer = new LiiklusContainer(LATEST_VERSION)) {
+
+            liiklusContainer.start();
         }
     }
 }

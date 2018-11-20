@@ -4,7 +4,6 @@ import com.github.bsideup.liiklus.protocol.*;
 import com.github.bsideup.liiklus.protocol.ReceiveReply.Record;
 import com.github.bsideup.liiklus.test.AbstractIntegrationTest;
 import com.google.protobuf.ByteString;
-import lombok.val;
 import org.junit.Before;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
@@ -45,10 +44,10 @@ public class GroupVersionTest extends AbstractIntegrationTest {
 
     @Test
     public void testCompoundGroupId() throws Exception {
-        val groupVersion = 1;
+        var groupVersion = 1;
 
-        val committedOffset = 3;
-        val nextOffset = committedOffset + 1;
+        var committedOffset = 3;
+        var nextOffset = committedOffset + 1;
 
         ackOffset(groupVersion, committedOffset);
 
@@ -110,8 +109,8 @@ public class GroupVersionTest extends AbstractIntegrationTest {
 
     @Test
     public void testLegacyVersions() throws Exception {
-        val groupVersion = 2;
-        val groupId = groupName + "-v" + groupVersion;
+        var groupVersion = 2;
+        var groupId = groupName + "-v" + groupVersion;
 
         ackOffset(groupVersion - 1, 5);
         ackOffset(groupId, 0, 3);
@@ -133,7 +132,7 @@ public class GroupVersionTest extends AbstractIntegrationTest {
     }
 
     private void ackOffset(String groupName, int groupVersion, long offset) {
-        val ackRequest = AckRequest.newBuilder()
+        var ackRequest = AckRequest.newBuilder()
                 .setTopic(topic)
                 .setGroup(groupName)
                 .setGroupVersion(groupVersion)

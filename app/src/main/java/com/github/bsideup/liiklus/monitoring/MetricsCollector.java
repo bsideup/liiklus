@@ -7,7 +7,6 @@ import io.prometheus.client.GaugeMetricFamily;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import reactor.core.publisher.Flux;
 
 import java.util.Arrays;
@@ -28,12 +27,12 @@ public class MetricsCollector {
                         .index()
                 )
                 .map(tuple -> {
-                    val isLatest = tuple.getT1() == 0;
-                    val positions = tuple.getT2();
+                    var isLatest = tuple.getT1() == 0;
+                    var positions = tuple.getT2();
 
-                    val gauge = new GaugeMetricFamily("liiklus_topic_position", "", Arrays.asList("topic", "groupName", "groupVersion", "isLatest", "partition"));
+                    var gauge = new GaugeMetricFamily("liiklus_topic_position", "", Arrays.asList("topic", "groupName", "groupVersion", "isLatest", "partition"));
 
-                    for (val entry : positions.getValues().entrySet()) {
+                    for (var entry : positions.getValues().entrySet()) {
                         gauge.addMetric(
                                 Arrays.asList(
                                         positions.getTopic(),

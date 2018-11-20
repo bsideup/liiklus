@@ -1,7 +1,6 @@
 package com.github.bsideup.liiklus.plugins;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.pf4j.DefaultPluginLoader;
 import org.pf4j.PluginClassLoader;
 import org.pf4j.PluginClasspath;
@@ -28,14 +27,14 @@ public class LiiklusPluginLoader extends DefaultPluginLoader {
 
     @Override
     protected void loadJars(Path pluginPath, PluginClassLoader pluginClassLoader) {
-        try (val jarFileSystem = FileSystems.newFileSystem(pluginPath, null)) {
-            for (val libDirectory : this.pluginClasspath.getLibDirectories()) {
-                val libPath = jarFileSystem.getPath(libDirectory);
+        try (var jarFileSystem = FileSystems.newFileSystem(pluginPath, null)) {
+            for (var libDirectory : this.pluginClasspath.getLibDirectories()) {
+                var libPath = jarFileSystem.getPath(libDirectory);
                 if (Files.exists(libPath)) {
-                    try (val pathStream = Files.walk(libPath, 1)) {
+                    try (var pathStream = Files.walk(libPath, 1)) {
                         pathStream.filter(Files::isRegularFile).forEach(it -> {
                             try {
-                                val tempFile = Files.createTempFile(it.getFileName().toString(), ".jar");
+                                var tempFile = Files.createTempFile(it.getFileName().toString(), ".jar");
                                 Files.copy(it, tempFile, StandardCopyOption.REPLACE_EXISTING);
                                 pluginClassLoader.addURL(tempFile.toUri().toURL());
                             } catch (Exception e) {

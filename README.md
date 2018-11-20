@@ -57,7 +57,7 @@ The clients must implement the following algorithm:
 ## Java example:
 Example code using [Project Reactor](http://projectreactor.io) and [reactive-grpc](https://github.com/salesforce/reactive-grpc):
 ```java
-val stub = ReactorLiiklusServiceGrpc.newReactorStub(channel);
+var stub = ReactorLiiklusServiceGrpc.newReactorStub(channel);
 stub
     .subscribe(
         SubscribeRequest.newBuilder()

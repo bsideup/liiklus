@@ -37,6 +37,8 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
     apply plugin: 'maven'
     apply plugin: 'java'
 
+    sourceCompatibility = targetCompatibility = 10
+
     test.testLogging {
         displayGranularity 1
         showStackTraces = true
@@ -54,7 +56,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
         imports {
             mavenBom 'org.junit:junit-bom:5.3.1'
             mavenBom org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES
-            mavenBom 'org.testcontainers:testcontainers-bom:1.9.1'
+            mavenBom 'org.testcontainers:testcontainers-bom:1.10.1'
         }
 
         dependencies {
@@ -62,7 +64,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
 
             dependency 'org.pf4j:pf4j:2.4.0'
 
-            dependencySet(group: 'io.rsocket', version: '0.11.11') {
+            dependencySet(group: 'io.rsocket', version: '0.11.12') {
                 entry 'rsocket-transport-netty'
                 entry 'rsocket-core'
             }
@@ -85,7 +87,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
             dependency 'com.google.auto.service:auto-service:1.0-rc4'
 
             // Override kafka-clients' version, otherwise it comes from Spring Boot
-            dependency 'org.apache.kafka:kafka-clients:2.0.0'
+            dependency 'org.apache.kafka:kafka-clients:2.0.1'
 
             dependencySet(group: 'io.grpc', version: '1.15.1') {
                 entry 'grpc-netty'
@@ -98,7 +100,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
 
             dependency 'com.salesforce.servicelibs:reactor-grpc-stub:0.9.0'
 
-            dependency 'org.awaitility:awaitility:3.1.2'
+            dependency 'org.awaitility:awaitility:3.1.3'
         }
     }
 }

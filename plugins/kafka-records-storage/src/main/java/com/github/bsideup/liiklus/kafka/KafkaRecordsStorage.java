@@ -5,7 +5,6 @@ import lombok.SneakyThrows;
 import lombok.Value;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -65,10 +64,10 @@ public class KafkaRecordsStorage implements RecordsStorage {
     public CompletionStage<OffsetInfo> publish(Envelope envelope) {
         String topic = envelope.getTopic();
 
-        val producerRecord = new ProducerRecord<ByteBuffer, ByteBuffer>(topic, envelope.getKey(), envelope.getValue());
+        var producerRecord = new ProducerRecord<ByteBuffer, ByteBuffer>(topic, envelope.getKey(), envelope.getValue());
 
         return Mono.<OffsetInfo>create(sink -> {
-            val future = producer.send(producerRecord, (metadata, exception) -> {
+            var future = producer.send(producerRecord, (metadata, exception) -> {
                 if (exception != null) {
                     sink.error(exception);
                 } else {
@@ -104,7 +103,7 @@ public class KafkaRecordsStorage implements RecordsStorage {
         ) {
             return Flux.create(sink -> {
                 try {
-                    val properties = new HashMap<String, Object>();
+                    var properties = new HashMap<String, Object>();
                     properties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
                     properties.put(ConsumerConfig.GROUP_ID_CONFIG, groupName);
                     properties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
@@ -112,28 +111,28 @@ public class KafkaRecordsStorage implements RecordsStorage {
                     properties.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, Queues.SMALL_BUFFER_SIZE + "");
                     autoOffsetReset.ifPresent(it -> properties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, it));
 
-                    val consumer = new KafkaConsumer<ByteBuffer, ByteBuffer>(
+                    var consumer = new KafkaConsumer<ByteBuffer, ByteBuffer>(
                             properties,
                             new ByteBufferDeserializer(),
                             new ByteBufferDeserializer()
                     );
 
-                    val topics = Arrays.asList(topic);
+                    var topics = Arrays.asList(topic);
 
                     if (!sink.isCancelled()) {
-                        val pausedPartitions = new ConcurrentHashMap<TopicPartition, Boolean>();
+                        var pausedPartitions = new ConcurrentHashMap<TopicPartition, Boolean>();
 
-                        val records = Flux
+                        var records = Flux
                                 .<ConsumerRecords<ByteBuffer, ByteBuffer>>create(recordsSink -> {
                                     try {
                                         while (!sink.isCancelled() && !recordsSink.isCancelled()) {
-                                            for (val entry : pausedPartitions.entrySet()) {
-                                                val topicPartition = entry.getKey();
+                                            for (var entry : pausedPartitions.entrySet()) {
+                                                var topicPartition = entry.getKey();
                                                 if (!consumer.assignment().contains(topicPartition)) {
                                                     continue;
                                                 }
 
-                                                val partitions = Arrays.asList(topicPartition);
+                                                var partitions = Arrays.asList(topicPartition);
                                                 if (entry.getValue()) {
                                                     consumer.pause(partitions);
                                                 } else {
@@ -141,7 +140,7 @@ public class KafkaRecordsStorage implements RecordsStorage {
                                                 }
                                             }
 
-                                            val consumerRecords = consumer.poll(Duration.ofMillis(10));
+                                            var consumerRecords = consumer.poll(Duration.ofMillis(10));
                                             if (!consumerRecords.isEmpty()) {
                                                 recordsSink.next(consumerRecords);
                                             }
@@ -166,20 +165,20 @@ public class KafkaRecordsStorage implements RecordsStorage {
                                 .subscribeOn(KAFKA_POLL_SCHEDULER)
                                 .publish(1);
 
-                        val revocations = new ConcurrentHashMap<Integer, DirectProcessor<Boolean>>();
+                        var revocations = new ConcurrentHashMap<Integer, DirectProcessor<Boolean>>();
                         consumer.subscribe(topics, new ConsumerRebalanceListener() {
 
                             @Override
                             @SneakyThrows
                             public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
-                                for (val topicPartition : partitions) {
+                                for (var topicPartition : partitions) {
                                     revocations.putIfAbsent(topicPartition.partition(), DirectProcessor.create());
                                     pausedPartitions.put(topicPartition, true);
                                 }
 
-                                val offsets = offsetsProvider.get().toCompletableFuture().get(10, TimeUnit.SECONDS);
+                                var offsets = offsetsProvider.get().toCompletableFuture().get(10, TimeUnit.SECONDS);
 
-                                for (val topicPartition : consumer.assignment()) {
+                                for (var topicPartition : consumer.assignment()) {
                                     int partition = topicPartition.partition();
                                     if (offsets.containsKey(partition)) {
                                         Long offset = offsets.get(partition);
@@ -199,7 +198,7 @@ public class KafkaRecordsStorage implements RecordsStorage {
                                         AtomicLong requests = new AtomicLong();
                                         return records
                                                 .flatMapIterable(it -> {
-                                                    val recordsOfPartition = it.records(topicPartition);
+                                                    var recordsOfPartition = it.records(topicPartition);
                                                     if (!recordsOfPartition.isEmpty()) {
                                                         pausedPartitions.put(topicPartition, requests.addAndGet(-recordsOfPartition.size()) <= 0);
                                                     }
@@ -223,7 +222,7 @@ public class KafkaRecordsStorage implements RecordsStorage {
 
                             @Override
                             public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
-                                for (val partition : partitions) {
+                                for (var partition : partitions) {
                                     revocations.get(partition.partition()).onNext(true);
                                 }
                             }

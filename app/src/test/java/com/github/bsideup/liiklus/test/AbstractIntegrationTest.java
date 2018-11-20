@@ -8,7 +8,6 @@ import io.grpc.inprocess.InProcessChannelBuilder;
 import io.rsocket.RSocketFactory;
 import io.rsocket.transport.netty.client.TcpClientTransport;
 import io.rsocket.transport.netty.server.CloseableChannel;
-import lombok.val;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 import org.springframework.context.ApplicationContext;
@@ -52,7 +51,7 @@ public abstract class AbstractIntegrationTest {
         System.setProperty("plugins.dir", "../plugins");
         System.setProperty("plugins.pathMatcher", "*/build/libs/*.jar");
 
-        val args = Arrays.asList(
+        var args = Arrays.asList(
                 "grpc.inProcessServerName=liiklus",
                 "storage.positions.type=MEMORY",
                 "storage.records.type=MEMORY",
@@ -65,8 +64,8 @@ public abstract class AbstractIntegrationTest {
         if (useGrpc) {
             stub = new GRPCLiiklusClient(InProcessChannelBuilder.forName("liiklus").build());
         } else {
-            val transport = TcpClientTransport.create(applicationContext.getBean(CloseableChannel.class).address());
-            val rSocket = RSocketFactory.connect().transport(transport).start().block();
+            var transport = TcpClientTransport.create(applicationContext.getBean(CloseableChannel.class).address());
+            var rSocket = RSocketFactory.connect().transport(transport).start().block();
             stub = new RSocketLiiklusClient(rSocket);
         }
 

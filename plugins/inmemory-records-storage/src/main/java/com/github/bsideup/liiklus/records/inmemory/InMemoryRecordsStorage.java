@@ -5,7 +5,6 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.experimental.FieldDefaults;
-import lombok.val;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxProcessor;
@@ -49,16 +48,16 @@ public class InMemoryRecordsStorage implements RecordsStorage {
 
     @Override
     public CompletionStage<OffsetInfo> publish(Envelope envelope) {
-        val topic = envelope.getTopic();
-        val storedTopic = state.computeIfAbsent(topic, __ -> new StoredTopic(numberOfPartitions));
+        var topic = envelope.getTopic();
+        var storedTopic = state.computeIfAbsent(topic, __ -> new StoredTopic(numberOfPartitions));
 
-        val partition = partitionByKey(envelope.getKey(), numberOfPartitions);
-        val storedPartition = storedTopic.getPartitions().computeIfAbsent(
+        var partition = partitionByKey(envelope.getKey(), numberOfPartitions);
+        var storedPartition = storedTopic.getPartitions().computeIfAbsent(
                 partition,
                 __ -> new StoredTopic.StoredPartition()
         );
 
-        val offset = storedPartition.getNextOffset().getAndIncrement();
+        var offset = storedPartition.getNextOffset().getAndIncrement();
         storedPartition.getProcessor().onNext(new StoredTopic.StoredPartition.StoredRecord(
                 offset,
                 envelope.getKey(),
@@ -74,14 +73,14 @@ public class InMemoryRecordsStorage implements RecordsStorage {
 
     @Override
     public Subscription subscribe(String topic, String groupName, Optional<String> autoOffsetReset) {
-        val storedTopic = state.computeIfAbsent(topic, __ -> new StoredTopic(numberOfPartitions));
+        var storedTopic = state.computeIfAbsent(topic, __ -> new StoredTopic(numberOfPartitions));
         return new Subscription() {
 
             @Override
             public Publisher<Stream<? extends PartitionSource>> getPublisher(
                     Supplier<CompletionStage<Map<Integer, Long>>> offsetsProvider
             ) {
-                val subscription = this;
+                var subscription = this;
                 return Flux.create(sink -> {
 
                     sink.onCancel(() -> storedTopic.revoke(groupName, this));
@@ -101,7 +100,7 @@ public class InMemoryRecordsStorage implements RecordsStorage {
 
                         @Override
                         public Publisher<Record> getPublisher() {
-                            val storedPartition = storedTopic.getPartitions().computeIfAbsent(
+                            var storedPartition = storedTopic.getPartitions().computeIfAbsent(
                                     partition,
                                     __ -> new StoredTopic.StoredPartition()
                             );
@@ -151,13 +150,13 @@ public class InMemoryRecordsStorage implements RecordsStorage {
         ConcurrentMap<String, ConcurrentMap<Subscription, Set<Integer>>> groupAssignments = new ConcurrentHashMap<>();
 
         synchronized void assign(String groupName, Subscription subscription) {
-            val groupAssignment = groupAssignments.computeIfAbsent(groupName, ___ -> new ConcurrentHashMap<>());
+            var groupAssignment = groupAssignments.computeIfAbsent(groupName, ___ -> new ConcurrentHashMap<>());
             groupAssignment.put(subscription, Collections.emptySet());
             rebalance(groupName);
         }
 
         synchronized void revoke(String groupName, Subscription subscription) {
-            val groupAssignment = groupAssignments.computeIfAbsent(groupName, ___ -> new ConcurrentHashMap<>());
+            var groupAssignment = groupAssignments.computeIfAbsent(groupName, ___ -> new ConcurrentHashMap<>());
             groupAssignment.remove(subscription);
             rebalance(groupName);
         }
@@ -167,12 +166,12 @@ public class InMemoryRecordsStorage implements RecordsStorage {
         }
 
         private synchronized void rebalance(String groupName) {
-            val subscriptions = groupAssignments.get(groupName);
+            var subscriptions = groupAssignments.get(groupName);
 
-            val i = new AtomicLong();
+            var i = new AtomicLong();
             int subscriptionsNum = subscriptions.size();
-            for (val subscription : subscriptions.keySet()) {
-                val entryNum = i.getAndIncrement();
+            for (var subscription : subscriptions.keySet()) {
+                var entryNum = i.getAndIncrement();
                 subscriptions.put(
                         subscription,
                         IntStream
