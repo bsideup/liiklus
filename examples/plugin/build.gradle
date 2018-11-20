@@ -3,6 +3,9 @@ plugins {
     id "io.spring.dependency-management"
 }
 
+
+sourceCompatibility = targetCompatibility = 8
+
 jar {
     baseName = "example-plugin"
     manifest {
@@ -32,15 +35,17 @@ dependencyManagement {
 
     imports {
         mavenBom org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES
-        mavenBom 'org.testcontainers:testcontainers-bom:1.9.1'
+        mavenBom 'org.testcontainers:testcontainers-bom:1.10.1'
     }
 
     dependencies {
-        dependency 'com.github.bsideup.liiklus:api:0.3.0'
-        dependency 'com.github.bsideup.liiklus:protocol:0.3.0'
-        dependency 'io.grpc:grpc-netty:1.16.0'
+        dependencySet(group: "com.github.bsideup.liiklus", version: "0.7.0") {
+            entry "api"
+            entry "client"
+            entry "testing"
+        }
 
-        dependency 'org.projectlombok:lombok:1.16.8'
+        dependency 'org.projectlombok:lombok:1.18.4'
         dependency 'com.google.auto.service:auto-service:1.0-rc4'
     }
 }
@@ -57,7 +62,7 @@ dependencies {
 
     testCompile 'org.testcontainers:kafka'
     testCompile 'ch.qos.logback:logback-classic:'
-    testCompile "com.github.bsideup.liiklus:protocol"
-    testCompile "io.grpc:grpc-netty"
+    testCompile "com.github.bsideup.liiklus:client"
+    testCompile "com.github.bsideup.liiklus:testing"
     testCompile 'org.assertj:assertj-core'
 }

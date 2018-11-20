@@ -1,23 +1,17 @@
 package com.github.bsideup.liiklus.plugins.example.config;
 
-import com.github.bsideup.liiklus.config.LiiklusConfiguration;
 import com.github.bsideup.liiklus.plugins.example.ExampleRecordPostProcessor;
 import com.github.bsideup.liiklus.plugins.example.ExampleRecordPreProcessor;
 import com.google.auto.service.AutoService;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.context.ApplicationContextInitializer;
+import org.springframework.context.support.GenericApplicationContext;
 
-@AutoService(LiiklusConfiguration.class)
-@Configuration
-public class ExamplePluginConfiguration implements LiiklusConfiguration {
+@AutoService(ApplicationContextInitializer.class)
+public class ExamplePluginConfiguration implements ApplicationContextInitializer<GenericApplicationContext> {
 
-    @Bean
-    ExampleRecordPreProcessor encryptionRecordPreProcessor() {
-        return new ExampleRecordPreProcessor();
-    }
-
-    @Bean
-    ExampleRecordPostProcessor exampleRecordPostProcessor() {
-        return new ExampleRecordPostProcessor();
+    @Override
+    public void initialize(GenericApplicationContext applicationContext) {
+        applicationContext.registerBean(ExampleRecordPreProcessor.class);
+        applicationContext.registerBean(ExampleRecordPostProcessor.class);
     }
 }

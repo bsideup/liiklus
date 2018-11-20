@@ -1,11 +1,9 @@
 buildscript {
     repositories {
         jcenter()
-        maven { url "https://repo.spring.io/snapshot" }
-        maven { url "https://repo.spring.io/milestone" }
     }
     dependencies {
-        classpath("org.springframework.boot:spring-boot-gradle-plugin:2.1.0.RC1")
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:2.1.0.RELEASE")
     }
 }
 
@@ -14,6 +12,13 @@ plugins {
 }
 
 allprojects {
+    repositories {
+        jcenter()
+        maven { url "https://repo.spring.io/snapshot" }
+        maven { url "https://repo.spring.io/milestone" }
+        maven { url 'https://jitpack.io' }
+    }
+
     task downloadDependencies {
         doLast {
             configurations.all {
@@ -32,12 +37,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
     apply plugin: 'maven'
     apply plugin: 'java'
 
-    repositories {
-        jcenter()
-        maven { url "https://repo.spring.io/snapshot" }
-        maven { url "https://repo.spring.io/milestone" }
-        maven { url 'https://jitpack.io' }
-    }
+    sourceCompatibility = targetCompatibility = 10
 
     test.testLogging {
         displayGranularity 1
@@ -56,14 +56,24 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
         imports {
             mavenBom 'org.junit:junit-bom:5.3.1'
             mavenBom org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES
-            mavenBom 'org.testcontainers:testcontainers-bom:1.9.1'
+            mavenBom 'org.testcontainers:testcontainers-bom:1.10.1'
         }
 
         dependencies {
-            dependency 'org.projectlombok:lombok:1.18.2'
+            dependency 'org.projectlombok:lombok:1.18.4'
 
             dependency 'org.pf4j:pf4j:2.4.0'
-            
+
+            dependencySet(group: 'io.rsocket', version: '0.11.12') {
+                entry 'rsocket-transport-netty'
+                entry 'rsocket-core'
+            }
+
+            dependencySet(group: 'io.rsocket.rpc', version: '0.2.5') {
+                entry 'rsocket-rpc-core'
+                entry 'rsocket-rpc-protobuf'
+            }
+
             dependency 'io.prometheus:simpleclient_common:0.5.0'
 
             dependency 'org.springframework.fu:spring-fu-jafu:0.0.3.BUILD-SNAPSHOT'
@@ -77,7 +87,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
             dependency 'com.google.auto.service:auto-service:1.0-rc4'
 
             // Override kafka-clients' version, otherwise it comes from Spring Boot
-            dependency 'org.apache.kafka:kafka-clients:2.0.0'
+            dependency 'org.apache.kafka:kafka-clients:2.0.1'
 
             dependencySet(group: 'io.grpc', version: '1.16.0') {
                 entry 'grpc-netty'
@@ -90,7 +100,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
 
             dependency 'com.salesforce.servicelibs:reactor-grpc-stub:0.9.0'
 
-            dependency 'org.awaitility:awaitility:3.1.2'
+            dependency 'org.awaitility:awaitility:3.1.3'
         }
     }
 }

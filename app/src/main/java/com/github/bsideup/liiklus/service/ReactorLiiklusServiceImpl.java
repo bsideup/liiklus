@@ -16,12 +16,12 @@ import com.google.protobuf.Empty;
 import com.google.protobuf.Timestamp;
 import com.salesforce.reactorgrpc.stub.SubscribeOnlyOnceLifter;
 import io.grpc.Status;
+import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Operators;
@@ -40,7 +40,7 @@ import static java.util.Collections.emptyMap;
 @RequiredArgsConstructor
 @FieldDefaults(makeFinal = true)
 @Slf4j
-public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.LiiklusServiceImplBase {
+public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.LiiklusServiceImplBase implements LiiklusService {
 
     private static final NavigableMap<Integer, Map<Integer, Long>> EMPTY_ACKED_OFFSETS = Collections.unmodifiableNavigableMap(new TreeMap<>());
 
@@ -55,6 +55,11 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
     RecordPreProcessorChain recordPreProcessorChain;
 
     RecordPostProcessorChain recordPostProcessorChain;
+
+    @Override
+    public Mono<PublishReply> publish(PublishRequest message, ByteBuf metadata) {
+        return publish(Mono.just(message));
+    }
 
     @Override
     public Mono<PublishReply> publish(Mono<PublishRequest> requestMono) {
@@ -89,10 +94,15 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
     }
 
     @Override
+    public Flux<SubscribeReply> subscribe(SubscribeRequest message, ByteBuf metadata) {
+        return subscribe(Mono.just(message));
+    }
+
+    @Override
     public Flux<SubscribeReply> subscribe(Mono<SubscribeRequest> requestFlux) {
         return requestFlux
                 .flatMapMany(subscribe -> {
-                    val groupVersion = subscribe.getGroupVersion();
+                    var groupVersion = subscribe.getGroupVersion();
                     final GroupId groupId;
                     if (groupVersion != 0) {
                         groupId = GroupId.of(subscribe.getGroup(), groupVersion);
@@ -105,7 +115,7 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                             log.warn("Parsed a legacy group '{}' into {}", group, groupId);
                         });
                     }
-                    val topic = subscribe.getTopic();
+                    var topic = subscribe.getTopic();
 
                     Optional<String> autoOffsetReset;
                     switch (subscribe.getAutoOffsetReset()) {
@@ -119,14 +129,14 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                             autoOffsetReset = Optional.empty();
                     }
 
-                    val subscription = recordsStorage.subscribe(topic, groupId.getName(), autoOffsetReset);
+                    var subscription = recordsStorage.subscribe(topic, groupId.getName(), autoOffsetReset);
 
-                    val sessionId = UUID.randomUUID().toString();
+                    var sessionId = UUID.randomUUID().toString();
 
-                    val storedSubscription = new StoredSubscription(subscription, topic, groupId);
+                    var storedSubscription = new StoredSubscription(subscription, topic, groupId);
                     subscriptions.put(sessionId, storedSubscription);
 
-                    val sourcesByPartition = sources.computeIfAbsent(sessionId, __ -> new ConcurrentHashMap<>());
+                    var sourcesByPartition = sources.computeIfAbsent(sessionId, __ -> new ConcurrentHashMap<>());
 
                     Supplier<CompletionStage<Map<Integer, Long>>> offsetsProvider = () -> {
                         return getOffsetsByGroupName(topic, groupId.getName())
@@ -145,7 +155,7 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
 
                     return Flux.from(subscription.getPublisher(offsetsProvider))
                             .flatMap(sources -> Flux.fromStream(sources).map(source -> {
-                                val partition = source.getPartition();
+                                var partition = source.getPartition();
 
                                 sourcesByPartition.put(
                                         partition,
@@ -177,6 +187,11 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
     }
 
     @Override
+    public Flux<ReceiveReply> receive(ReceiveRequest message, ByteBuf metadata) {
+        return receive(Mono.just(message));
+    }
+
+    @Override
     public Flux<ReceiveReply> receive(Mono<ReceiveRequest> requestMono) {
         return requestMono
                 .flatMapMany(request -> {
@@ -185,7 +200,7 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                     // TODO auto ack to the last known offset
                     long lastKnownOffset = request.getLastKnownOffset();
 
-                    val storedSource = sources.containsKey(sessionId) ? sources.get(sessionId).get(partition) : null;
+                    var storedSource = sources.containsKey(sessionId) ? sources.get(sessionId).get(partition) : null;
 
                     if (storedSource == null) {
                         log.warn("Source is null, returning empty Publisher. Request: {}", request.toString().replace("\n", "\\n"));
@@ -220,6 +235,11 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
     }
 
     @Override
+    public Mono<Empty> ack(AckRequest message, ByteBuf metadata) {
+        return ack(Mono.just(message));
+    }
+
+    @Override
     public Mono<Empty> ack(Mono<AckRequest> request) {
         return request
                 .flatMap(ack -> {
@@ -228,7 +248,7 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                     int partition;
 
                     if (ack.hasAssignment()) {
-                        val subscription = subscriptions.get(ack.getAssignment().getSessionId());
+                        var subscription = subscriptions.get(ack.getAssignment().getSessionId());
 
                         if (subscription == null) {
                             log.warn("Subscription is null, returning empty Publisher. Request: {}", ack.toString().replace("\n", "\\n"));
@@ -254,6 +274,11 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                 .thenReturn(Empty.getDefaultInstance())
                 .log("ack", Level.SEVERE, SignalType.ON_ERROR)
                 .onErrorMap(e -> Status.INTERNAL.withCause(e).withDescription(e.getMessage()).asException());
+    }
+
+    @Override
+    public Mono<GetOffsetsReply> getOffsets(GetOffsetsRequest message, ByteBuf metadata) {
+        return getOffsets(Mono.just(message));
     }
 
     @Override

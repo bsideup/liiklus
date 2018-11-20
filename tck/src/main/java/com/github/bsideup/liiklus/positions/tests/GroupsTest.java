@@ -3,7 +3,6 @@ package com.github.bsideup.liiklus.positions.tests;
 import com.github.bsideup.liiklus.positions.GroupId;
 import com.github.bsideup.liiklus.positions.PositionsStorage;
 import com.github.bsideup.liiklus.positions.PositionsStorageTestSupport;
-import lombok.val;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
@@ -21,10 +20,10 @@ public interface GroupsTest extends PositionsStorageTestSupport {
     @Test
     @DisplayName("Should return all groups and topics")
     default void shouldReturnMultipleGroups() {
-        val topic = UUID.randomUUID().toString();
-        val topic2 = UUID.randomUUID().toString();
-        val groupId = GroupId.ofString(UUID.randomUUID().toString());
-        val groupId2 = GroupId.ofString(UUID.randomUUID().toString());
+        var topic = UUID.randomUUID().toString();
+        var topic2 = UUID.randomUUID().toString();
+        var groupId = GroupId.ofString(UUID.randomUUID().toString());
+        var groupId2 = GroupId.ofString(UUID.randomUUID().toString());
 
         await(getStorage().update(topic, groupId, 2, 2));
         await(getStorage().update(topic, groupId2, 2, 3));
@@ -57,10 +56,10 @@ public interface GroupsTest extends PositionsStorageTestSupport {
     @Test
     @DisplayName("Should return all versions by group name")
     default void shouldReturnAllVersionsByGroup() {
-        val topic = UUID.randomUUID().toString();
-        val groupName = UUID.randomUUID().toString();
-        val groupId1 = GroupId.of(groupName, 1);
-        val groupId2 = GroupId.of(groupName, 2);
+        var topic = UUID.randomUUID().toString();
+        var groupName = UUID.randomUUID().toString();
+        var groupId1 = GroupId.of(groupName, 1);
+        var groupId2 = GroupId.of(groupName, 2);
 
         await(getStorage().update(topic, groupId1, 2, 2));
         await(getStorage().update(topic, groupId2, 2, 3));

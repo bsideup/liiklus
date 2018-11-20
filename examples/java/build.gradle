@@ -46,9 +46,9 @@ repositories {
 }
 
 dependencies {
-    compileOnly 'org.projectlombok:lombok:1.16.20'
+    compileOnly 'org.projectlombok:lombok:1.18.4'
 
-    compile 'org.testcontainers:kafka:1.9.1'
+    compile 'org.testcontainers:kafka:1.10.1'
 
     compile 'org.apache.commons:commons-math3:3.6.1'
 

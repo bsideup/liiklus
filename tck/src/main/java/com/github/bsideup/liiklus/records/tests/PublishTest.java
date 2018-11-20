@@ -2,7 +2,6 @@ package com.github.bsideup.liiklus.records.tests;
 
 import com.github.bsideup.liiklus.records.RecordStorageTestSupport;
 import com.github.bsideup.liiklus.records.RecordsStorage;
-import lombok.val;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -13,9 +12,9 @@ public interface PublishTest extends RecordStorageTestSupport {
 
     @Test
     default void testPublish() throws Exception {
-        val record = createEnvelope("key".getBytes());
+        var record = createEnvelope("key".getBytes());
 
-        val offsetInfo = publish(record);
+        var offsetInfo = publish(record);
 
         assertThat(offsetInfo)
                 .satisfies(info -> {
@@ -24,7 +23,7 @@ public interface PublishTest extends RecordStorageTestSupport {
                     assertThat(info.getOffset()).as("offset").isNotNegative();
                 });
 
-        val receivedRecord = subscribeToPartition(offsetInfo.getPartition())
+        var receivedRecord = subscribeToPartition(offsetInfo.getPartition())
                 .flatMap(RecordsStorage.PartitionSource::getPublisher)
                 .blockFirst(Duration.ofSeconds(10));
 
@@ -35,13 +34,13 @@ public interface PublishTest extends RecordStorageTestSupport {
 
     @Test
     default void testPublishMany() {
-        val numRecords = 5;
+        var numRecords = 5;
 
-        val offsetInfos = publishMany("key".getBytes(), numRecords);
+        var offsetInfos = publishMany("key".getBytes(), numRecords);
 
         assertThat(offsetInfos).hasSize(numRecords);
 
-        val partition = offsetInfos.get(0).getPartition();
+        var partition = offsetInfos.get(0).getPartition();
 
         assertThat(offsetInfos).extracting(RecordsStorage.OffsetInfo::getPartition).containsOnly(partition);
     }

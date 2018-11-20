@@ -1,0 +1,24 @@
+language: java
+jdk:
+  - openjdk11
+
+sudo: required
+services:
+  - docker
+  
+env:
+  global:
+    - JAVA_TOOL_OPTIONS=-Dhttps.protocols=TLSv1.2
+
+install:
+  - ./gradlew build -x check
+
+jobs:
+  include:
+    - stage: test
+      env: [ NAME=app ]
+      script: ./gradlew :app:check
+
+    - stage: test
+      env: [ NAME=plugins ]
+      script: ./gradlew check -x :app:check

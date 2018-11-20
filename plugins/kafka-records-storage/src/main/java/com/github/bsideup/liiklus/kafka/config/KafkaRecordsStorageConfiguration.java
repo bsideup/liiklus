@@ -4,7 +4,6 @@ import com.github.bsideup.liiklus.kafka.KafkaRecordsStorage;
 import com.github.bsideup.liiklus.records.RecordsStorage;
 import com.google.auto.service.AutoService;
 import lombok.Data;
-import lombok.val;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.support.GenericApplicationContext;
@@ -19,7 +18,7 @@ public class KafkaRecordsStorageConfiguration implements ApplicationContextIniti
 
     @Override
     public void initialize(GenericApplicationContext applicationContext) {
-        val environment = applicationContext.getEnvironment();
+        var environment = applicationContext.getEnvironment();
 
         if (!environment.acceptsProfiles(Profiles.of("gateway"))) {
             return;
@@ -29,9 +28,9 @@ public class KafkaRecordsStorageConfiguration implements ApplicationContextIniti
             return;
         }
 
-        val binder = Binder.get(environment);
+        var binder = Binder.get(environment);
 
-        val kafkaProperties = binder.bind("kafka", KafkaProperties.class).get();
+        var kafkaProperties = binder.bind("kafka", KafkaProperties.class).get();
 
         applicationContext.registerBean(RecordsStorage.class, () -> {
             return new KafkaRecordsStorage(kafkaProperties.getBootstrapServers());

@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonPointer;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.bsideup.liiklus.records.RecordsStorage.Envelope;
 import lombok.SneakyThrows;
-import lombok.val;
 import org.junit.jupiter.api.Test;
 
 import java.net.URL;
@@ -19,7 +18,7 @@ class JsonSchemaPreProcessorTest {
 
     @Test
     void testBasicValidation() {
-        val processor = getProcessor();
+        var processor = getProcessor();
 
         assertThatThrownBy(() -> preProcess(processor, "simpleEvent"))
                 .hasMessageContaining("$.requiredField: is missing but it is required");
@@ -49,7 +48,7 @@ class JsonSchemaPreProcessorTest {
 
     @Test
     void testTypeWithSlashes() {
-        val processor = getProcessor();
+        var processor = getProcessor();
 
         preProcess(processor, "event/type/with/slashes", it -> it.put("foo", "bar"));
 
@@ -59,7 +58,7 @@ class JsonSchemaPreProcessorTest {
 
     @Test
     void testMissingEventType() {
-        val processor = getProcessor();
+        var processor = getProcessor();
 
         assertThatThrownBy(() -> preProcess(processor, null))
                 .hasMessageContaining("/eventType is null");

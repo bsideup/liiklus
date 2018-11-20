@@ -2,7 +2,6 @@ package com.github.bsideup.liiklus.plugins;
 
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import lombok.val;
 import org.pf4j.PluginRepository;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
@@ -20,10 +19,10 @@ public class LiiklusPluginRepository implements PluginRepository {
     @Override
     @SneakyThrows
     public List<Path> getPluginPaths() {
-        val pluginsRoot = liiklusPluginManager.getPluginsRoot();
-        val pathMatcher = liiklusPluginManager.getPluginsPathMatcher();
+        var pluginsRoot = liiklusPluginManager.getPluginsRoot();
+        var pathMatcher = liiklusPluginManager.getPluginsPathMatcher();
 
-        val locationPattern = "file:" + pluginsRoot.resolve(pathMatcher).toString();
+        var locationPattern = "file:" + pluginsRoot.resolve(pathMatcher).toString();
         return Stream.of(new PathMatchingResourcePatternResolver().getResources(locationPattern))
                 .map(it -> {
                     try {
