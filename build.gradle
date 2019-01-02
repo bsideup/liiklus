@@ -14,7 +14,6 @@ plugins {
 allprojects {
     repositories {
         jcenter()
-        maven { url "https://repo.spring.io/snapshot" }
         maven { url "https://repo.spring.io/milestone" }
         maven { url 'https://jitpack.io' }
     }
@@ -76,7 +75,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
 
             dependency 'io.prometheus:simpleclient_common:0.5.0'
 
-            dependency 'org.springframework.fu:spring-fu-jafu:0.0.4.BUILD-SNAPSHOT'
+            dependency 'org.springframework.fu:spring-fu-jafu:0.0.3'
 
             dependencySet(group: 'com.google.protobuf', version: '3.6.1') {
                 entry 'protoc'
