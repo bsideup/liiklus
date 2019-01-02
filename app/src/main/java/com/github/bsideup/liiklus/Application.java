@@ -45,14 +45,15 @@ public class Application {
     static {
         // TODO https://github.com/grpc/grpc-java/issues/4317
         // https://github.com/netty/netty/issues/5930
-        System.setProperty("io.netty.recycler.maxCapacity", "0");
         System.setProperty("io.netty.allocator.useCacheForAllThreads", "false");
-        System.setProperty("io.netty.allocator.type", "unpooled");
-        System.setProperty("io.netty.allocator.numHeapArenas", "0");
-        System.setProperty("io.netty.allocator.numDirectArenas", "0");
-        System.setProperty("io.netty.allocator.tinyCacheSize", "0");
-        System.setProperty("io.netty.allocator.smallCacheSize", "0");
-        System.setProperty("io.netty.allocator.normalCacheSize", "0");
+
+//        System.setProperty("io.netty.recycler.maxCapacity", "0");
+//        System.setProperty("io.netty.allocator.type", "unpooled");
+//        System.setProperty("io.netty.allocator.numHeapArenas", "0");
+//        System.setProperty("io.netty.allocator.numDirectArenas", "0");
+//        System.setProperty("io.netty.allocator.tinyCacheSize", "0");
+//        System.setProperty("io.netty.allocator.smallCacheSize", "0");
+//        System.setProperty("io.netty.allocator.normalCacheSize", "0");
     }
 
     public static void main(String[] args) throws Exception {

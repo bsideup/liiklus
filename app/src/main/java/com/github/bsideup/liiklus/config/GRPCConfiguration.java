@@ -54,6 +54,10 @@ public class GRPCConfiguration implements ApplicationContextInitializer<GenericA
                         });
                     }
 
+                    if (serverProperties.isDirectExecutor()) {
+                        serverBuilder.directExecutor();
+                    }
+
                     return serverBuilder
                             .addService(applicationContext.getBean(ReactorLiiklusServiceImpl.class))
                             .build();
@@ -71,6 +75,8 @@ public class GRPCConfiguration implements ApplicationContextInitializer<GenericA
         int port = 6565;
 
         boolean enabled = true;
+
+        boolean directExecutor = false;
 
         String compression = null;
 
