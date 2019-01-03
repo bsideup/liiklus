@@ -3,7 +3,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath("org.springframework.boot:spring-boot-gradle-plugin:2.1.0.RELEASE")
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:2.1.1.RELEASE")
     }
 }
 
@@ -14,7 +14,6 @@ plugins {
 allprojects {
     repositories {
         jcenter()
-        maven { url "https://repo.spring.io/snapshot" }
         maven { url "https://repo.spring.io/milestone" }
         maven { url 'https://jitpack.io' }
     }
@@ -54,9 +53,9 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
         overriddenByDependencies = false
 
         imports {
-            mavenBom 'org.junit:junit-bom:5.3.1'
+            mavenBom 'org.junit:junit-bom:5.3.2'
             mavenBom org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES
-            mavenBom 'org.testcontainers:testcontainers-bom:1.9.1'
+            mavenBom 'org.testcontainers:testcontainers-bom:1.10.4'
         }
 
         dependencies {
@@ -69,14 +68,14 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
                 entry 'rsocket-core'
             }
 
-            dependencySet(group: 'io.rsocket.rpc', version: '0.2.4') {
+            dependencySet(group: 'io.rsocket.rpc', version: '0.2.12') {
                 entry 'rsocket-rpc-core'
                 entry 'rsocket-rpc-protobuf'
             }
 
-            dependency 'io.prometheus:simpleclient_common:0.5.0'
+            dependency 'io.prometheus:simpleclient_common:0.6.0'
 
-            dependency 'org.springframework.fu:spring-fu-jafu:0.0.3.BUILD-SNAPSHOT'
+            dependency 'org.springframework.fu:spring-fu-jafu:0.0.3'
 
             dependencySet(group: 'com.google.protobuf', version: '3.6.1') {
                 entry 'protoc'
@@ -87,7 +86,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
             dependency 'com.google.auto.service:auto-service:1.0-rc4'
 
             // Override kafka-clients' version, otherwise it comes from Spring Boot
-            dependency 'org.apache.kafka:kafka-clients:2.0.0'
+            dependency 'org.apache.kafka:kafka-clients:2.1.0'
 
             dependencySet(group: 'io.grpc', version: '1.15.1') {
                 entry 'grpc-netty'
@@ -100,7 +99,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
 
             dependency 'com.salesforce.servicelibs:reactor-grpc-stub:0.9.0'
 
-            dependency 'org.awaitility:awaitility:3.1.2'
+            dependency 'org.awaitility:awaitility:3.1.5'
         }
     }
 }
