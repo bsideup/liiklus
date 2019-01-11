@@ -37,6 +37,8 @@ public class FakeRecordsStorage implements RecordsStorage, ApplicationContextIni
     public Subscription subscribe(String topic, String groupName, Optional<String> autoOffsetReset) {
         var timestamp = Instant.now();
 
+        AtomicLong counter = new AtomicLong();
+
         return offsetsProvider -> Flux.create(sink -> {
             sink.next(
                     IntStream.range(0, 32).mapToObj(partition -> new PartitionSource() {
@@ -54,7 +56,7 @@ public class FakeRecordsStorage implements RecordsStorage, ApplicationContextIni
                                 var envelope = new Envelope(
                                         topic,
                                         null,
-                                        ByteBuffer.wrap(UUID.randomUUID().toString().getBytes())
+                                        ByteBuffer.wrap(new UUID(counter.get(), 0).toString().getBytes())
                                 );
                                 sink.next(new Record(
                                         envelope,

@@ -138,11 +138,11 @@ public class KafkaSourceBenchmark {
     }
 
     @SneakyThrows
-    private static Path downloadDataIfMissing(URL dataUrl) {
+    static Path downloadDataIfMissing(URL dataUrl) {
         var dataPath = Paths.get("data.txt").toAbsolutePath();
 
         if (!Files.exists(dataPath)) {
-            log.info("Data file ({}) is missing. Downloading...");
+            log.info("Data file ({}) is missing. Downloading...", dataPath);
             var tmpFile = dataPath.resolveSibling(dataPath.getFileName().toString() + ".downloading");
             tmpFile.toFile().deleteOnExit();
             try (var stream = dataUrl.openStream()) {
@@ -159,7 +159,7 @@ public class KafkaSourceBenchmark {
     }
 
     @SneakyThrows
-    private static int populateTopic(String topic, String bootstrapServers, Callable<InputStream> dataStreamSupplier, int skip, int limit) {
+    static int populateTopic(String topic, String bootstrapServers, Callable<InputStream> dataStreamSupplier, int skip, int limit) {
         log.info("Populating topic {}", topic);
         var producer = new KafkaProducer<String, String>(
                 ImmutableMap.of(

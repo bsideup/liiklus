@@ -36,7 +36,6 @@ public class GRPCConfiguration implements ApplicationContextInitializer<GenericA
                     if (serverProperties.isEnabled()) {
                         serverBuilder = NettyServerBuilder
                                 .forPort(serverProperties.getPort())
-                                // .workerEventLoopGroup(new NioEventLoopGroup(Schedulers.DEFAULT_POOL_SIZE))
                                 .permitKeepAliveTime(150, TimeUnit.SECONDS)
                                 .permitKeepAliveWithoutCalls(true);
                     } else {
