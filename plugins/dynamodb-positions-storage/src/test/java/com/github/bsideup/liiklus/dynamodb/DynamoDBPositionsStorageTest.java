@@ -1,24 +1,22 @@
 package com.github.bsideup.liiklus.dynamodb;
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsync;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsyncClient;
-import com.amazonaws.services.dynamodbv2.model.AttributeDefinition;
-import com.amazonaws.services.dynamodbv2.model.CreateTableRequest;
-import com.amazonaws.services.dynamodbv2.model.KeySchemaElement;
-import com.amazonaws.services.dynamodbv2.model.KeyType;
-import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughput;
-import com.amazonaws.services.dynamodbv2.model.ScalarAttributeType;
 import com.github.bsideup.liiklus.positions.PositionsStorage;
 import com.github.bsideup.liiklus.positions.PositionsStorageTests;
 import lombok.Getter;
 import org.junit.jupiter.api.BeforeEach;
 import org.testcontainers.containers.localstack.LocalStackContainer;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
+import software.amazon.awssdk.services.dynamodb.model.AttributeDefinition;
+import software.amazon.awssdk.services.dynamodb.model.CreateTableRequest;
+import software.amazon.awssdk.services.dynamodb.model.KeySchemaElement;
+import software.amazon.awssdk.services.dynamodb.model.KeyType;
+import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughput;
+import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType;
 
+import java.net.URI;
 import java.util.UUID;
-
-import static java.util.Arrays.asList;
 
 class DynamoDBPositionsStorageTest implements PositionsStorageTests {
 
@@ -29,9 +27,9 @@ class DynamoDBPositionsStorageTest implements PositionsStorageTests {
         localstack.start();
     }
 
-    private final AmazonDynamoDBAsync dynamoDB = AmazonDynamoDBAsyncClient.asyncBuilder()
-            .withEndpointConfiguration(localstack.getEndpointConfiguration(LocalStackContainer.Service.DYNAMODB))
-            .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials("key", "secret")))
+    private final DynamoDbAsyncClient dynamoDB = DynamoDbAsyncClient.builder()
+            .endpointOverride(URI.create(localstack.getEndpointConfiguration(LocalStackContainer.Service.DYNAMODB).getServiceEndpoint()))
+            .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("key", "secret")))
             .build();
 
     private final String tableName = UUID.randomUUID().toString();
@@ -41,17 +39,23 @@ class DynamoDBPositionsStorageTest implements PositionsStorageTests {
 
     @BeforeEach
     void setUp() {
-        dynamoDB.createTable(new CreateTableRequest(
-                asList(
-                        new AttributeDefinition(DynamoDBPositionsStorage.HASH_KEY_FIELD, ScalarAttributeType.S),
-                        new AttributeDefinition(DynamoDBPositionsStorage.RANGE_KEY_FIELD, ScalarAttributeType.S)
-                ),
-                tableName,
-                asList(
-                        new KeySchemaElement(DynamoDBPositionsStorage.HASH_KEY_FIELD, KeyType.HASH),
-                        new KeySchemaElement(DynamoDBPositionsStorage.RANGE_KEY_FIELD, KeyType.RANGE)
-                ),
-                new ProvisionedThroughput(10L, 10L)
-        ));
+        var request = CreateTableRequest.builder()
+                .keySchema(
+                        KeySchemaElement.builder().attributeName(DynamoDBPositionsStorage.HASH_KEY_FIELD).keyType(KeyType.HASH).build(),
+                        KeySchemaElement.builder().attributeName(DynamoDBPositionsStorage.RANGE_KEY_FIELD).keyType(KeyType.RANGE).build()
+                )
+                .attributeDefinitions(
+                        AttributeDefinition.builder().attributeName(DynamoDBPositionsStorage.HASH_KEY_FIELD).attributeType(ScalarAttributeType.S).build(),
+                        AttributeDefinition.builder().attributeName(DynamoDBPositionsStorage.RANGE_KEY_FIELD).attributeType(ScalarAttributeType.S).build()
+                )
+                .tableName(tableName)
+                .provisionedThroughput(ProvisionedThroughput.builder().readCapacityUnits(10L).writeCapacityUnits(10L).build())
+                .build();
+
+        try {
+            dynamoDB.createTable(request).get();
+        } catch (Exception e) {
+            throw new IllegalStateException("Can't create positions dynamodb table", e);
+        }
     }
 }
