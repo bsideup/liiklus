@@ -12,9 +12,11 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeAction;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
+import software.amazon.awssdk.services.dynamodb.model.ComparisonOperator;
 import software.amazon.awssdk.services.dynamodb.model.Condition;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 import software.amazon.awssdk.services.dynamodb.model.ExpectedAttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
@@ -49,7 +51,7 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
 
     @Override
     public Publisher<Positions> findAll() {
-        return Flux.defer(() -> Flux.from(dynamoDB.scanPaginator(req -> req.tableName(tableName))))
+        return Flux.from(dynamoDB.scanPaginator(req -> req.tableName(tableName)))
                 .flatMapIterable(ScanResponse::items)
                 .map(item -> new Positions(
                         item.get("topic").s(),
@@ -60,7 +62,13 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
 
     @Override
     public CompletionStage<Map<Integer, Long>> findAll(String topic, GroupId groupId) {
-        return Mono.defer(() -> Mono.fromCompletionStage(dynamoDB.getItem(req -> req.tableName(tableName).consistentRead(true).key(toKey(topic, groupId)))))
+        var request = GetItemRequest.builder()
+                .tableName(tableName)
+                .consistentRead(true)
+                .key(toKey(topic, groupId))
+                .build();
+
+        return Mono.fromCompletionStage(() -> dynamoDB.getItem(request))
                 .<Map<Integer, Long>>handle((result, sink) -> {
                     try {
                         var positions = toPositions(result.item());
@@ -84,13 +92,13 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
         var request = QueryRequest.builder()
                 .tableName(tableName)
                 .keyConditions(ImmutableMap.of(
-                        HASH_KEY_FIELD, Condition.builder().comparisonOperator(EQ).attributeValueList(attribute(topic)).build(),
-                        RANGE_KEY_FIELD, Condition.builder().comparisonOperator(BEGINS_WITH).attributeValueList(attribute(groupName)).build()
+                        HASH_KEY_FIELD, condition(EQ, attribute(topic)),
+                        RANGE_KEY_FIELD, condition(BEGINS_WITH, attribute(groupName))
                 ))
                 .build();
 
         return Flux
-                .defer(() -> Flux.from(dynamoDB.queryPaginator(request)))
+                .from(dynamoDB.queryPaginator(request))
                 .flatMapIterable(QueryResponse::items)
                 .map(item -> new AbstractMap.SimpleEntry<>(
                         GroupId.ofString(item.get("groupId").s()),
@@ -121,7 +129,7 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
                 ))
                 .build();
 
-        return Mono.defer(() -> Mono.fromCompletionStage(dynamoDB.updateItem(update)))
+        return Mono.fromCompletionStage(() -> dynamoDB.updateItem(update))
                 .then()
                 .onErrorMap(CompletionException.class, CompletionException::getCause)
                 .retryWhen(it -> it.delayUntil(e -> {
@@ -143,7 +151,7 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
                             .expected(singletonMap("positions", ExpectedAttributeValue.builder().exists(false).build()))
                             .build();
 
-                    return Mono.fromCompletionStage(dynamoDB.updateItem(create))
+                    return Mono.fromCompletionStage(() -> dynamoDB.updateItem(create))
                             .map(__ -> true)
                             .onErrorMap(CompletionException.class, CompletionException::getCause)
                             .onErrorResume(ConditionalCheckFailedException.class, __ -> Mono.just(true));
@@ -176,6 +184,10 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
                         it -> Integer.parseInt(it.getKey()),
                         it -> Long.parseLong(it.getValue().n())
                 ));
+    }
+
+    static Condition condition(ComparisonOperator eq, AttributeValue attribute) {
+        return Condition.builder().comparisonOperator(eq).attributeValueList(attribute).build();
     }
 
     static AttributeValue attribute(String topic) {
