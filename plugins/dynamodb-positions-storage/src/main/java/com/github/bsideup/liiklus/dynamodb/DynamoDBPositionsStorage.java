@@ -24,6 +24,7 @@ import java.time.Duration;
 import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
@@ -116,6 +117,7 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
 
         return Mono.defer(() -> Mono.fromCompletionStage(dynamoDB.updateItem(request)))
                 .then()
+                .onErrorMap(CompletionException.class, CompletionException::getCause)
                 .retryWhen(it -> it.delayUntil(e -> {
                     if (!(e instanceof ConditionalCheckFailedException)) {
                         return Mono.error(e);
@@ -141,12 +143,12 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
 
                             })
                             .map(__ -> true)
+                            .onErrorMap(CompletionException.class, CompletionException::getCause)
                             .onErrorResume(ConditionalCheckFailedException.class, __ -> Mono.just(true));
                 }))
                 .log(this.getClass().getName(), Level.WARNING, SignalType.ON_ERROR)
                 .retryWhen(it -> it.delayElements(Duration.ofSeconds(1)))
                 .toFuture();
-
     }
 
     Map<String, AttributeValue> toKey(String topic, GroupId groupId) {
