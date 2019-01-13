@@ -7,6 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeDefinition;
 import software.amazon.awssdk.services.dynamodb.model.CreateTableRequest;
@@ -28,6 +29,7 @@ class DynamoDBPositionsStorageTest implements PositionsStorageTests {
     }
 
     private final DynamoDbAsyncClient dynamoDB = DynamoDbAsyncClient.builder()
+            .region(Region.of(localstack.getEndpointConfiguration(LocalStackContainer.Service.DYNAMODB).getSigningRegion()))
             .endpointOverride(URI.create(localstack.getEndpointConfiguration(LocalStackContainer.Service.DYNAMODB).getServiceEndpoint()))
             .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("key", "secret")))
             .build();
