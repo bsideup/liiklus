@@ -32,7 +32,5 @@ dependencies {
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
     testCompile project(":tck")
     testCompile 'org.testcontainers:localstack'
-    testCompile('com.amazonaws:aws-java-sdk-dynamodb:1.11.475') {
-        exclude group: 'org.slf4j'
-    }
+    testCompile 'com.amazonaws:aws-java-sdk-dynamodb:1.11.475'
 }
