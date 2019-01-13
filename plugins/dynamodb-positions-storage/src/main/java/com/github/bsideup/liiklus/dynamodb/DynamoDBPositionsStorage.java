@@ -15,6 +15,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValueUpdate;
 import software.amazon.awssdk.services.dynamodb.model.Condition;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 import software.amazon.awssdk.services.dynamodb.model.ExpectedAttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
@@ -80,11 +81,16 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
 
     @Override
     public CompletionStage<Map<Integer, Map<Integer, Long>>> findAllVersionsByGroup(String topic, String groupName) {
+        var request = QueryRequest.builder()
+                .tableName(tableName)
+                .keyConditions(ImmutableMap.of(
+                        HASH_KEY_FIELD, Condition.builder().comparisonOperator(EQ).attributeValueList(attribute(topic)).build(),
+                        RANGE_KEY_FIELD, Condition.builder().comparisonOperator(BEGINS_WITH).attributeValueList(attribute(groupName)).build()
+                ))
+                .build();
+
         return Flux
-                .defer(() -> Flux.from(dynamoDB.queryPaginator(req -> req.tableName(tableName).keyConditions(ImmutableMap.of(
-                        HASH_KEY_FIELD, Condition.builder().comparisonOperator(EQ).attributeValueList(AttributeValue.builder().s(topic).build()).build(),
-                        RANGE_KEY_FIELD, Condition.builder().comparisonOperator(BEGINS_WITH).attributeValueList(AttributeValue.builder().s(groupName).build()).build()
-                )))))
+                .defer(() -> Flux.from(dynamoDB.queryPaginator(request)))
                 .flatMapIterable(QueryResponse::items)
                 .map(item -> new AbstractMap.SimpleEntry<>(
                         GroupId.ofString(item.get("groupId").s()),
@@ -102,7 +108,7 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
     public CompletionStage<Void> update(String topic, GroupId groupId, int partition, long position) {
         Map<String, AttributeValue> key = toKey(topic, groupId);
 
-        var request = UpdateItemRequest.builder()
+        var update = UpdateItemRequest.builder()
                 .tableName(tableName)
                 .key(key)
                 .conditionExpression("attribute_exists(positions)")
@@ -115,7 +121,7 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
                 ))
                 .build();
 
-        return Mono.defer(() -> Mono.fromCompletionStage(dynamoDB.updateItem(request)))
+        return Mono.defer(() -> Mono.fromCompletionStage(dynamoDB.updateItem(update)))
                 .then()
                 .onErrorMap(CompletionException.class, CompletionException::getCause)
                 .retryWhen(it -> it.delayUntil(e -> {
@@ -123,25 +129,21 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
                         return Mono.error(e);
                     }
 
-                    return Mono
-                            .defer(() -> {
-                                // TODO find out how to do field UPSERT with DynamoDB's expressions
-                                var req = UpdateItemRequest.builder()
-                                        .tableName(tableName)
-                                        .key(key)
-                                        .attributeUpdates(singletonMap(
-                                                "positions",
-                                                AttributeValueUpdate.builder()
-                                                        .action(AttributeAction.PUT)
-                                                        .value(AttributeValue.builder().m(emptyMap()).build())
-                                                .build()
-                                        ))
-                                        .expected(singletonMap("positions", ExpectedAttributeValue.builder().exists(false).build()))
-                                        .build();
+                    // TODO find out how to do field UPSERT with DynamoDB's expressions
+                    var create = UpdateItemRequest.builder()
+                            .tableName(tableName)
+                            .key(key)
+                            .attributeUpdates(singletonMap(
+                                    "positions",
+                                    AttributeValueUpdate.builder()
+                                            .action(AttributeAction.PUT)
+                                            .value(AttributeValue.builder().m(emptyMap()).build())
+                                            .build()
+                            ))
+                            .expected(singletonMap("positions", ExpectedAttributeValue.builder().exists(false).build()))
+                            .build();
 
-                                return Mono.fromCompletionStage(dynamoDB.updateItem(req));
-
-                            })
+                    return Mono.fromCompletionStage(dynamoDB.updateItem(create))
                             .map(__ -> true)
                             .onErrorMap(CompletionException.class, CompletionException::getCause)
                             .onErrorResume(ConditionalCheckFailedException.class, __ -> Mono.just(true));
@@ -151,14 +153,14 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
                 .toFuture();
     }
 
-    Map<String, AttributeValue> toKey(String topic, GroupId groupId) {
+    static Map<String, AttributeValue> toKey(String topic, GroupId groupId) {
         var result = new HashMap<String, AttributeValue>();
-        result.put(HASH_KEY_FIELD, AttributeValue.builder().s(topic).build());
-        result.put(RANGE_KEY_FIELD, AttributeValue.builder().s(groupId.asString()).build());
+        result.put(HASH_KEY_FIELD, attribute(topic));
+        result.put(RANGE_KEY_FIELD, attribute(groupId.asString()));
         return result;
     }
 
-    Map<Integer, Long> toPositions(Map<String, AttributeValue> item) {
+    static Map<Integer, Long> toPositions(Map<String, AttributeValue> item) {
         if (item == null) {
             return null;
         }
@@ -174,5 +176,9 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
                         it -> Integer.parseInt(it.getKey()),
                         it -> Long.parseLong(it.getValue().n())
                 ));
+    }
+
+    static AttributeValue attribute(String topic) {
+        return AttributeValue.builder().s(topic).build();
     }
 }
