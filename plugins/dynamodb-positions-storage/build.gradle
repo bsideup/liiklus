@@ -24,8 +24,9 @@ dependencies {
     compileOnly project(":api")
     compileOnly 'io.projectreactor:reactor-core'
 
-    compile('software.amazon.awssdk:dynamodb:2.2.0') {
+    compile('software.amazon.awssdk:dynamodb:2.3.0') {
         exclude group: 'org.slf4j'
+        exclude group: 'org.reactivestreams'
     }
 
     testCompileOnly 'org.projectlombok:lombok'
