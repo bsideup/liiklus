@@ -75,7 +75,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
 
             dependency 'io.prometheus:simpleclient_common:0.6.0'
 
-            dependency 'org.springframework.fu:spring-fu-jafu:0.0.4'
+            dependency 'org.springframework.fu:spring-fu-jafu:0.0.5'
 
             dependencySet(group: 'com.google.protobuf', version: '3.6.1') {
                 entry 'protoc'
