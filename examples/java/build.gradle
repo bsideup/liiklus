@@ -13,7 +13,7 @@ protobuf {
 
     plugins {
         grpc {
-            artifact = 'io.grpc:protoc-gen-grpc-java:1.12.0'
+            artifact = 'io.grpc:protoc-gen-grpc-java:1.18.0'
         }
 
         reactor {
@@ -54,8 +54,8 @@ dependencies {
 
     compile 'com.google.protobuf:protobuf-java:3.6.1'
 
-    compile 'io.grpc:grpc-netty:1.15.1'
-    compile 'io.grpc:grpc-protobuf:1.15.1'
+    compile 'io.grpc:grpc-netty:1.18.0'
+    compile 'io.grpc:grpc-protobuf:1.18.0'
     compile 'com.salesforce.servicelibs:reactor-grpc-stub:0.8.2'
 
     runtime 'ch.qos.logback:logback-classic:1.2.3'
