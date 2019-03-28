@@ -1,4 +1,4 @@
-FROM openjdk:11.0.2-jdk AS workspace
+FROM openjdk:12-jdk AS workspace
 
 WORKDIR /root/project
 COPY gradle gradle/
