@@ -2,7 +2,6 @@ package com.github.bsideup.liiklus.records.tests;
 
 import com.github.bsideup.liiklus.records.RecordStorageTestSupport;
 import com.github.bsideup.liiklus.records.RecordsStorage;
-import lombok.val;
 import org.junit.jupiter.api.Test;
 import reactor.test.StepVerifier;
 
@@ -12,15 +11,15 @@ public interface BackPressureTest extends RecordStorageTestSupport {
 
     @Test
     default void testSubscribeBackpressure() throws Exception {
-        val numRecords = 20;
-        val key = "key".getBytes();
+        var numRecords = 20;
+        var key = "key".getBytes();
 
-        val offsetInfos = publishMany(key, numRecords);
-        val partition = offsetInfos.get(0).getPartition();
+        var offsetInfos = publishMany(key, numRecords);
+        var partition = offsetInfos.get(0).getPartition();
 
-        val recordFlux = subscribeToPartition(partition, "earliest").flatMap(RecordsStorage.PartitionSource::getPublisher);
+        var recordFlux = subscribeToPartition(partition, "earliest").flatMap(RecordsStorage.PartitionSource::getPublisher);
 
-        val initialRequest = 1;
+        var initialRequest = 1;
         StepVerifier.create(recordFlux, initialRequest)
                 .expectSubscription()
                 .expectNextCount(1)
@@ -33,15 +32,15 @@ public interface BackPressureTest extends RecordStorageTestSupport {
 
     @Test
     default void testSubscribeWithoutRequest() throws Exception {
-        val numRecords = 20;
-        val key = "key".getBytes();
+        var numRecords = 20;
+        var key = "key".getBytes();
 
-        val offsetInfos = publishMany(key, numRecords);
-        val partition = offsetInfos.get(0).getPartition();
+        var offsetInfos = publishMany(key, numRecords);
+        var partition = offsetInfos.get(0).getPartition();
 
-        val recordFlux = subscribeToPartition(partition, "earliest").flatMap(RecordsStorage.PartitionSource::getPublisher);
+        var recordFlux = subscribeToPartition(partition, "earliest").flatMap(RecordsStorage.PartitionSource::getPublisher);
 
-        val initialRequest = 0;
+        var initialRequest = 0;
         StepVerifier.create(recordFlux, initialRequest)
                 .expectSubscription()
                 .then(() -> publishMany(key, 10))

@@ -1,15 +1,4 @@
-plugins {
-    id "java"
-}
-
 apply plugin: 'org.springframework.boot'
-
-test.testLogging {
-    displayGranularity 1
-    showStackTraces = true
-    exceptionFormat = 'full'
-    events "STARTED", "PASSED", "FAILED", "SKIPPED"
-}
 
 dependencies {
     compileOnly 'org.projectlombok:lombok'
@@ -17,22 +6,19 @@ dependencies {
     compile project(":api")
     compile project(":protocol")
 
-    compile 'org.lognet:grpc-spring-boot-starter'
+    compile 'org.springframework.boot:spring-boot-starter-webflux'
+    compile 'org.springframework.fu:spring-fu-jafu'
+
     compile 'io.grpc:grpc-netty'
-
-    compile 'org.springframework.boot:spring-boot-starter-actuator'
-    compile 'org.springframework.boot:spring-boot-starter-web'
-    compile 'io.micrometer:micrometer-registry-prometheus'
-
+    compile 'io.prometheus:simpleclient_common'
     compile 'org.pf4j:pf4j'
+    compile 'io.rsocket:rsocket-transport-netty'
 
     testCompileOnly 'org.projectlombok:lombok'
     testCompile 'org.springframework.boot:spring-boot-starter-test'
-    testCompile 'org.testcontainers:kafka'
     testCompile 'org.assertj:assertj-core'
     testCompile 'org.awaitility:awaitility'
-
-    testCompile 'io.projectreactor.kafka:reactor-kafka'
+    testCompile project(":client")
 }
 
 def plugins = rootProject.allprojects.findAll { it.projectDir.parentFile.name == "plugins" }

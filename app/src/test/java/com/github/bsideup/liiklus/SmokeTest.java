@@ -8,6 +8,7 @@ import com.github.bsideup.liiklus.test.AbstractIntegrationTest;
 import com.google.protobuf.ByteString;
 import org.assertj.core.api.Condition;
 import org.junit.Test;
+import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.SignalType;
 
@@ -20,6 +21,28 @@ import java.util.stream.IntStream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class SmokeTest extends AbstractIntegrationTest {
+
+    @Test
+    public void testHealth() throws Exception {
+        WebTestClient.bindToApplicationContext(applicationContext)
+                .build()
+                .get()
+                .uri("/health")
+                .exchange()
+                .expectStatus()
+                .is2xxSuccessful();
+    }
+
+    @Test
+    public void testPrometheusExporter() throws Exception {
+        WebTestClient.bindToApplicationContext(applicationContext)
+                .build()
+                .get()
+                .uri("/prometheus")
+                .exchange()
+                .expectStatus()
+                .is2xxSuccessful();
+    }
 
     @Test
     public void testPublishSubscribe() throws Exception {

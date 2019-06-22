@@ -1,87 +1,85 @@
 package com.github.bsideup.liiklus.dynamodb.config;
 
-import com.amazonaws.client.builder.AwsClientBuilder;
-import com.amazonaws.regions.DefaultAwsRegionProviderChain;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsync;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsyncClient;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBAsyncClientBuilder;
-import com.amazonaws.services.dynamodbv2.model.*;
-import com.github.bsideup.liiklus.config.ExporterProfile;
-import com.github.bsideup.liiklus.config.GatewayProfile;
-import com.github.bsideup.liiklus.config.LiiklusConfiguration;
 import com.github.bsideup.liiklus.dynamodb.DynamoDBPositionsStorage;
 import com.github.bsideup.liiklus.positions.PositionsStorage;
 import com.google.auto.service.AutoService;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.context.ApplicationContextInitializer;
+import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.validation.annotation.Validated;
-import reactor.core.scheduler.Schedulers;
+import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
+import software.amazon.awssdk.services.dynamodb.model.AttributeDefinition;
+import software.amazon.awssdk.services.dynamodb.model.CreateTableRequest;
+import software.amazon.awssdk.services.dynamodb.model.KeySchemaElement;
+import software.amazon.awssdk.services.dynamodb.model.KeyType;
+import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughput;
+import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType;
 
 import javax.validation.constraints.NotEmpty;
-import java.util.Arrays;
+import java.net.URI;
 import java.util.Optional;
-import java.util.concurrent.Executors;
 
 @Slf4j
-@AutoService(LiiklusConfiguration.class)
-@Configuration
-@ExporterProfile
-@GatewayProfile
-@ConditionalOnProperty(value = "storage.positions.type", havingValue = "DYNAMODB")
-@EnableConfigurationProperties(DynamoDBConfiguration.DynamoDBProperties.class)
-public class DynamoDBConfiguration implements LiiklusConfiguration {
+@AutoService(ApplicationContextInitializer.class)
+public class DynamoDBConfiguration implements ApplicationContextInitializer<GenericApplicationContext> {
 
-    @Autowired
-    DynamoDBProperties dynamoDBProperties;
+    @Override
+    public void initialize(GenericApplicationContext applicationContext) {
+        var environment = applicationContext.getEnvironment();
 
-    @Bean
-    PositionsStorage dynamoDBPositionsStorage() {
-        AmazonDynamoDBAsyncClientBuilder builder = AmazonDynamoDBAsyncClient.asyncBuilder();
-
-        dynamoDBProperties.getEndpoint()
-                .map(endpoint -> new AwsClientBuilder.EndpointConfiguration(
-                        endpoint,
-                        new DefaultAwsRegionProviderChain().getRegion()
-                ))
-                .ifPresent(builder::setEndpointConfiguration);
-
-        AmazonDynamoDBAsync dynamoDB = builder
-                .withExecutorFactory(() -> Executors.newFixedThreadPool(Schedulers.DEFAULT_POOL_SIZE, new ThreadFactoryBuilder().setNameFormat("aws-dynamodb-%d").build()))
-                .build();
-
-        if (dynamoDBProperties.isAutoCreateTable()) {
-            log.info("Going to automatically create a table with name '{}'", dynamoDBProperties.getPositionsTable());
-            dynamoDB.createTable(new CreateTableRequest(
-                    Arrays.asList(
-                            new AttributeDefinition(DynamoDBPositionsStorage.HASH_KEY_FIELD, ScalarAttributeType.S),
-                            new AttributeDefinition(DynamoDBPositionsStorage.RANGE_KEY_FIELD, ScalarAttributeType.S)
-                    ),
-                    dynamoDBProperties.getPositionsTable(),
-                    Arrays.asList(
-                            new KeySchemaElement(DynamoDBPositionsStorage.HASH_KEY_FIELD, KeyType.HASH),
-                            new KeySchemaElement(DynamoDBPositionsStorage.RANGE_KEY_FIELD, KeyType.RANGE)
-                    ),
-                    new ProvisionedThroughput(10L, 10L)
-            ));
+        if (!"DYNAMODB".equals(environment.getProperty("storage.positions.type"))) {
+            return;
         }
 
-        return new DynamoDBPositionsStorage(
-                dynamoDB,
-                dynamoDBProperties.getPositionsTable()
-        );
+        var binder = Binder.get(environment);
+        var dynamoDBProperties = binder.bind("dynamodb", DynamoDBProperties.class).orElseGet(DynamoDBProperties::new);
+
+
+        applicationContext.registerBean(PositionsStorage.class, () -> {
+            var builder = DynamoDbAsyncClient.builder();
+
+            dynamoDBProperties.getEndpoint()
+                    .map(URI::create)
+                    .ifPresent(builder::endpointOverride);
+
+            var dynamoDB = builder
+                    .build();
+
+            if (dynamoDBProperties.isAutoCreateTable()) {
+                log.info("Going to automatically create a table with name '{}'", dynamoDBProperties.getPositionsTable());
+                var request = CreateTableRequest.builder()
+                        .keySchema(
+                                KeySchemaElement.builder().attributeName(DynamoDBPositionsStorage.HASH_KEY_FIELD).keyType(KeyType.HASH).build(),
+                                KeySchemaElement.builder().attributeName(DynamoDBPositionsStorage.RANGE_KEY_FIELD).keyType(KeyType.RANGE).build()
+                        )
+                        .attributeDefinitions(
+                                AttributeDefinition.builder().attributeName(DynamoDBPositionsStorage.HASH_KEY_FIELD).attributeType(ScalarAttributeType.S).build(),
+                                AttributeDefinition.builder().attributeName(DynamoDBPositionsStorage.RANGE_KEY_FIELD).attributeType(ScalarAttributeType.S).build()
+                                )
+                        .tableName(dynamoDBProperties.getPositionsTable())
+                        .provisionedThroughput(ProvisionedThroughput.builder().readCapacityUnits(10L).writeCapacityUnits(10L).build())
+                        .build();
+
+                try {
+                    dynamoDB.createTable(request).get();
+                } catch (Exception e) {
+                    throw new IllegalStateException("Can't create positions dynamodb table", e);
+                }
+            }
+
+            return new DynamoDBPositionsStorage(
+                    dynamoDB,
+                    dynamoDBProperties.getPositionsTable()
+            );
+        });
     }
 
     @Data
-    @ConfigurationProperties("dynamodb")
     @Validated
     public static class DynamoDBProperties {
+
         Optional<String> endpoint = Optional.empty();
 
         boolean autoCreateTable = false;

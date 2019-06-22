@@ -2,11 +2,10 @@ package com.github.bsideup.liiklus;
 
 import com.github.bsideup.liiklus.test.AbstractIntegrationTest;
 import com.google.common.collect.Sets;
-import lombok.val;
 import org.assertj.core.api.AbstractThrowableAssert;
 import org.junit.After;
 import org.junit.Test;
-import org.springframework.boot.context.properties.bind.validation.BindValidationException;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.context.ConfigurableApplicationContext;
 
 import java.util.Collection;
@@ -17,9 +16,13 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 
 public class ProfilesTest extends AbstractIntegrationTest {
 
-    static Set<String> KAFKA_PROPERTIES = AbstractIntegrationTest.getKafkaProperties();
+    static Set<String> RECORDS_PROPERTIES = Sets.newHashSet(
+            "storage.records.type=MEMORY"
+    );
 
-    static Set<String> DYNAMODB_PROPERTIES = AbstractIntegrationTest.getDynamoDBProperties();
+    static Set<String> POSITIONS_PROPERTIES = Sets.newHashSet(
+            "storage.positions.type=MEMORY"
+    );
 
     Set<String> commonArgs = Sets.newHashSet(
             "grpc.inProcessServerName=liiklus-profile-test"
@@ -37,15 +40,15 @@ public class ProfilesTest extends AbstractIntegrationTest {
     @Test
     public void testRequired() throws Exception {
         assertThatAppWithProps(commonArgs)
-                .hasRootCauseInstanceOf(BindValidationException.class);
+                .hasRootCauseInstanceOf(NoSuchBeanDefinitionException.class);
 
-        assertThatAppWithProps(commonArgs, KAFKA_PROPERTIES)
-                .hasRootCauseInstanceOf(BindValidationException.class);
+        assertThatAppWithProps(commonArgs, RECORDS_PROPERTIES)
+                .hasRootCauseInstanceOf(NoSuchBeanDefinitionException.class);
 
-        assertThatAppWithProps(commonArgs, DYNAMODB_PROPERTIES)
-                .hasRootCauseInstanceOf(BindValidationException.class);
+        assertThatAppWithProps(commonArgs, POSITIONS_PROPERTIES)
+                .hasRootCauseInstanceOf(NoSuchBeanDefinitionException.class);
 
-        assertThatAppWithProps(commonArgs, KAFKA_PROPERTIES, DYNAMODB_PROPERTIES)
+        assertThatAppWithProps(commonArgs, RECORDS_PROPERTIES, POSITIONS_PROPERTIES)
                 .doesNotThrowAnyException();
     }
 
@@ -54,9 +57,9 @@ public class ProfilesTest extends AbstractIntegrationTest {
         commonArgs.add("spring.profiles.active=exporter");
 
         assertThatAppWithProps(commonArgs)
-                .hasRootCauseInstanceOf(BindValidationException.class);
+                .hasRootCauseInstanceOf(NoSuchBeanDefinitionException.class);
 
-        assertThatAppWithProps(commonArgs, DYNAMODB_PROPERTIES)
+        assertThatAppWithProps(commonArgs, POSITIONS_PROPERTIES)
                 .doesNotThrowAnyException();
     }
 
@@ -65,15 +68,15 @@ public class ProfilesTest extends AbstractIntegrationTest {
         commonArgs.add("spring.profiles.active=gateway");
 
         assertThatAppWithProps(commonArgs)
-                .hasRootCauseInstanceOf(BindValidationException.class);
+                .hasRootCauseInstanceOf(NoSuchBeanDefinitionException.class);
 
-        assertThatAppWithProps(commonArgs, KAFKA_PROPERTIES)
-                .hasRootCauseInstanceOf(BindValidationException.class);
+        assertThatAppWithProps(commonArgs, RECORDS_PROPERTIES)
+                .hasRootCauseInstanceOf(NoSuchBeanDefinitionException.class);
 
-        assertThatAppWithProps(commonArgs, DYNAMODB_PROPERTIES)
-                .hasRootCauseInstanceOf(BindValidationException.class);
+        assertThatAppWithProps(commonArgs, POSITIONS_PROPERTIES)
+                .hasRootCauseInstanceOf(NoSuchBeanDefinitionException.class);
 
-        assertThatAppWithProps(commonArgs, KAFKA_PROPERTIES, DYNAMODB_PROPERTIES)
+        assertThatAppWithProps(commonArgs, RECORDS_PROPERTIES, POSITIONS_PROPERTIES)
                 .doesNotThrowAnyException();
     }
 
@@ -84,7 +87,7 @@ public class ProfilesTest extends AbstractIntegrationTest {
         }
 
         return assertThatCode(() -> {
-            val args = Stream.of(props)
+            var args = Stream.of(props)
                     .flatMap(Collection::stream)
                     .map(it -> "--" + it)
                     .toArray(String[]::new);

@@ -2,8 +2,8 @@
 > Liiklus **[li:klus]** ("traffic" in Estonian) - gRPC-based Gateway for the event-based systems from the ones who think that Kafka is too low-level.
 
 ## Why
-* horizontally scalable **gRPC streaming gateway**
-* supports as many client languages as gRPC does (Java, Go, C++, Python, etc...)
+* horizontally scalable **RSocket/gRPC streaming gateway**
+* supports as many client languages as RSocket+gRPC do (Java, Go, C++, Python, etc...)
 * reactive first
 * Per-partition **backpressure-aware** sources
 * at-least-once/at-most-once delivery guarantees
@@ -57,7 +57,7 @@ The clients must implement the following algorithm:
 ## Java example:
 Example code using [Project Reactor](http://projectreactor.io) and [reactive-grpc](https://github.com/salesforce/reactive-grpc):
 ```java
-val stub = ReactorLiiklusServiceGrpc.newReactorStub(channel);
+var stub = ReactorLiiklusServiceGrpc.newReactorStub(channel);
 stub
     .subscribe(
         SubscribeRequest.newBuilder()

@@ -5,7 +5,6 @@ import com.github.bsideup.liiklus.protocol.SubscribeRequest.AutoOffsetReset;
 import com.google.protobuf.ByteString;
 import io.grpc.netty.NettyChannelBuilder;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.reactivestreams.Publisher;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.KafkaContainer;
@@ -23,18 +22,18 @@ public class Consumer {
         // This variable should point to your Liiklus deployment (possible behind a Load Balancer)
         String liiklusTarget = getLiiklusTarget();
 
-        val channel = NettyChannelBuilder.forTarget(liiklusTarget)
+        var channel = NettyChannelBuilder.forTarget(liiklusTarget)
                 .directExecutor()
                 .usePlaintext(true)
                 .build();
 
-        val subscribeAction = SubscribeRequest.newBuilder()
+        var subscribeAction = SubscribeRequest.newBuilder()
                 .setTopic("events-topic")
                 .setGroup("my-group")
                 .setAutoOffsetReset(AutoOffsetReset.EARLIEST)
                 .build();
 
-        val stub = ReactorLiiklusServiceGrpc.newReactorStub(channel);
+        var stub = ReactorLiiklusServiceGrpc.newReactorStub(channel);
 
         // Send an event every second
         Flux.interval(Duration.ofSeconds(1))
@@ -87,7 +86,7 @@ public class Consumer {
     }
 
     private static String getLiiklusTarget() {
-        val kafka = new KafkaContainer()
+        var kafka = new KafkaContainer()
                 .withEnv("KAFKA_NUM_PARTITIONS", "4");
 
         GenericContainer liiklus = new GenericContainer<>("bsideup/liiklus:0.1.8")

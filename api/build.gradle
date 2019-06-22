@@ -1,10 +1,5 @@
-plugins {
-    id "java"
-}
-
 dependencies {
     compileOnly 'org.projectlombok:lombok'
-    compileOnly 'org.springframework.boot:spring-boot-starter'
 
     compile 'org.reactivestreams:reactive-streams'
 

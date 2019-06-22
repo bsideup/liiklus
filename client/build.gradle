@@ -1,10 +1,9 @@
-plugins {
-    id "java"
-}
-
 dependencies {
+    compileOnly 'org.projectlombok:lombok'
+
     compile project(":protocol")
 
+    compile 'io.rsocket:rsocket-transport-netty'
     compile 'io.grpc:grpc-netty'
     compile 'com.google.protobuf:protobuf-java-util'
 }
