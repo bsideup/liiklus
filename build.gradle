@@ -83,7 +83,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
                 entry 'protobuf-java-util'
             }
 
-            dependency 'com.google.auto.service:auto-service:1.0-rc4'
+            dependency 'com.google.auto.service:auto-service:1.0-rc5'
 
             // Override kafka-clients' version, otherwise it comes from Spring Boot
             dependency 'org.apache.kafka:kafka-clients:2.1.0'
