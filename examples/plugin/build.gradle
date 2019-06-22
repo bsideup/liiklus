@@ -35,17 +35,17 @@ dependencyManagement {
 
     imports {
         mavenBom org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES
-        mavenBom 'org.testcontainers:testcontainers-bom:1.10.4'
+        mavenBom 'org.testcontainers:testcontainers-bom:1.11.3'
     }
 
     dependencies {
-        dependencySet(group: "com.github.bsideup.liiklus", version: "0.7.0") {
+        dependencySet(group: "com.github.bsideup.liiklus", version: "0.8.1") {
             entry "api"
             entry "client"
             entry "testing"
         }
 
-        dependency 'org.projectlombok:lombok:1.18.4'
+        dependency 'org.projectlombok:lombok:1.18.6'
         dependency 'com.google.auto.service:auto-service:1.0-rc4'
     }
 }
