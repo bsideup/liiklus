@@ -28,7 +28,7 @@ dependencies {
     compileOnly project(":api")
     compileOnly 'io.projectreactor:reactor-core'
 
-    compile ('org.apache.pulsar:pulsar-client:2.1.0-incubating') {
+    compile ('org.apache.pulsar:pulsar-client:2.3.2') {
         exclude group: "org.slf4j"
     }
 
@@ -37,5 +37,5 @@ dependencies {
 
     testCompile project(":tck")
     testCompile 'org.testcontainers:pulsar'
-    testCompile 'org.apache.pulsar:pulsar-client-admin:2.1.0-incubating'
+    testCompile 'org.apache.pulsar:pulsar-client-admin:2.3.2'
 }

@@ -6,7 +6,6 @@ import lombok.experimental.FieldDefaults;
 import org.apache.pulsar.client.api.*;
 import org.apache.pulsar.client.api.PulsarClientException.AlreadyClosedException;
 import org.apache.pulsar.client.impl.MessageIdImpl;
-import org.apache.pulsar.client.impl.PulsarClientImpl;
 import org.apache.pulsar.common.naming.TopicName;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
@@ -15,6 +14,7 @@ import reactor.core.publisher.Mono;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
@@ -95,7 +95,8 @@ public class PulsarRecordsStorage implements RecordsStorage {
                 Supplier<CompletionStage<Map<Integer, Long>>> offsetsProvider
         ) {
             return Mono
-                    .defer(() -> Mono.fromCompletionStage(((PulsarClientImpl) pulsarClient).getNumberOfPartitions(topic)))
+                    .defer(() -> Mono.fromCompletionStage(pulsarClient.getPartitionsForTopic(topic)))
+                    .map(List::size)
                     .mergeWith(Flux.never()) // Never complete
                     .map(numberOfPartitions -> {
                         return IntStream.range(0, numberOfPartitions).mapToObj(partition -> new PulsarPartitionSource(

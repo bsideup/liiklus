@@ -17,7 +17,7 @@ import static org.awaitility.Awaitility.await;
 
 public interface RecordStorageTestSupport {
 
-    static ConditionFactory await = await().atMost(10, TimeUnit.SECONDS);
+    static ConditionFactory await = await().atMost(30, TimeUnit.SECONDS);
 
     RecordsStorage getTarget();
 
