@@ -91,7 +91,7 @@ public class Application {
         application.setEnvironment(environment);
 
         application.addInitializers(
-                new StringCodecInitializer(false),
+                new StringCodecInitializer(false, true),
                 new ResourceCodecInitializer(false),
                 new ReactiveWebServerInitializer(
                         binder.bind("server", ServerProperties.class).orElseGet(ServerProperties::new),
