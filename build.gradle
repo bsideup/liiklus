@@ -77,7 +77,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
 
             dependency 'org.springframework.fu:spring-fu-autoconfigure-adapter:0.0.5'
 
-            dependencySet(group: 'com.google.protobuf', version: '3.6.1') {
+            dependencySet(group: 'com.google.protobuf', version: '3.8.0') {
                 entry 'protoc'
                 entry 'protobuf-java'
                 entry 'protobuf-java-util'
