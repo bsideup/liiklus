@@ -55,9 +55,7 @@ public class GRpcBenchmark {
         System.setProperty("grpc.directExecutor", directExecutor + "");
 
         applicationContext = Application.start(new String[]{
-                "--plugins.dir=./plugins",
-                "--plugins.pathMatcher=*/build/libs/*.jar",
-                "--storage.positions.type=MEMORY",
+                "--storage.positions.type=FAKE",
                 "--storage.records.type=FAKE",
         });
 

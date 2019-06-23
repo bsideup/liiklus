@@ -42,9 +42,7 @@ public class TransportBenchmark {
     Transport transport;
 
     final ConfigurableApplicationContext applicationContext = Application.start(new String[]{
-            "--plugins.dir=./plugins",
-            "--plugins.pathMatcher=*/build/libs/*.jar",
-            "--storage.positions.type=MEMORY",
+            "--storage.positions.type=FAKE",
             "--storage.records.type=FAKE",
     });
 

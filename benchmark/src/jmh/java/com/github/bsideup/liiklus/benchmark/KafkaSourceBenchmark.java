@@ -83,7 +83,7 @@ public class KafkaSourceBenchmark {
                 "--plugins.dir=./plugins",
                 "--plugins.pathMatcher=*/build/libs/*.jar",
                 "--kafka.bootstrapServers=" + bootstrapServers,
-                "--storage.positions.type=MEMORY",
+                "--storage.positions.type=FAKE",
                 "--storage.records.type=KAFKA",
         });
     }

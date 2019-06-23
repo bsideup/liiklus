@@ -39,7 +39,6 @@ public class AckTest extends AbstractIntegrationTest {
     @Test
     public void testManualAck() throws Exception {
         Integer partition = stub.subscribe(subscribeRequest)
-                .take(1)
                 .delayUntil(it -> stub.ack(AckRequest.newBuilder().setAssignment(it.getAssignment()).setOffset(100).build()))
                 .map(it -> it.getAssignment().getPartition())
                 .blockFirst(Duration.ofSeconds(30));

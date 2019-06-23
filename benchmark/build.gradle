@@ -1,9 +1,14 @@
 plugins {
-    id "me.champeau.gradle.jmh" version "0.4.7"
+    id "me.champeau.gradle.jmh" version "0.4.8"
 }
 
 jmh {
+    jmhVersion = '1.21'
     humanOutputFile = null
+    includeTests = true
+    if (project.hasProperty('jmh')) {
+        include = [".*" + project.jmh + ".*"]
+    }
 }
 
 dependencies {
@@ -14,17 +19,13 @@ dependencies {
     compileOnly 'org.springframework.boot:spring-boot-starter'
     compileOnly 'io.projectreactor:reactor-core'
 
-    testCompileOnly 'org.projectlombok:lombok'
-
-    testCompile project(":app")
-    testCompile project(":client")
-
-    testCompile 'org.testcontainers:kafka'
-    testCompile 'org.apache.kafka:kafka-clients'
-
     jmhCompileOnly 'org.projectlombok:lombok'
+
+    jmh project(":app")
+    jmh project(":client")
+
+    jmh 'org.testcontainers:kafka'
+    jmh 'org.apache.kafka:kafka-clients'
+
+    jmh "org.openjdk.jmh:jmh-generator-annprocess:${jmh.jmhVersion}"
 }
-
-def plugins = rootProject.allprojects.findAll { it.projectDir.parentFile.name == "plugins" }
-
-tasks.jmh.dependsOn(plugins.collect { it.getTasksByName("jar", true) })
