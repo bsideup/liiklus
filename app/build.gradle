@@ -15,7 +15,7 @@ dependencies {
     compile project(":protocol")
 
     compile 'org.springframework.boot:spring-boot-starter-webflux'
-    compile 'org.springframework.fu:spring-fu-jafu'
+    compile 'org.springframework.fu:spring-fu-autoconfigure-adapter'
 
     compile 'io.grpc:grpc-netty'
     compile 'io.prometheus:simpleclient_common'
