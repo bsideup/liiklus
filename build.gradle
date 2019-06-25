@@ -86,7 +86,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
             dependency 'com.google.auto.service:auto-service:1.0-rc5'
 
             // Override kafka-clients' version, otherwise it comes from Spring Boot
-            dependency 'org.apache.kafka:kafka-clients:2.2.1'
+            dependency 'org.apache.kafka:kafka-clients:2.3.0'
 
             dependencySet(group: 'io.grpc', version: '1.15.1') {
                 entry 'grpc-netty'
