@@ -1,5 +1,5 @@
 # Liiklus
-> Liiklus **[li:klus]** ("traffic" in Estonian) - gRPC-based Gateway for the event-based systems from the ones who think that Kafka is too low-level.
+> Liiklus **[li:klus]** ("traffic" in Estonian) - RSocket/gRPC-based Gateway for the event-based systems from the ones who think that Kafka is too low-level.
 
 ## Why
 * horizontally scalable **RSocket/gRPC streaming gateway**

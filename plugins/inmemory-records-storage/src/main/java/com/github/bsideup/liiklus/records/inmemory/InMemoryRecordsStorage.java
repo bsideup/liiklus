@@ -21,6 +21,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -51,7 +52,9 @@ public class InMemoryRecordsStorage implements RecordsStorage {
         var topic = envelope.getTopic();
         var storedTopic = state.computeIfAbsent(topic, __ -> new StoredTopic(numberOfPartitions));
 
-        var partition = partitionByKey(envelope.getKey(), numberOfPartitions);
+        var partition = envelope.getKey() != null
+                ? partitionByKey(envelope.getKey(), numberOfPartitions)
+                : ThreadLocalRandom.current().nextInt(0, numberOfPartitions);
         var storedPartition = storedTopic.getPartitions().computeIfAbsent(
                 partition,
                 __ -> new StoredTopic.StoredPartition()
@@ -126,7 +129,7 @@ public class InMemoryRecordsStorage implements RecordsStorage {
                                     .map(it -> new Record(
                                             new Envelope(
                                                     topic,
-                                                    it.getKey().asReadOnlyBuffer(),
+                                                    it.getKey() != null ? it.getKey().asReadOnlyBuffer() : null,
                                                     it.getValue().asReadOnlyBuffer()
                                             ),
                                             it.getTimestamp(),

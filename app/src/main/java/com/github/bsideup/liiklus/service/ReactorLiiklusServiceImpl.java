@@ -214,20 +214,24 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                             records = records.transform(processor::postProcess);
                         }
                         return records
-                                .map(consumerRecord -> ReceiveReply.newBuilder()
-                                        .setRecord(
-                                                ReceiveReply.Record.newBuilder()
-                                                        .setOffset(consumerRecord.getOffset())
-                                                        .setReplay(consumerRecord.getOffset() <= latestAckedOffsets.getOrDefault(partition, Optional.empty()).orElse(-1L))
-                                                        .setKey(ByteString.copyFrom(consumerRecord.getEnvelope().getKey()))
-                                                        .setValue(ByteString.copyFrom(consumerRecord.getEnvelope().getValue()))
-                                                        .setTimestamp(Timestamp.newBuilder()
-                                                                .setSeconds(consumerRecord.getTimestamp().getEpochSecond())
-                                                                .setNanos(consumerRecord.getTimestamp().getNano())
-                                                        )
-                                        )
-                                        .build()
-                                );
+                                .map(consumerRecord -> {
+                                    var envelope = consumerRecord.getEnvelope();
+
+                                    var replyBuilder = ReceiveReply.Record.newBuilder()
+                                            .setOffset(consumerRecord.getOffset())
+                                            .setReplay(consumerRecord.getOffset() <= latestAckedOffsets.getOrDefault(partition, Optional.empty()).orElse(-1L))
+                                            .setValue(ByteString.copyFrom(envelope.getValue()))
+                                            .setTimestamp(Timestamp.newBuilder()
+                                                    .setSeconds(consumerRecord.getTimestamp().getEpochSecond())
+                                                    .setNanos(consumerRecord.getTimestamp().getNano())
+                                            );
+
+                                    if (envelope.getKey() != null) {
+                                        replyBuilder.setKey(ByteString.copyFrom(envelope.getKey()));
+                                    }
+
+                                    return ReceiveReply.newBuilder().setRecord(replyBuilder).build();
+                                });
                     });
                 })
                 .log("receive", Level.SEVERE, SignalType.ON_ERROR)
