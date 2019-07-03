@@ -5,6 +5,7 @@ import com.github.bsideup.liiklus.records.RecordsStorage;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.DirectProcessor;
 
+import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -121,5 +122,26 @@ public interface SubscribeTest extends RecordStorageTestSupport {
                 offsetInfos.get(8).getOffset(),
                 offsetInfos.get(9).getOffset()
         );
+    }
+
+    @Test
+    default void testNullKey() throws Exception {
+        var topic = getTopic();
+        var offsetInfo = publish(new RecordsStorage.Envelope(
+                topic,
+                null,
+                ByteBuffer.wrap("hello".getBytes())
+        ));
+        int partition = offsetInfo.getPartition();
+
+        var record = subscribeToPartition(partition)
+                .flatMap(RecordsStorage.PartitionSource::getPublisher)
+                .blockFirst(Duration.ofSeconds(10));
+
+        assertThat(record)
+                .isNotNull()
+                .satisfies(it -> {
+                    assertThat(it.getOffset()).isEqualTo(offsetInfo.getOffset());
+                });
     }
 }
