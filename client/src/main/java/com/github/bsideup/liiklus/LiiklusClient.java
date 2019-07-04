@@ -16,4 +16,6 @@ public interface LiiklusClient {
     Mono<Empty> ack(AckRequest message);
 
     Mono<GetOffsetsReply> getOffsets(GetOffsetsRequest message);
+
+    Mono<GetEndOffsetsReply> getEndOffsets(GetEndOffsetsRequest message);
 }

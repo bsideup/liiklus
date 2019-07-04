@@ -43,4 +43,9 @@ public class RSocketLiiklusClient implements LiiklusClient {
     public Mono<GetOffsetsReply> getOffsets(GetOffsetsRequest message) {
         return liiklusServiceClient.getOffsets(message);
     }
+
+    @Override
+    public Mono<GetEndOffsetsReply> getEndOffsets(GetEndOffsetsRequest message) {
+        return liiklusServiceClient.getEndOffsets(message);
+    }
 }

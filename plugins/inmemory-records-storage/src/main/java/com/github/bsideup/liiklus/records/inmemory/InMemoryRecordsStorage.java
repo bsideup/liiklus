@@ -1,6 +1,6 @@
 package com.github.bsideup.liiklus.records.inmemory;
 
-import com.github.bsideup.liiklus.records.RecordsStorage;
+import com.github.bsideup.liiklus.records.FiniteRecordsStorage;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
@@ -33,7 +33,7 @@ import java.util.stream.Stream;
  */
 @RequiredArgsConstructor
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
-public class InMemoryRecordsStorage implements RecordsStorage {
+public class InMemoryRecordsStorage implements FiniteRecordsStorage {
 
     public static int partitionByKey(String key, int numberOfPartitions) {
         return partitionByKey(ByteBuffer.wrap(key.getBytes()), numberOfPartitions);
@@ -72,6 +72,20 @@ public class InMemoryRecordsStorage implements RecordsStorage {
                 partition,
                 offset
         ));
+    }
+
+    @Override
+    public CompletionStage<Map<Integer, Long>> getEndOffsets(String topic) {
+        var partitions = state.getOrDefault(topic, new StoredTopic(numberOfPartitions)).getPartitions();
+        return CompletableFuture.completedFuture(
+                partitions.entrySet().stream().collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        it -> Math.max(
+                                0,
+                                it.getValue().getNextOffset().get() - 1
+                        )
+                ))
+        );
     }
 
     @Override
