@@ -4,6 +4,7 @@ import com.github.bsideup.liiklus.protocol.PublishRequest;
 import com.github.bsideup.liiklus.protocol.ReceiveReply;
 import com.github.bsideup.liiklus.protocol.ReceiveRequest;
 import com.github.bsideup.liiklus.protocol.SubscribeRequest;
+import com.github.bsideup.liiklus.records.RecordsStorage;
 import com.github.bsideup.liiklus.test.AbstractIntegrationTest;
 import com.google.protobuf.ByteString;
 import org.assertj.core.api.Condition;
@@ -12,8 +13,11 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.SignalType;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -85,5 +89,38 @@ public class SmokeTest extends AbstractIntegrationTest {
                 })
                 .extracting(it -> it.getRecord().getValue().toStringUtf8())
                 .containsSubsequence(values.toArray(new String[values.size()]));
+    }
+
+    @Test
+    public void testNullKey() throws Exception {
+        var subscribeAction = SubscribeRequest.newBuilder()
+                .setTopic(testName.getMethodName())
+                .setGroup(testName.getMethodName())
+                .setAutoOffsetReset(SubscribeRequest.AutoOffsetReset.EARLIEST)
+                .build();
+
+        var value = UUID.randomUUID().toString();
+        var recordsStorage = applicationContext.getBean(RecordsStorage.class);
+        recordsStorage.publish(new RecordsStorage.Envelope(
+                subscribeAction.getTopic(),
+                null, // intentionally
+                ByteBuffer.wrap(value.getBytes(StandardCharsets.UTF_8))
+        )).toCompletableFuture().join();
+
+        var record = stub
+                .subscribe(subscribeAction)
+                .flatMap(it -> stub.receive(
+                        ReceiveRequest.newBuilder()
+                                .setAssignment(it.getAssignment())
+                                .build()
+                ))
+                .map(ReceiveReply::getRecord)
+                .blockFirst(Duration.ofSeconds(10));
+
+        assertThat(record)
+                .isNotNull()
+                .satisfies(it -> {
+                    assertThat(it.getValue().toStringUtf8()).as("value").isEqualTo(value);
+                });
     }
 }
