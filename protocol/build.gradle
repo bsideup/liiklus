@@ -4,6 +4,8 @@ plugins {
 
 apply plugin: "com.google.protobuf"
 
+sourceCompatibility = targetCompatibility = 8
+
 protobuf {
     protoc {
         artifact = 'com.google.protobuf:protoc'
