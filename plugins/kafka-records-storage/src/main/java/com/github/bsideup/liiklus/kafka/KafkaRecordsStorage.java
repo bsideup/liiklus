@@ -1,6 +1,6 @@
 package com.github.bsideup.liiklus.kafka;
 
-import com.github.bsideup.liiklus.records.RecordsStorage;
+import com.github.bsideup.liiklus.records.FiniteRecordsStorage;
 import lombok.SneakyThrows;
 import lombok.Value;
 import lombok.experimental.FieldDefaults;
@@ -33,11 +33,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @FieldDefaults(makeFinal = true)
 @Slf4j
-public class KafkaRecordsStorage implements RecordsStorage {
+public class KafkaRecordsStorage implements FiniteRecordsStorage {
 
     private static final Scheduler KAFKA_POLL_SCHEDULER = Schedulers.elastic();
 
@@ -58,6 +59,39 @@ public class KafkaRecordsStorage implements RecordsStorage {
                 new ByteBufferSerializer(),
                 new ByteBufferSerializer()
         );
+    }
+
+    @Override
+    public CompletionStage<Map<Integer, Long>> getEndOffsets(String topic) {
+        return Mono.fromCallable(() -> {
+            var properties = new HashMap<String, Object>();
+            properties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+            properties.put(ConsumerConfig.GROUP_ID_CONFIG, UUID.randomUUID().toString());
+            properties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
+            properties.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, "0");
+            properties.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, "1");
+
+            try (
+                    var consumer = new KafkaConsumer<ByteBuffer, ByteBuffer>(
+                            properties,
+                            new ByteBufferDeserializer(),
+                            new ByteBufferDeserializer()
+                    )
+            ) {
+                consumer.subscribe(List.of(topic));
+
+                var endOffsets = consumer.endOffsets(
+                        consumer.partitionsFor(topic).stream()
+                                .map(it -> new TopicPartition(topic, it.partition()))
+                                .collect(Collectors.toSet())
+                );
+
+                return endOffsets.entrySet().stream().collect(Collectors.toMap(
+                        it -> it.getKey().partition(),
+                        it -> it.getValue() - 1
+                ));
+            }
+        }).subscribeOn(Schedulers.elastic()).toFuture();
     }
 
     @Override

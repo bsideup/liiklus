@@ -5,6 +5,7 @@ import com.github.bsideup.liiklus.config.RecordPreProcessorChain;
 import com.github.bsideup.liiklus.positions.GroupId;
 import com.github.bsideup.liiklus.positions.PositionsStorage;
 import com.github.bsideup.liiklus.protocol.*;
+import com.github.bsideup.liiklus.records.FiniteRecordsStorage;
 import com.github.bsideup.liiklus.records.RecordPostProcessor;
 import com.github.bsideup.liiklus.records.RecordPreProcessor;
 import com.github.bsideup.liiklus.records.RecordsStorage;
@@ -300,6 +301,24 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                 .log("getOffsets", Level.SEVERE, SignalType.ON_ERROR)
                 .onErrorMap(e -> Status.INTERNAL.withCause(e).withDescription(e.getMessage()).asException())
         );
+    }
+
+    @Override
+    public Mono<GetEndOffsetsReply> getEndOffsets(GetEndOffsetsRequest message, ByteBuf metadata) {
+        return getEndOffsets(Mono.just(message));
+    }
+
+    @Override
+    public Mono<GetEndOffsetsReply> getEndOffsets(Mono<GetEndOffsetsRequest> request) {
+        return request.flatMap(getEndOffsets -> {
+            if (!(recordsStorage instanceof FiniteRecordsStorage)) {
+                return Mono.error(Status.INTERNAL.withDescription("The record storage is not finite").asException());
+            }
+
+            var topic = getEndOffsets.getTopic();
+            return Mono.fromCompletionStage(((FiniteRecordsStorage) recordsStorage).getEndOffsets(topic))
+                    .map(endOffsets -> GetEndOffsetsReply.newBuilder().putAllOffsets(endOffsets).build());
+        });
     }
 
     private Mono<Map<Integer, Optional<Long>>> getLatestOffsetsOfGroup(String topic, String groupName) {

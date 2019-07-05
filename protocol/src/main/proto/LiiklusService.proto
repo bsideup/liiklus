@@ -28,6 +28,10 @@ service LiiklusService {
     rpc GetOffsets(GetOffsetsRequest) returns (GetOffsetsReply) {
 
     }
+
+    rpc GetEndOffsets(GetEndOffsetsRequest) returns (GetEndOffsetsReply) {
+
+    }
 }
 
 message PublishRequest {
@@ -121,5 +125,13 @@ message GetOffsetsRequest {
 }
 
 message GetOffsetsReply {
+    map<uint32, uint64> offsets = 1;
+}
+
+message GetEndOffsetsRequest {
+    string topic = 1;
+}
+
+message GetEndOffsetsReply {
     map<uint32, uint64> offsets = 1;
 }
