@@ -60,12 +60,14 @@ public class PulsarRecordsStorage implements RecordsStorage {
                 .flatMap(producer -> {
                     val valueBytes = new byte[envelope.getValue().remaining()];
                     envelope.getValue().duplicate().get(valueBytes);
-                    val future = producer.newMessage()
-                            .key(StandardCharsets.UTF_8.decode(envelope.getKey().duplicate()).toString())
-                            .value(valueBytes)
-                            .sendAsync();
+                    var typedMessageBuilder = producer.newMessage()
+                            .value(valueBytes);
+                    var key = envelope.getKey();
+                    if (key != null) {
+                        typedMessageBuilder.key(StandardCharsets.UTF_8.decode(key.duplicate()).toString());
+                    }
 
-                    return Mono.fromCompletionStage(future)
+                    return Mono.fromCompletionStage(typedMessageBuilder.sendAsync())
                             .cast(MessageIdImpl.class)
                             .map(it -> new OffsetInfo(
                                     topic,
@@ -104,8 +106,8 @@ public class PulsarRecordsStorage implements RecordsStorage {
                                 partition,
                                 groupName,
                                 autoOffsetReset,
-                                Mono.defer(() -> Mono
-                                        .fromCompletionStage(offsetsProvider.get())
+                                Mono
+                                        .fromCompletionStage(offsetsProvider)
                                         .handle((it, sink) -> {
                                             if (it.containsKey(partition)) {
                                                 sink.next(it.get(partition));
@@ -113,7 +115,6 @@ public class PulsarRecordsStorage implements RecordsStorage {
                                                 sink.complete();
                                             }
                                         })
-                                )
                         ));
                     });
         }
@@ -167,22 +168,30 @@ public class PulsarRecordsStorage implements RecordsStorage {
                     },
                     future -> Mono
                             .fromCompletionStage(future)
-                            .delayUntil(consumer -> initialOffset.delayUntil(offset -> Mono.fromCompletionStage(consumer.seekAsync(fromOffset(offset)))))
-                            .flatMapMany(consumer -> Mono
-                                    .defer(() -> Mono.fromCompletionStage(consumer.receiveAsync()))
-                                    .repeat()
-                                    .onErrorResume(AlreadyClosedException.class, __ -> Mono.empty())
-                                    .map(message -> new Record(
-                                            new Envelope(
-                                                    topic,
-                                                    ByteBuffer.wrap(message.getKey().getBytes()),
-                                                    ByteBuffer.wrap(message.getValue())
-                                            ),
-                                            Instant.ofEpochMilli(message.getEventTime()),
-                                            partition,
-                                            toOffset(message.getMessageId())
-                                    ))
-                            ),
+                            .delayUntil(consumer -> {
+                                return initialOffset.delayUntil(offset -> {
+                                    return Mono.fromCompletionStage(consumer.seekAsync(fromOffset(offset)));
+                                });
+                            })
+                            .flatMapMany(consumer -> {
+                                return Mono
+                                        .fromCompletionStage(consumer::receiveAsync)
+                                        .repeat()
+                                        .onErrorResume(AlreadyClosedException.class, __ -> Mono.empty())
+                                        .map(message -> {
+                                            var key = message.getKey();
+                                            return new Record(
+                                                    new Envelope(
+                                                            topic,
+                                                            key != null ? ByteBuffer.wrap(key.getBytes()) : null,
+                                                            ByteBuffer.wrap(message.getValue())
+                                                    ),
+                                                    Instant.ofEpochMilli(message.getEventTime()),
+                                                    partition,
+                                                    toOffset(message.getMessageId())
+                                            );
+                                        });
+                            }),
                     it -> {
                         if (it.isDone()) {
                             Consumer<byte[]> consumer = it.getNow(null);
