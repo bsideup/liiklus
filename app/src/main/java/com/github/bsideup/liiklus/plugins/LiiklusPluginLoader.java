@@ -3,7 +3,6 @@ package com.github.bsideup.liiklus.plugins;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.DefaultPluginLoader;
 import org.pf4j.PluginClassLoader;
-import org.pf4j.PluginClasspath;
 import org.pf4j.PluginManager;
 
 import java.io.IOException;
@@ -15,8 +14,8 @@ import java.nio.file.StandardCopyOption;
 @Slf4j
 public class LiiklusPluginLoader extends DefaultPluginLoader {
 
-    public LiiklusPluginLoader(PluginManager pluginManager, PluginClasspath pluginClasspath) {
-        super(pluginManager, pluginClasspath);
+    public LiiklusPluginLoader(PluginManager pluginManager) {
+        super(pluginManager);
     }
 
     @Override
@@ -28,7 +27,7 @@ public class LiiklusPluginLoader extends DefaultPluginLoader {
     @Override
     protected void loadJars(Path pluginPath, PluginClassLoader pluginClassLoader) {
         try (var jarFileSystem = FileSystems.newFileSystem(pluginPath, null)) {
-            for (var libDirectory : this.pluginClasspath.getLibDirectories()) {
+            for (var libDirectory : this.pluginClasspath.getJarsDirectories()) {
                 var libPath = jarFileSystem.getPath(libDirectory);
                 if (Files.exists(libPath)) {
                     try (var pathStream = Files.walk(libPath, 1)) {
