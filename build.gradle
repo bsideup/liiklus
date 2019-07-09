@@ -35,6 +35,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
     apply plugin: 'io.spring.dependency-management'
     apply plugin: 'maven'
     apply plugin: 'java'
+    apply from: "$rootDir/gradle/rerunTests.gradle"
 
     sourceCompatibility = targetCompatibility = 10
 
