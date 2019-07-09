@@ -11,6 +11,9 @@ import org.pf4j.PluginRepository;
 import org.pf4j.ServiceProviderExtensionFinder;
 
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
 
 public class LiiklusPluginManager extends DefaultPluginManager {
 
@@ -34,11 +37,18 @@ public class LiiklusPluginManager extends DefaultPluginManager {
 
     @Override
     protected ExtensionFinder createExtensionFinder() {
-        return new ServiceProviderExtensionFinder(this);
+        return new ServiceProviderExtensionFinder(this) {
+            @Override
+            public Map<String, Set<String>> readClasspathStorages() {
+                // Loads too much (including some javax.servlet.ServletContainerInitializer classes)
+                // Since the main jar does not provide any extensions anyways, we can return an empty map here)
+                return Collections.emptyMap();
+            }
+        };
     }
 
     @Override
     protected PluginLoader createPluginLoader() {
-        return new LiiklusPluginLoader(this, pluginClasspath);
+        return new LiiklusPluginLoader(this);
     }
 }
