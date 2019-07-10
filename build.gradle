@@ -58,6 +58,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
             mavenBom org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES
             mavenBom 'org.testcontainers:testcontainers-bom:1.11.4'
             mavenBom 'io.grpc:grpc-bom:1.22.0'
+            mavenBom 'com.google.protobuf:protobuf-bom:3.8.0'
         }
 
         dependencies {
@@ -79,11 +80,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
 
             dependency 'org.springframework.fu:spring-fu-autoconfigure-adapter:0.0.5'
 
-            dependencySet(group: 'com.google.protobuf', version: '3.8.0') {
-                entry 'protoc'
-                entry 'protobuf-java'
-                entry 'protobuf-java-util'
-            }
+            dependency 'com.google.protobuf:protoc:3.8.0'
 
             dependency 'com.google.auto.service:auto-service:1.0-rc5'
 
