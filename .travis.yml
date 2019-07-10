@@ -22,3 +22,7 @@ jobs:
     - stage: test
       env: [ NAME=plugins ]
       script: ./gradlew check -x :app:check
+
+    - stage: test
+      env: [ NAME=examples ]
+      script: ./gradlew :examples/plugin:check :examples/java:check
