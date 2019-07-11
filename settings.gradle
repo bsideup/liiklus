@@ -5,8 +5,8 @@ include 'protocol'
 include 'client'
 include 'testing'
 
-include 'examples/java'
-include 'examples/plugin'
+include 'examples:java'
+include 'examples:plugin'
 
 file('plugins').eachDir { dir ->
     def projectName = dir.name

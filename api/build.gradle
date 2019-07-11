@@ -3,10 +3,12 @@ sourceCompatibility = targetCompatibility = 8
 
 dependencies {
     compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
 
     compile 'org.reactivestreams:reactive-streams'
 
     testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
     testCompile 'junit:junit'
     testCompile 'org.assertj:assertj-core'
 }

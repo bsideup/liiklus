@@ -47,6 +47,7 @@ repositories {
 
 dependencies {
     compileOnly 'org.projectlombok:lombok:1.18.8'
+    annotationProcessor 'org.projectlombok:lombok:1.18.8'
 
     compile 'org.testcontainers:kafka:1.11.4'
 
