@@ -4,6 +4,7 @@ import com.github.bsideup.liiklus.service.ReactorLiiklusServiceImpl;
 import io.grpc.*;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.netty.NettyServerBuilder;
+import io.grpc.protobuf.services.ProtoReflectionService;
 import io.netty.channel.nio.NioEventLoopGroup;
 import lombok.Data;
 import org.springframework.boot.context.properties.bind.Binder;
@@ -54,6 +55,7 @@ public class GRPCConfiguration implements ApplicationContextInitializer<GenericA
                                     return next.startCall(call, headers);
                                 }
                             })
+                            .addService(ProtoReflectionService.newInstance())
                             .addService(applicationContext.getBean(ReactorLiiklusServiceImpl.class))
                             .build();
                 },
