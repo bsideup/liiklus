@@ -2,7 +2,6 @@ package com.github.bsideup.liiklus.positions.redis;
 
 import com.github.bsideup.liiklus.positions.GroupId;
 import com.github.bsideup.liiklus.positions.PositionsStorage;
-import com.google.common.collect.ImmutableMap;
 import io.lettuce.core.RedisClient;
 import io.lettuce.core.api.StatefulRedisConnection;
 import lombok.RequiredArgsConstructor;
@@ -84,10 +83,7 @@ public class RedisPositionsStorage implements PositionsStorage {
         return connection.async()
                 .hmset(
                         toKey(topic, groupId.asString()),
-                        ImmutableMap.of(
-                                Integer.toString(partition),
-                                Long.toString(position)
-                        )
+                        Map.of(Integer.toString(partition), Long.toString(position))
                 ).thenAccept(s -> log.debug("set is {} for {}", s, topic));
     }
 
