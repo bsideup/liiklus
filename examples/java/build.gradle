@@ -56,7 +56,7 @@ dependencies {
     compile 'com.google.protobuf:protobuf-java:3.8.0'
 
     compile 'io.grpc:grpc-netty:1.15.1'
-    compile 'io.grpc:grpc-protobuf:1.15.1'
+    compile 'io.grpc:grpc-protobuf:1.21.0'
     compile 'com.salesforce.servicelibs:reactor-grpc-stub:0.10.0'
 
     runtime 'ch.qos.logback:logback-classic:1.2.3'
