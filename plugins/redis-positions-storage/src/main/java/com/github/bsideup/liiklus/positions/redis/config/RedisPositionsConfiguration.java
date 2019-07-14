@@ -16,6 +16,7 @@ import reactor.core.publisher.Mono;
 
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
+import java.util.function.Supplier;
 
 @Slf4j
 @AutoService(ApplicationContextInitializer.class)
@@ -34,18 +35,22 @@ public class RedisPositionsConfiguration implements ApplicationContextInitialize
                 .bind("redis", RedisProperties.class)
                 .orElseGet(RedisProperties::new);
 
-        applicationContext.registerBean(PositionsStorage.class, () -> {
-            var redisURI = RedisURI.builder()
-                    .withHost(redisProperties.getHost())
-                    .withPort(redisProperties.getPort())
-                    .build();
+        // TODO lambda instead of Supplier makes it throw `NoClassDefFoundError` o_O
+        applicationContext.registerBean(PositionsStorage.class, new Supplier<PositionsStorage>() {
+            @Override
+            public PositionsStorage get() {
+                var redisURI = RedisURI.builder()
+                        .withHost(redisProperties.getHost())
+                        .withPort(redisProperties.getPort())
+                        .build();
 
-            return new RedisPositionsStorage(
-                    Mono
-                            .fromCompletionStage(() -> RedisClient.create().connectAsync(StringCodec.UTF8, redisURI))
-                            .cache(),
-                    redisProperties.getPositionsProperties().getPrefix()
-            );
+                return new RedisPositionsStorage(
+                        Mono
+                                .fromCompletionStage(() -> RedisClient.create().connectAsync(StringCodec.UTF8, redisURI))
+                                .cache(),
+                        redisProperties.getPositionsProperties().getPrefix()
+                );
+            }
         });
     }
 
