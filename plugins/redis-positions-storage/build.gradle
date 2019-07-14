@@ -15,8 +15,6 @@ jar {
     }
 }
 
-sourceCompatibility = targetCompatibility = 10
-
 dependencies {
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
@@ -28,15 +26,14 @@ dependencies {
     compileOnly project(":api")
     compileOnly 'io.projectreactor:reactor-core'
 
-    compile 'io.lettuce:lettuce-core:5.1.7.RELEASE'
+    compile 'io.lettuce:lettuce-core'
 
     testCompileOnly 'org.projectlombok:lombok'
-    testCompileOnly 'org.springframework.boot:spring-boot-starter'
-    testCompileOnly 'org.springframework.boot:spring-boot-starter-test'
     testAnnotationProcessor 'org.projectlombok:lombok'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
     testCompile project(":tck")
     testCompile 'org.assertj:assertj-core'
     testCompile 'org.testcontainers:testcontainers'
-    testCompile 'org.mockito:mockito-junit-jupiter'
+    testCompile 'org.springframework.boot:spring-boot'
+    testCompile 'org.springframework.boot:spring-boot-test'
 }

@@ -1,54 +1,36 @@
 package com.github.bsideup.liiklus.positions.redis.config;
 
-import org.junit.jupiter.api.BeforeEach;
+import com.github.bsideup.liiklus.positions.PositionsStorage;
+import com.github.bsideup.liiklus.positions.redis.RedisPositionsStorage;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.support.GenericApplicationContext;
-import org.springframework.mock.env.MockEnvironment;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.context.ApplicationContextInitializer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@ExtendWith(MockitoExtension.class)
 class RedisPositionsConfigurationTest {
-    @InjectMocks RedisPositionsConfiguration redisPositionsConfiguration;
 
-    MockEnvironment           configurableEnvironment;
-    GenericApplicationContext genericApplicationContext;
-
-    @BeforeEach
-    void setUp() {
-        configurableEnvironment = new MockEnvironment();
-        genericApplicationContext = new GenericApplicationContext();
-        genericApplicationContext.setEnvironment(configurableEnvironment);
-    }
+    ApplicationContextRunner applicationContextRunner = new ApplicationContextRunner()
+            .withInitializer((ApplicationContextInitializer) new RedisPositionsConfiguration());
 
     @Test
     void should_skip_when_position_storage_not_redis() {
-        //given
-
-        //when
-        redisPositionsConfiguration.initialize(this.genericApplicationContext);
-        genericApplicationContext.refresh();
-
-        //then
-        assertThat(genericApplicationContext.getBeanDefinitionNames()).hasSize(0);
-
+        applicationContextRunner.run(context -> {
+            assertThat(context).doesNotHaveBean(PositionsStorage.class);
+        });
     }
 
     @Test
     void should_register_positions_storage_bean_when_type_is_redis() {
-        //given
-        configurableEnvironment.setProperty("storage.positions.type", "REDIS");
-        configurableEnvironment.setProperty("redis.host", "host");
-        configurableEnvironment.setProperty("redis.port", "8888");
-
-        //when
-        redisPositionsConfiguration.initialize(genericApplicationContext);
-
-        //then
-        assertThat(genericApplicationContext.getBeanDefinitionNames().length).isGreaterThan(1);
+        applicationContextRunner = applicationContextRunner.withPropertyValues(
+                "storage.positions.type: REDIS",
+                "redis.host: host",
+                "redis.port: 8888"
+        );
+        applicationContextRunner.run(context -> {
+            assertThat(context)
+                    .getBean(PositionsStorage.class)
+                    .isInstanceOf(RedisPositionsStorage.class);
+        });
     }
-
 }
