@@ -57,7 +57,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
             mavenBom 'org.junit:junit-bom:5.5.0'
             mavenBom org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES
             mavenBom 'org.testcontainers:testcontainers-bom:1.11.4'
-            mavenBom 'io.grpc:grpc-bom:1.22.0'
+            mavenBom 'io.grpc:grpc-bom:1.22.1'
             mavenBom 'com.google.protobuf:protobuf-bom:3.8.0'
         }
 
