@@ -135,7 +135,7 @@ public class Application {
                 pluginManager.getExtensionClasses(ApplicationContextInitializer.class).stream()
                         .map(it -> {
                             try {
-                                return it.newInstance();
+                                return it.getDeclaredConstructor().newInstance();
                             } catch (Exception e) {
                                 throw new RuntimeException(e);
                             }
