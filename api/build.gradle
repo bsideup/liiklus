@@ -1,5 +1,8 @@
-
 sourceCompatibility = targetCompatibility = 8
+
+test {
+    useJUnit()
+}
 
 dependencies {
     compileOnly 'org.projectlombok:lombok'

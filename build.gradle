@@ -37,13 +37,17 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
     apply plugin: 'java'
     apply from: "$rootDir/gradle/rerunTests.gradle"
 
-    sourceCompatibility = targetCompatibility = 10
+    sourceCompatibility = targetCompatibility = 11
 
-    test.testLogging {
-        displayGranularity 1
-        showStackTraces = true
-        exceptionFormat = 'full'
-        events "STARTED", "PASSED", "FAILED", "SKIPPED"
+    test {
+        useJUnitPlatform()
+
+        testLogging {
+            displayGranularity 1
+            showStackTraces = true
+            exceptionFormat = 'full'
+            events "STARTED", "PASSED", "FAILED", "SKIPPED"
+        }
     }
 
     project.afterEvaluate {

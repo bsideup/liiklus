@@ -3,8 +3,11 @@ plugins {
     id "io.spring.dependency-management"
 }
 
-
 sourceCompatibility = targetCompatibility = 8
+
+test {
+    useJUnit()
+}
 
 jar {
     baseName = "example-plugin"
