@@ -1,5 +1,9 @@
 apply plugin: 'org.springframework.boot'
 
+test {
+    useJUnit()
+}
+
 dependencies {
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
