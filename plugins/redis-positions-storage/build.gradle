@@ -7,8 +7,23 @@ jar {
     }
 
     into('lib') {
-        from configurations.compile
+        from(configurations.compile - configurations.provided)
     }
+}
+
+sourceSets {
+    e2eTest
+}
+
+task e2eTest(type: Test) {
+    group = 'verification'
+    testClassesDirs = sourceSets.e2eTest.output.classesDirs
+    classpath = sourceSets.e2eTest.runtimeClasspath
+}
+tasks.check.dependsOn(e2eTest)
+
+e2eTest {
+    useJUnitPlatform()
 }
 
 dependencies {
@@ -17,24 +32,31 @@ dependencies {
     compileOnly 'com.google.auto.service:auto-service'
     annotationProcessor 'com.google.auto.service:auto-service'
 
-    compileOnly 'org.springframework.boot:spring-boot-starter'
-    compileOnly 'javax.validation:validation-api'
-    compileOnly project(":api")
-    compileOnly 'io.projectreactor:reactor-core'
+    provided project(":app")
 
-    compile 'io.lettuce:lettuce-core', {
-        exclude group: 'io.netty'
-        exclude group: 'io.projectreactor'
-        exclude group: 'org.reactivestreams'
-    }
+    compile 'io.lettuce:lettuce-core'
 
     testCompileOnly 'org.projectlombok:lombok'
     testAnnotationProcessor 'org.projectlombok:lombok'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
-    testCompile project(":tck")
-    testCompile 'org.assertj:assertj-core'
-    testCompile 'org.testcontainers:testcontainers'
-    testCompile 'org.springframework.boot:spring-boot'
+    testCompile project(":tck"), {
+        exclude group: "org.slf4j", module: "slf4j-simple"
+    }
     testCompile 'org.springframework.boot:spring-boot-test'
-    testCompile 'io.lettuce:lettuce-core'
+
+    e2eTestCompile 'org.projectlombok:lombok'
+    e2eTestAnnotationProcessor 'org.projectlombok:lombok'
+    e2eTestRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+    e2eTestCompile project(":app")
+    e2eTestCompile project(":tck"), {
+        exclude group: "org.slf4j", module: "slf4j-simple"
+    }
+    e2eTestCompile 'org.testcontainers:testcontainers'
+    e2eTestCompile 'org.assertj:assertj-core'
+    e2eTestCompile 'io.lettuce:lettuce-core'
 }
+
+tasks.e2eTest.dependsOn(
+        jar,
+        rootProject.project(":inmemory-records-storage").getTasksByName("jar", false)
+)

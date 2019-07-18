@@ -4,6 +4,14 @@ test {
     useJUnit()
 }
 
+jar {
+    enabled = true
+}
+
+bootJar {
+    archiveClassifier = 'boot'
+}
+
 dependencies {
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'

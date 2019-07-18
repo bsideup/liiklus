@@ -1,5 +1,6 @@
 package com.github.bsideup.liiklus.positions.redis;
 
+import com.github.bsideup.liiklus.Application;
 import com.github.bsideup.liiklus.positions.GroupId;
 import com.github.bsideup.liiklus.positions.PositionsStorage;
 import com.github.bsideup.liiklus.positions.PositionsStorage.Positions;
@@ -10,12 +11,11 @@ import io.lettuce.core.api.sync.RedisCommands;
 import lombok.Getter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+import org.springframework.context.ApplicationContext;
 import org.testcontainers.containers.GenericContainer;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import java.time.Duration;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -24,8 +24,26 @@ class RedisPositionsStorageTest implements PositionsStorageTests {
     static final GenericContainer redis = new GenericContainer("redis:3.0.6")
             .withExposedPorts(6379);
 
+    static final ApplicationContext applicationContext;
+
     static {
         redis.start();
+
+        System.setProperty("server.port", "0");
+        System.setProperty("rsocket.enabled", "false");
+        System.setProperty("grpc.enabled", "false");
+        System.setProperty("grpc.inProcessServerName", "liiklus");
+
+        System.setProperty("plugins.dir", "../../plugins");
+        System.setProperty("plugins.pathMatcher", "*/build/libs/*.jar");
+
+        System.setProperty("storage.records.type", "MEMORY");
+
+        System.setProperty("storage.positions.type", "REDIS");
+        System.setProperty("redis.host", redis.getContainerIpAddress());
+        System.setProperty("redis.port", redis.getMappedPort(6379) + "");
+
+        applicationContext = Application.start(new String[0]);
     }
 
     static final RedisClient redisClient = RedisClient.create(
@@ -38,13 +56,13 @@ class RedisPositionsStorageTest implements PositionsStorageTests {
     static final RedisCommands<String, String> redisCommands = redisClient.connect().sync();
 
     @Getter
-    PositionsStorage storage = new RedisPositionsStorage(
-            Mono.just(redisClient.connect()),
-            "test:" + UUID.randomUUID()
-    );
+    PositionsStorage storage = applicationContext.getBean(PositionsStorage.class);
 
     @Test
     void should_skip_keys_without_prefix(TestInfo testInfo) {
+        // This test assumes an empty DB
+        redisCommands.flushall();
+
         var topicName = getTopicName(testInfo);
         redisCommands.set("CORRUPTED_KEY", "SUSPICIOUS_VALUE");
         storage.update(topicName, GroupId.ofString("mygroup-v1"), 0, 0);
