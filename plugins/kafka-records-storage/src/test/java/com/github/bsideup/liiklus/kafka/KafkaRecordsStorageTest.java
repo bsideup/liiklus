@@ -38,7 +38,7 @@ public class KafkaRecordsStorageTest implements RecordStorageTests {
 
     @Getter
     RecordsStorage target = new KafkaRecordsStorage(
-            kafka.getBootstrapServers()
+            kafka.getBootstrapServers(), new HashMap<>()
     );
 
     @Getter

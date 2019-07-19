@@ -27,7 +27,12 @@ import reactor.util.concurrent.Queues;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -43,12 +48,16 @@ public class KafkaRecordsStorage implements RecordsStorage {
 
     String bootstrapServers;
 
+    Map<String, String> baseProps;
+
     private final KafkaProducer<ByteBuffer, ByteBuffer> producer;
 
-    public KafkaRecordsStorage(String bootstrapServers) {
+    public KafkaRecordsStorage(String bootstrapServers, Map<String, String> baseProps) {
         this.bootstrapServers = bootstrapServers;
+        this.baseProps = baseProps;
 
         Map<String, Object> props = new HashMap<>();
+        props.putAll(baseProps);
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ProducerConfig.CLIENT_ID_CONFIG, "liiklus-" + UUID.randomUUID().toString());
         props.put(ProducerConfig.ACKS_CONFIG, "all");
@@ -104,6 +113,7 @@ public class KafkaRecordsStorage implements RecordsStorage {
             return Flux.create(sink -> {
                 try {
                     var properties = new HashMap<String, Object>();
+                    properties.putAll(baseProps);
                     properties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
                     properties.put(ConsumerConfig.GROUP_ID_CONFIG, groupName);
                     properties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
