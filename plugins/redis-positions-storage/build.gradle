@@ -7,7 +7,7 @@ jar {
     }
 
     into('lib') {
-        from(configurations.compile - configurations.provided)
+        from(configurations.compile - configurations.compileOnly)
     }
 }
 
@@ -32,13 +32,14 @@ dependencies {
     compileOnly 'com.google.auto.service:auto-service'
     annotationProcessor 'com.google.auto.service:auto-service'
 
-    provided project(":app")
+    compileOnly project(":app")
 
     compile 'io.lettuce:lettuce-core'
 
     testCompileOnly 'org.projectlombok:lombok'
     testAnnotationProcessor 'org.projectlombok:lombok'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+    testCompile project(":app")
     testCompile project(":tck"), {
         exclude group: "org.slf4j", module: "slf4j-simple"
     }
