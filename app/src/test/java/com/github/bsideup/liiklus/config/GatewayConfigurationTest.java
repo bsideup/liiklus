@@ -17,13 +17,13 @@ import java.util.concurrent.CompletionStage;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(MockitoJUnitRunner.class)
-public class LayersConfigurationTest {
+public class GatewayConfigurationTest {
 
     MockEnvironment environment;
 
     StaticApplicationContext applicationContext;
 
-    final LayersConfiguration layersConfiguration = new LayersConfiguration();
+    final GatewayConfiguration gatewayConfiguration = new GatewayConfiguration();
 
     @Before
     public void setUp() throws Exception {
@@ -40,7 +40,7 @@ public class LayersConfigurationTest {
 
     @Test
     public void testOrderWithEmptyOrders() throws Exception {
-        layersConfiguration.initialize(applicationContext);
+        gatewayConfiguration.initialize(applicationContext);
 
         assertThat(applicationContext.getBean(RecordPreProcessorChain.class).getAll()).containsExactly(
                 P1.INSTANCE,
@@ -58,7 +58,7 @@ public class LayersConfigurationTest {
     public void testOrderWithDefaultOrder() throws Exception {
         setOrder(P2.class, 0);
 
-        layersConfiguration.initialize(applicationContext);
+        gatewayConfiguration.initialize(applicationContext);
         assertThat(applicationContext.getBean(RecordPreProcessorChain.class).getAll()).containsExactly(
                 P1.INSTANCE,
                 P2.INSTANCE,
@@ -75,7 +75,7 @@ public class LayersConfigurationTest {
     public void testNegativeOrders() throws Exception {
         setOrder(P2.class, -100);
         setOrder(P3.class, -50);
-        layersConfiguration.initialize(applicationContext);
+        gatewayConfiguration.initialize(applicationContext);
 
         assertThat(applicationContext.getBean(RecordPreProcessorChain.class).getAll()).containsExactly(
                 P2.INSTANCE,
@@ -94,7 +94,7 @@ public class LayersConfigurationTest {
     public void testPositiveOrders() throws Exception {
         setOrder(P2.class, 100);
         setOrder(P3.class, 50);
-        layersConfiguration.initialize(applicationContext);
+        gatewayConfiguration.initialize(applicationContext);
 
         assertThat(applicationContext.getBean(RecordPreProcessorChain.class).getAll()).containsExactly(
                 P1.INSTANCE,
@@ -113,7 +113,7 @@ public class LayersConfigurationTest {
     public void testOrderClashing() throws Exception {
         setOrder(P3.class, -100);
         setOrder(P2.class, -100);
-        layersConfiguration.initialize(applicationContext);
+        gatewayConfiguration.initialize(applicationContext);
 
         assertThat(applicationContext.getBean(RecordPreProcessorChain.class).getAll()).containsExactly(
                 P2.INSTANCE,

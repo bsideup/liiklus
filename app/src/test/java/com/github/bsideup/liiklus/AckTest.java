@@ -40,7 +40,17 @@ public class AckTest extends AbstractIntegrationTest {
     public void testManualAck() throws Exception {
         Integer partition = stub.subscribe(subscribeRequest)
                 .take(1)
-                .delayUntil(it -> stub.ack(AckRequest.newBuilder().setAssignment(it.getAssignment()).setOffset(100).build()))
+                .delayUntil(it -> {
+                    return stub.ack(
+                            AckRequest.newBuilder()
+                                    .setTopic(subscribeRequest.getTopic())
+                                    .setGroup(subscribeRequest.getGroup())
+                                    .setGroupVersion(subscribeRequest.getGroupVersion())
+                                    .setPartition(it.getAssignment().getPartition())
+                                    .setOffset(100)
+                                    .build()
+                    );
+                })
                 .map(it -> it.getAssignment().getPartition())
                 .blockFirst(Duration.ofSeconds(30));
 

@@ -1,0 +1,23 @@
+jar {
+    manifest {
+        attributes(
+                'Plugin-Id': "${project.name}",
+                'Plugin-Version': "${project.version}",
+        )
+    }
+
+    into('lib') {
+        from(configurations.compile - configurations.compileOnly)
+    }
+}
+
+dependencies {
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    compileOnly 'com.google.auto.service:auto-service'
+    annotationProcessor 'com.google.auto.service:auto-service'
+
+    compileOnly project(":app")
+
+    compile 'io.prometheus:simpleclient_common'
+}

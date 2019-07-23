@@ -1,4 +1,4 @@
-package com.github.bsideup.liiklus.monitoring;
+package com.github.bsideup.liiklus.metrics;
 
 import com.github.bsideup.liiklus.positions.PositionsStorage;
 import com.github.bsideup.liiklus.positions.PositionsStorage.Positions;
