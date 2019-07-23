@@ -24,35 +24,35 @@ import reactor.core.publisher.Mono;
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 public class RSocketLiiklusService implements com.github.bsideup.liiklus.protocol.LiiklusService {
 
-    LiiklusService liiklusServiceImpl;
+    LiiklusService liiklusService;
 
     @Override
     public Mono<PublishReply> publish(PublishRequest message, ByteBuf metadata) {
-        return liiklusServiceImpl.publish(Mono.just(message));
+        return liiklusService.publish(Mono.just(message));
     }
 
     @Override
     public Flux<SubscribeReply> subscribe(SubscribeRequest message, ByteBuf metadata) {
-        return liiklusServiceImpl.subscribe(Mono.just(message));
+        return liiklusService.subscribe(Mono.just(message));
     }
 
     @Override
     public Flux<ReceiveReply> receive(ReceiveRequest message, ByteBuf metadata) {
-        return liiklusServiceImpl.receive(Mono.just(message));
+        return liiklusService.receive(Mono.just(message));
     }
 
     @Override
     public Mono<Empty> ack(AckRequest message, ByteBuf metadata) {
-        return liiklusServiceImpl.ack(Mono.just(message));
+        return liiklusService.ack(Mono.just(message));
     }
 
     @Override
     public Mono<GetOffsetsReply> getOffsets(GetOffsetsRequest message, ByteBuf metadata) {
-        return liiklusServiceImpl.getOffsets(Mono.just(message));
+        return liiklusService.getOffsets(Mono.just(message));
     }
 
     @Override
     public Mono<GetEndOffsetsReply> getEndOffsets(GetEndOffsetsRequest message, ByteBuf metadata) {
-        return liiklusServiceImpl.getEndOffsets(Mono.just(message));
+        return liiklusService.getEndOffsets(Mono.just(message));
     }
 }
