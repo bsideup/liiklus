@@ -2,6 +2,7 @@ package com.github.bsideup.liiklus.config;
 
 import com.github.bsideup.liiklus.records.RecordPostProcessor;
 import com.github.bsideup.liiklus.records.RecordPreProcessor;
+import com.github.bsideup.liiklus.service.LiiklusService;
 import lombok.Data;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.context.ApplicationContextInitializer;
@@ -13,11 +14,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class LayersConfiguration implements ApplicationContextInitializer<GenericApplicationContext> {
+public class GatewayConfiguration implements ApplicationContextInitializer<GenericApplicationContext> {
 
     @Override
     public void initialize(GenericApplicationContext applicationContext) {
         var environment = applicationContext.getEnvironment();
+
         if (!environment.acceptsProfiles(Profiles.of("gateway"))) {
             return;
         }
@@ -40,6 +42,8 @@ public class LayersConfiguration implements ApplicationContextInitializer<Generi
                         .sorted(comparator.reversed())
                         .collect(Collectors.toList())
         ));
+
+        applicationContext.registerBean(LiiklusService.class);
     }
 
     @Data

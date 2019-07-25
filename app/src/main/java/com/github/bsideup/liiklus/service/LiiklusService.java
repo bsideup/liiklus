@@ -15,9 +15,6 @@ import com.github.bsideup.liiklus.records.RecordsStorage.Subscription;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
 import com.google.protobuf.Timestamp;
-import com.salesforce.reactorgrpc.stub.SubscribeOnlyOnceLifter;
-import io.grpc.Status;
-import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
@@ -25,7 +22,6 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.Operators;
 import reactor.core.publisher.SignalType;
 
 import java.util.*;
@@ -41,7 +37,7 @@ import static java.util.Collections.emptyMap;
 @RequiredArgsConstructor
 @FieldDefaults(makeFinal = true)
 @Slf4j
-public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.LiiklusServiceImplBase implements LiiklusService {
+public class LiiklusService {
 
     private static final NavigableMap<Integer, Map<Integer, Long>> EMPTY_ACKED_OFFSETS = Collections.unmodifiableNavigableMap(new TreeMap<>());
 
@@ -57,12 +53,6 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
 
     RecordPostProcessorChain recordPostProcessorChain;
 
-    @Override
-    public Mono<PublishReply> publish(PublishRequest message, ByteBuf metadata) {
-        return publish(Mono.just(message));
-    }
-
-    @Override
     public Mono<PublishReply> publish(Mono<PublishRequest> requestMono) {
         return requestMono
                 .map(request -> new Envelope(
@@ -90,16 +80,9 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                         .setOffset(it.getOffset())
                         .build()
                 )
-                .log("publish", Level.SEVERE, SignalType.ON_ERROR)
-                .onErrorMap(e -> Status.INTERNAL.withCause(e).withDescription(e.getMessage()).asException());
+                .log("publish", Level.SEVERE, SignalType.ON_ERROR);
     }
 
-    @Override
-    public Flux<SubscribeReply> subscribe(SubscribeRequest message, ByteBuf metadata) {
-        return subscribe(Mono.just(message));
-    }
-
-    @Override
     public Flux<SubscribeReply> subscribe(Mono<SubscribeRequest> requestFlux) {
         return requestFlux
                 .flatMapMany(subscribe -> {
@@ -166,7 +149,7 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                                                 Flux.from(source.getPublisher())
                                                         .log("partition-" + partition, Level.WARNING, SignalType.ON_ERROR)
                                                         .doFinally(__ -> sourcesByPartition.remove(partition))
-                                                        .transform(Operators.lift(new SubscribeOnlyOnceLifter<Record>()))
+                                                        // TODO .transform(Operators.lift(new SubscribeOnlyOnceLifter<Record>()))
                                         )
                                 );
 
@@ -183,16 +166,9 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                                 subscriptions.remove(sessionId, storedSubscription);
                             });
                 })
-                .log("subscribe", Level.SEVERE, SignalType.ON_ERROR)
-                .onErrorMap(e -> Status.INTERNAL.withCause(e).withDescription(e.getMessage()).asException());
+                .log("subscribe", Level.SEVERE, SignalType.ON_ERROR);
     }
 
-    @Override
-    public Flux<ReceiveReply> receive(ReceiveRequest message, ByteBuf metadata) {
-        return receive(Mono.just(message));
-    }
-
-    @Override
     public Flux<ReceiveReply> receive(Mono<ReceiveRequest> requestMono) {
         return requestMono
                 .flatMapMany(request -> {
@@ -235,16 +211,9 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                                 });
                     });
                 })
-                .log("receive", Level.SEVERE, SignalType.ON_ERROR)
-                .onErrorMap(e -> Status.INTERNAL.withCause(e).withDescription(e.getMessage()).asException());
+                .log("receive", Level.SEVERE, SignalType.ON_ERROR);
     }
 
-    @Override
-    public Mono<Empty> ack(AckRequest message, ByteBuf metadata) {
-        return ack(Mono.just(message));
-    }
-
-    @Override
     public Mono<Empty> ack(Mono<AckRequest> request) {
         return request
                 .flatMap(ack -> {
@@ -277,16 +246,9 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                     ));
                 })
                 .thenReturn(Empty.getDefaultInstance())
-                .log("ack", Level.SEVERE, SignalType.ON_ERROR)
-                .onErrorMap(e -> Status.INTERNAL.withCause(e).withDescription(e.getMessage()).asException());
+                .log("ack", Level.SEVERE, SignalType.ON_ERROR);
     }
 
-    @Override
-    public Mono<GetOffsetsReply> getOffsets(GetOffsetsRequest message, ByteBuf metadata) {
-        return getOffsets(Mono.just(message));
-    }
-
-    @Override
     public Mono<GetOffsetsReply> getOffsets(Mono<GetOffsetsRequest> request) {
         return request.flatMap(getOffsets -> Mono
                 .fromCompletionStage(positionsStorage.findAll(
@@ -299,20 +261,13 @@ public class ReactorLiiklusServiceImpl extends ReactorLiiklusServiceGrpc.Liiklus
                 .defaultIfEmpty(emptyMap())
                 .map(offsets -> GetOffsetsReply.newBuilder().putAllOffsets(offsets).build())
                 .log("getOffsets", Level.SEVERE, SignalType.ON_ERROR)
-                .onErrorMap(e -> Status.INTERNAL.withCause(e).withDescription(e.getMessage()).asException())
         );
     }
 
-    @Override
-    public Mono<GetEndOffsetsReply> getEndOffsets(GetEndOffsetsRequest message, ByteBuf metadata) {
-        return getEndOffsets(Mono.just(message));
-    }
-
-    @Override
     public Mono<GetEndOffsetsReply> getEndOffsets(Mono<GetEndOffsetsRequest> request) {
         return request.flatMap(getEndOffsets -> {
             if (!(recordsStorage instanceof FiniteRecordsStorage)) {
-                return Mono.error(Status.INTERNAL.withDescription("The record storage is not finite").asException());
+                return Mono.error(new IllegalStateException("The record storage is not finite"));
             }
 
             var topic = getEndOffsets.getTopic();

@@ -1,8 +1,8 @@
-package com.github.bsideup.liiklus.config;
+package com.github.bsideup.liiklus.transport.grpc.config;
 
-import com.github.bsideup.liiklus.service.ReactorLiiklusServiceImpl;
+import com.github.bsideup.liiklus.transport.grpc.GRPCLiiklusService;
+import com.google.auto.service.AutoService;
 import io.grpc.*;
-import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.netty.NettyServerBuilder;
 import io.grpc.protobuf.services.ProtoReflectionService;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -15,6 +15,7 @@ import reactor.core.scheduler.Schedulers;
 
 import java.util.concurrent.TimeUnit;
 
+@AutoService(ApplicationContextInitializer.class)
 public class GRPCConfiguration implements ApplicationContextInitializer<GenericApplicationContext> {
 
     @Override
@@ -29,24 +30,20 @@ public class GRPCConfiguration implements ApplicationContextInitializer<GenericA
 
         var serverProperties = binder.bind("grpc", GRpcServerProperties.class).orElseGet(GRpcServerProperties::new);
 
-        applicationContext.registerBean(ReactorLiiklusServiceImpl.class);
+        if (!serverProperties.isEnabled()) {
+            return;
+        }
+
+        applicationContext.registerBean(GRPCLiiklusService.class);
 
         applicationContext.registerBean(
                 Server.class,
                 () -> {
-                    ServerBuilder<?> serverBuilder;
-
-                    if (serverProperties.isEnabled()) {
-                        serverBuilder = NettyServerBuilder
-                                .forPort(serverProperties.getPort())
-                                .workerEventLoopGroup(new NioEventLoopGroup(Schedulers.DEFAULT_POOL_SIZE))
-                                .permitKeepAliveTime(150, TimeUnit.SECONDS)
-                                .permitKeepAliveWithoutCalls(true);
-                    } else {
-                        serverBuilder = InProcessServerBuilder.forName(serverProperties.getInProcessServerName());
-                    }
-
-                    return serverBuilder
+                    var serverBuilder = NettyServerBuilder
+                            .forPort(serverProperties.getPort())
+                            .workerEventLoopGroup(new NioEventLoopGroup(Schedulers.DEFAULT_POOL_SIZE))
+                            .permitKeepAliveTime(150, TimeUnit.SECONDS)
+                            .permitKeepAliveWithoutCalls(true)
                             .directExecutor()
                             .intercept(new ServerInterceptor() {
                                 @Override
@@ -55,9 +52,13 @@ public class GRPCConfiguration implements ApplicationContextInitializer<GenericA
                                     return next.startCall(call, headers);
                                 }
                             })
-                            .addService(ProtoReflectionService.newInstance())
-                            .addService(applicationContext.getBean(ReactorLiiklusServiceImpl.class))
-                            .build();
+                            .addService(ProtoReflectionService.newInstance());
+
+                    for (var bindableService : applicationContext.getBeansOfType(BindableService.class).values()) {
+                        serverBuilder.addService(bindableService);
+                    }
+
+                    return serverBuilder.build();
                 },
                 it -> {
                     it.setInitMethodName("start");
@@ -72,8 +73,6 @@ public class GRPCConfiguration implements ApplicationContextInitializer<GenericA
         int port = 6565;
 
         boolean enabled = true;
-
-        String inProcessServerName;
 
     }
 
