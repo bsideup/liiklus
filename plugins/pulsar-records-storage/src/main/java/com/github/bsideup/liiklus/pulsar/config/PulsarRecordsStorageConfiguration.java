@@ -14,6 +14,8 @@ import org.springframework.core.env.Profiles;
 import org.springframework.validation.annotation.Validated;
 
 import javax.validation.constraints.NotEmpty;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 @AutoService(ApplicationContextInitializer.class)
@@ -39,9 +41,20 @@ public class PulsarRecordsStorageConfiguration implements ApplicationContextInit
             @Override
             @SneakyThrows(PulsarClientException.class)
             public RecordsStorage get() {
-                return new PulsarRecordsStorage(
-                        PulsarClient.builder().serviceUrl(pulsarProperties.getServiceUrl()).build()
-                );
+                var clientBuilder = PulsarClient.builder()
+                        .serviceUrl(pulsarProperties.getServiceUrl());
+
+                pulsarProperties.getTlsTrustCertsFilePath().ifPresent(clientBuilder::tlsTrustCertsFilePath);
+                pulsarProperties.getAuthPluginClassName()
+                        .ifPresent(authClass -> {
+                            try {
+                                clientBuilder.authentication(authClass, pulsarProperties.getAuthPluginParams());
+                            } catch (PulsarClientException.UnsupportedAuthenticationException e) {
+                                throw new IllegalStateException(e);
+                            }
+                        });
+
+                return new PulsarRecordsStorage(clientBuilder.build());
             }
         });
     }
@@ -52,5 +65,12 @@ public class PulsarRecordsStorageConfiguration implements ApplicationContextInit
 
         @NotEmpty
         String serviceUrl;
+
+        Optional<String> tlsTrustCertsFilePath = Optional.empty();
+
+        Optional<String> authPluginClassName = Optional.empty();
+
+        Map<String, String> authPluginParams = Map.of();
+
     }
 }
