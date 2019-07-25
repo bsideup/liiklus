@@ -32,7 +32,6 @@ class RedisPositionsStorageTest implements PositionsStorageTests {
         System.setProperty("server.port", "0");
         System.setProperty("rsocket.enabled", "false");
         System.setProperty("grpc.enabled", "false");
-        System.setProperty("grpc.inProcessServerName", "liiklus");
 
         System.setProperty("plugins.dir", "../../plugins");
         System.setProperty("plugins.pathMatcher", "*/build/libs/*.jar");
