@@ -12,28 +12,6 @@ protobuf {
     }
 
     generatedFilesBaseDir = "$projectDir/generated"
-
-    plugins {
-        grpc {
-            artifact = 'io.grpc:protoc-gen-grpc-java'
-        }
-
-        reactor {
-            artifact = "com.salesforce.servicelibs:reactor-grpc:0.9.0:jdk8@jar"
-        }
-
-        rsocketRpc {
-            artifact = 'io.rsocket.rpc:rsocket-rpc-protobuf'
-        }
-    }
-
-    generateProtoTasks {
-        ofSourceSet('main')*.plugins {
-            grpc { }
-            reactor { }
-            rsocketRpc { }
-        }
-    }
 }
 
 clean {
@@ -43,17 +21,9 @@ clean {
 idea {
     module {
         generatedSourceDirs += file("${protobuf.generatedFilesBaseDir}/main/java")
-        generatedSourceDirs += file("${protobuf.generatedFilesBaseDir}/main/reactor")
-        generatedSourceDirs += file("${protobuf.generatedFilesBaseDir}/main/grpc")
-        generatedSourceDirs += file("${protobuf.generatedFilesBaseDir}/main/rsocketRpc")
     }
 }
 
 dependencies {
     compile 'com.google.protobuf:protobuf-java'
-
-    compile 'io.grpc:grpc-stub'
-    compile 'io.grpc:grpc-protobuf'
-    compile 'com.salesforce.servicelibs:reactor-grpc-stub'
-    compile 'io.rsocket.rpc:rsocket-rpc-core'
 }

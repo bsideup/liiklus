@@ -1,7 +1,9 @@
-package com.github.bsideup.liiklus.config;
+package com.github.bsideup.liiklus.transport.rsocket.config;
 
+import com.github.bsideup.liiklus.protocol.LiiklusService;
 import com.github.bsideup.liiklus.protocol.LiiklusServiceServer;
-import com.github.bsideup.liiklus.service.ReactorLiiklusServiceImpl;
+import com.github.bsideup.liiklus.transport.rsocket.RSocketLiiklusService;
+import com.google.auto.service.AutoService;
 import io.rsocket.RSocketFactory;
 import io.rsocket.rpc.rsocket.RequestHandlingRSocket;
 import io.rsocket.transport.netty.server.CloseableChannel;
@@ -15,6 +17,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.Optional;
 
+@AutoService(ApplicationContextInitializer.class)
 public class RSocketConfiguration implements ApplicationContextInitializer<GenericApplicationContext> {
 
     @Override
@@ -33,10 +36,13 @@ public class RSocketConfiguration implements ApplicationContextInitializer<Gener
             return;
         }
 
+        applicationContext.registerBean(RSocketLiiklusService.class);
+
         applicationContext.registerBean(
                 CloseableChannel.class,
                 () -> {
-                    var liiklusService = applicationContext.getBean(ReactorLiiklusServiceImpl.class);
+                    var liiklusService = applicationContext.getBean(LiiklusService.class);
+
                     return RSocketFactory.receive()
                             .acceptor((setup, sendingSocket) -> Mono.just(new RequestHandlingRSocket(new LiiklusServiceServer(liiklusService, Optional.empty(), Optional.empty()))))
                             .transport(TcpServerTransport.create(serverProperties.getHost(), serverProperties.getPort()))

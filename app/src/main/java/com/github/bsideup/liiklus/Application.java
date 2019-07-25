@@ -1,13 +1,9 @@
 package com.github.bsideup.liiklus;
 
-import com.github.bsideup.liiklus.config.GRPCConfiguration;
-import com.github.bsideup.liiklus.config.LayersConfiguration;
-import com.github.bsideup.liiklus.config.MetricsConfiguration;
-import com.github.bsideup.liiklus.config.RSocketConfiguration;
-import com.github.bsideup.liiklus.monitoring.MetricsCollector;
+import com.github.bsideup.liiklus.config.GatewayConfiguration;
 import com.github.bsideup.liiklus.plugins.LiiklusPluginManager;
-import io.prometheus.client.exporter.common.TextFormat;
 import lombok.extern.slf4j.Slf4j;
+import org.pf4j.PluginManager;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -24,19 +20,13 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.GenericApplicationContext;
-import org.springframework.core.env.Profiles;
 import org.springframework.core.env.SimpleCommandLinePropertySource;
 import org.springframework.core.env.StandardEnvironment;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
+import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerResponse;
-import org.springframework.web.reactive.function.server.support.RouterFunctionMapping;
 
-import java.io.IOException;
-import java.io.StringWriter;
 import java.nio.file.Paths;
-import java.util.Collections;
 
 @Slf4j
 @SpringBootApplication
@@ -99,35 +89,15 @@ public class Application {
                         binder.bind("spring.webflux", WebFluxProperties.class).orElseGet(WebFluxProperties::new),
                         new NettyReactiveWebServerFactory()
                 ),
-                new GRPCConfiguration(),
-                new RSocketConfiguration(),
-                new LayersConfiguration(),
-                new MetricsConfiguration(),
+                new GatewayConfiguration(),
                 (GenericApplicationContext applicationContext) -> {
-                    applicationContext.registerBean(RouterFunctionMapping.class, () -> {
-                        var router = RouterFunctions.route();
-                        router.GET("/health", __ -> ServerResponse.ok().syncBody("OK"));
-
-                        if (environment.acceptsProfiles(Profiles.of("exporter"))) {
-                            var metricsCollector = applicationContext.getBean(MetricsCollector.class);
-                            router.GET("/prometheus", __ -> {
-                                return metricsCollector.collect()
-                                        .collectList()
-                                        .flatMap(metrics -> {
-                                            try {
-                                                var writer = new StringWriter();
-                                                TextFormat.write004(writer, Collections.enumeration(metrics));
-                                                return ServerResponse.ok()
-                                                        .contentType(MediaType.valueOf(TextFormat.CONTENT_TYPE_004))
-                                                        .syncBody(writer.toString());
-                                            } catch (IOException e) {
-                                                return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-                                            }
-                                        });
-                            });
-                        }
-                        return new RouterFunctionMapping(router.build());
+                    applicationContext.registerBean("health", RouterFunction.class, () -> {
+                        return RouterFunctions.route()
+                                .GET("/health", __ -> ServerResponse.ok().syncBody("OK"))
+                                .build();
                     });
+
+                    applicationContext.registerBean(PluginManager.class, () -> pluginManager);
                 }
         );
 

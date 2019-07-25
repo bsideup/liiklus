@@ -22,11 +22,7 @@ dependencies {
     compile 'org.springframework.boot:spring-boot-starter-webflux'
     compile 'org.springframework.fu:spring-fu-autoconfigure-adapter'
 
-    compile 'io.grpc:grpc-netty'
-    compile 'io.grpc:grpc-services'
-    compile 'io.prometheus:simpleclient_common'
     compile 'org.pf4j:pf4j'
-    compile 'io.rsocket:rsocket-transport-netty'
 
     testCompileOnly 'org.projectlombok:lombok'
     testAnnotationProcessor 'org.projectlombok:lombok'
