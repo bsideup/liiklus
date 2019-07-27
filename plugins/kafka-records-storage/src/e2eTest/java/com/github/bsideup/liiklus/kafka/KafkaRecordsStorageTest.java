@@ -1,6 +1,6 @@
 package com.github.bsideup.liiklus.kafka;
 
-import com.github.bsideup.liiklus.Application;
+import com.github.bsideup.liiklus.ApplicationRunner;
 import com.github.bsideup.liiklus.records.RecordStorageTests;
 import com.github.bsideup.liiklus.records.RecordsStorage;
 import lombok.Getter;
@@ -29,19 +29,9 @@ public class KafkaRecordsStorageTest implements RecordStorageTests {
     static {
         kafka.start();
 
-        System.setProperty("server.port", "0");
-        System.setProperty("rsocket.enabled", "false");
-        System.setProperty("grpc.enabled", "false");
-
-        System.setProperty("plugins.dir", "../../plugins");
-        System.setProperty("plugins.pathMatcher", "*/build/libs/*.jar");
-
-        System.setProperty("storage.positions.type", "MEMORY");
-
-        System.setProperty("storage.records.type", "KAFKA");
         System.setProperty("kafka.bootstrapServers", kafka.getBootstrapServers());
 
-        applicationContext = Application.start(new String[0]);
+        applicationContext = new ApplicationRunner("KAFKA", "MEMORY").run();
 
         try {
             var pluginClassLoader = applicationContext.getBean(PluginManager.class).getPluginClassLoader("kafka-records-storage");

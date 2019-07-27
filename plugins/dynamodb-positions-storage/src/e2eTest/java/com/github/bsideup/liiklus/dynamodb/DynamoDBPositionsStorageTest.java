@@ -1,6 +1,6 @@
 package com.github.bsideup.liiklus.dynamodb;
 
-import com.github.bsideup.liiklus.Application;
+import com.github.bsideup.liiklus.ApplicationRunner;
 import com.github.bsideup.liiklus.positions.PositionsStorage;
 import com.github.bsideup.liiklus.positions.PositionsStorageTests;
 import lombok.Getter;
@@ -20,16 +20,6 @@ class DynamoDBPositionsStorageTest implements PositionsStorageTests {
     static {
         localstack.start();
 
-        System.setProperty("server.port", "0");
-        System.setProperty("rsocket.enabled", "false");
-        System.setProperty("grpc.enabled", "false");
-
-        System.setProperty("plugins.dir", "../../plugins");
-        System.setProperty("plugins.pathMatcher", "*/build/libs/*.jar");
-
-        System.setProperty("storage.records.type", "MEMORY");
-
-        System.setProperty("storage.positions.type", "DYNAMODB");
         System.setProperty("dynamodb.autoCreateTable", "true");
         System.setProperty("dynamodb.positionsTable", "positions-" + UUID.randomUUID());
         var endpointConfiguration = localstack.getEndpointConfiguration(Service.DYNAMODB);
@@ -39,7 +29,7 @@ class DynamoDBPositionsStorageTest implements PositionsStorageTests {
         System.setProperty("aws.accessKeyId", credentials.getAWSAccessKeyId());
         System.setProperty("aws.secretAccessKey", credentials.getAWSSecretKey());
 
-        applicationContext = Application.start(new String[0]);
+        applicationContext = new ApplicationRunner("MEMORY", "DYNAMODB").run();
     }
 
     @Getter

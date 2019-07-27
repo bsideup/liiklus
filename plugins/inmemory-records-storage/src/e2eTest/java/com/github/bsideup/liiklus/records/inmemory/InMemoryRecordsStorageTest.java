@@ -1,15 +1,13 @@
 package com.github.bsideup.liiklus.records.inmemory;
 
-import com.github.bsideup.liiklus.Application;
+import com.github.bsideup.liiklus.ApplicationRunner;
 import com.github.bsideup.liiklus.records.RecordStorageTests;
 import com.github.bsideup.liiklus.records.RecordsStorage;
 import lombok.Getter;
-import lombok.SneakyThrows;
 import org.pf4j.PluginManager;
 import org.springframework.context.ApplicationContext;
 import reactor.core.publisher.Mono;
 
-import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -25,17 +23,7 @@ class InMemoryRecordsStorageTest implements RecordStorageTests {
     static final ApplicationContext applicationContext;
 
     static {
-        System.setProperty("server.port", "0");
-        System.setProperty("rsocket.enabled", "false");
-        System.setProperty("grpc.enabled", "false");
-
-        System.setProperty("plugins.dir", "../../plugins");
-        System.setProperty("plugins.pathMatcher", "*/build/libs/*.jar");
-
-        System.setProperty("storage.positions.type", "MEMORY");
-
-        System.setProperty("storage.records.type", "MEMORY");
-        applicationContext = Application.start(new String[0]);
+        applicationContext = new ApplicationRunner("MEMORY", "MEMORY").run();
 
         var pluginManager = applicationContext.getBean(PluginManager.class);
 

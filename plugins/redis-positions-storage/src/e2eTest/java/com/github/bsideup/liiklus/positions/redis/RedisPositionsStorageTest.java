@@ -1,6 +1,6 @@
 package com.github.bsideup.liiklus.positions.redis;
 
-import com.github.bsideup.liiklus.Application;
+import com.github.bsideup.liiklus.ApplicationRunner;
 import com.github.bsideup.liiklus.positions.GroupId;
 import com.github.bsideup.liiklus.positions.PositionsStorage;
 import com.github.bsideup.liiklus.positions.PositionsStorage.Positions;
@@ -29,20 +29,10 @@ class RedisPositionsStorageTest implements PositionsStorageTests {
     static {
         redis.start();
 
-        System.setProperty("server.port", "0");
-        System.setProperty("rsocket.enabled", "false");
-        System.setProperty("grpc.enabled", "false");
-
-        System.setProperty("plugins.dir", "../../plugins");
-        System.setProperty("plugins.pathMatcher", "*/build/libs/*.jar");
-
-        System.setProperty("storage.records.type", "MEMORY");
-
-        System.setProperty("storage.positions.type", "REDIS");
         System.setProperty("redis.host", redis.getContainerIpAddress());
         System.setProperty("redis.port", redis.getMappedPort(6379) + "");
 
-        applicationContext = Application.start(new String[0]);
+        applicationContext = new ApplicationRunner("MEMORY", "REDIS").run();
     }
 
     static final RedisClient redisClient = RedisClient.create(

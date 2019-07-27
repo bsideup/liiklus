@@ -2,11 +2,10 @@ dependencies {
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
-    compile project(":api")
+    compile project(":app")
 
     compile 'org.junit.jupiter:junit-jupiter-api'
     compile 'org.assertj:assertj-core'
-    compile 'io.projectreactor:reactor-core'
     compile 'io.projectreactor:reactor-test'
     compile 'org.awaitility:awaitility'
 }
