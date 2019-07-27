@@ -7,9 +7,29 @@ jar {
     }
 
     into('lib') {
-        from configurations.compile
+        from(configurations.compile - configurations.compileOnly)
     }
 }
+
+sourceSets {
+    e2eTest
+}
+
+task e2eTest(type: Test) {
+    group = 'verification'
+    testClassesDirs = sourceSets.e2eTest.output.classesDirs
+    classpath = sourceSets.e2eTest.runtimeClasspath
+}
+tasks.check.dependsOn(e2eTest)
+
+e2eTest {
+    useJUnitPlatform()
+}
+
+tasks.e2eTest.dependsOn(
+        jar,
+        rootProject.project(":inmemory-positions-storage").getTasksByName("jar", false)
+)
 
 dependencies {
     compileOnly 'org.projectlombok:lombok'
@@ -17,20 +37,16 @@ dependencies {
     compileOnly 'com.google.auto.service:auto-service'
     annotationProcessor 'com.google.auto.service:auto-service'
 
-    compileOnly 'org.springframework.boot:spring-boot-starter'
-    compileOnly 'org.springframework.boot:spring-boot-starter-validation'
-    compileOnly project(":api")
-    compileOnly 'io.projectreactor:reactor-core'
+    compileOnly project(":app")
 
-    compile ('org.apache.pulsar:pulsar-client:2.3.2') {
-        exclude group: "org.slf4j"
-    }
+    compile 'org.apache.pulsar:pulsar-client:2.3.2'
 
-    testCompileOnly 'org.projectlombok:lombok'
-    testAnnotationProcessor 'org.projectlombok:lombok'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
-
-    testCompile project(":tck")
-    testCompile 'org.testcontainers:pulsar'
-    testCompile 'org.apache.pulsar:pulsar-client-admin:2.3.2'
+    e2eTestCompile 'org.projectlombok:lombok'
+    e2eTestAnnotationProcessor 'org.projectlombok:lombok'
+    e2eTestRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+    e2eTestCompile project(":app")
+    e2eTestCompile project(":tck")
+    // TODO avoid polluting the classpath
+    e2eTestCompile 'org.testcontainers:pulsar'
+    e2eTestCompile 'org.apache.pulsar:pulsar-client-admin:2.3.2'
 }

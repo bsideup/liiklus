@@ -48,9 +48,7 @@ dependencies {
     e2eTestAnnotationProcessor 'org.projectlombok:lombok'
     e2eTestRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
     e2eTestCompile project(":app")
-    e2eTestCompile project(":tck"), {
-        exclude group: "org.slf4j", module: "slf4j-simple"
-    }
+    e2eTestCompile project(":tck")
     e2eTestCompile 'org.testcontainers:testcontainers'
     e2eTestCompile 'org.assertj:assertj-core'
     // TODO avoid polluting app's classpath with test dependencies
