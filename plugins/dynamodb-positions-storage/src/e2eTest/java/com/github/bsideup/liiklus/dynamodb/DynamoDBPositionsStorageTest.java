@@ -37,7 +37,7 @@ class DynamoDBPositionsStorageTest implements PositionsStorageTests {
         System.setProperty("aws.region", endpointConfiguration.getSigningRegion());
         var credentials = localstack.getDefaultCredentialsProvider().getCredentials();
         System.setProperty("aws.accessKeyId", credentials.getAWSAccessKeyId());
-        System.setProperty("aws.secretKey", credentials.getAWSSecretKey());
+        System.setProperty("aws.secretAccessKey", credentials.getAWSSecretKey());
 
         applicationContext = Application.start(new String[0]);
     }
