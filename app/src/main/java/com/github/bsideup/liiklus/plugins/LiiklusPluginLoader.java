@@ -29,7 +29,7 @@ public class LiiklusPluginLoader implements PluginLoader {
 
     @Override
     public ClassLoader loadPlugin(Path pluginPath, PluginDescriptor pluginDescriptor) {
-        var pluginClassLoader = new PluginClassLoader(pluginManager, pluginDescriptor, getClass().getClassLoader());
+        var pluginClassLoader = new PluginClassLoader(pluginManager, pluginDescriptor, Thread.currentThread().getContextClassLoader());
         pluginClassLoader.addFile(pluginPath.toFile());
 
         // TODO consider fat jars

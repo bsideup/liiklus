@@ -14,6 +14,8 @@ project.afterEvaluate {
             beforeTest { desc -> logger.warn("Re-running ${desc.className}.${desc.name}") }
 
             useTestFramework(originalTask.getTestFramework())
+            classpath = originalTask.classpath
+            testClassesDirs = originalTask.testClassesDirs
 
             testLogging {
                 displayGranularity 1

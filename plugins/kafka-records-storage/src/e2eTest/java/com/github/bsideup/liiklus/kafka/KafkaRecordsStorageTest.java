@@ -1,9 +1,11 @@
 package com.github.bsideup.liiklus.kafka;
 
+import com.github.bsideup.liiklus.ApplicationRunner;
 import com.github.bsideup.liiklus.records.RecordStorageTests;
 import com.github.bsideup.liiklus.records.RecordsStorage;
 import lombok.Getter;
 import org.apache.kafka.common.utils.Utils;
+import org.springframework.context.ApplicationContext;
 import org.testcontainers.containers.KafkaContainer;
 import reactor.core.publisher.Mono;
 
@@ -32,14 +34,18 @@ public class KafkaRecordsStorageTest implements RecordStorageTests {
     private static final KafkaContainer kafka = new KafkaContainer()
             .withEnv("KAFKA_NUM_PARTITIONS", NUM_OF_PARTITIONS + "");
 
+    static final ApplicationContext applicationContext;
+
     static {
         kafka.start();
+
+        System.setProperty("kafka.bootstrapServers", kafka.getBootstrapServers());
+
+        applicationContext = new ApplicationRunner("KAFKA", "MEMORY").run();
     }
 
     @Getter
-    RecordsStorage target = new KafkaRecordsStorage(
-            kafka.getBootstrapServers()
-    );
+    RecordsStorage target = applicationContext.getBean(RecordsStorage.class);
 
     @Getter
     String topic = UUID.randomUUID().toString();

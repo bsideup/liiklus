@@ -1,9 +1,10 @@
 package com.github.bsideup.liiklus.records.inmemory;
 
+import com.github.bsideup.liiklus.ApplicationRunner;
 import com.github.bsideup.liiklus.records.RecordStorageTests;
 import com.github.bsideup.liiklus.records.RecordsStorage;
 import lombok.Getter;
-import lombok.SneakyThrows;
+import org.springframework.context.ApplicationContext;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
@@ -13,7 +14,7 @@ import java.util.UUID;
 
 class InMemoryRecordsStorageTest implements RecordStorageTests {
 
-    private static final int NUM_OF_PARTITIONS = 4;
+    private static final int NUM_OF_PARTITIONS = 32;
 
     // Generate a set of keys where each key goes to unique partition
     public static Map<Integer, String> PARTITION_KEYS = Mono.fromCallable(() -> UUID.randomUUID().toString())
@@ -28,16 +29,13 @@ class InMemoryRecordsStorageTest implements RecordStorageTests {
             .filter(it -> it.size() == NUM_OF_PARTITIONS)
             .blockFirst(Duration.ofSeconds(10));
 
+    static final ApplicationContext applicationContext = new ApplicationRunner("MEMORY", "MEMORY").run();
+
     @Getter
-    RecordsStorage target;
+    RecordsStorage target = applicationContext.getBean(RecordsStorage.class);
 
     @Getter
     String topic = UUID.randomUUID().toString();
-
-    @SneakyThrows
-    public InMemoryRecordsStorageTest() {
-        this.target = new InMemoryRecordsStorage(NUM_OF_PARTITIONS);
-    }
 
     @Override
     public String keyByPartition(int partition) {

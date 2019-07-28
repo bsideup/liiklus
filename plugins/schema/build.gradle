@@ -7,7 +7,7 @@ jar {
     }
 
     into('lib') {
-        from configurations.compile
+        from(configurations.compile - configurations.compileOnly)
     }
 }
 
@@ -17,14 +17,9 @@ dependencies {
     compileOnly 'com.google.auto.service:auto-service'
     annotationProcessor 'com.google.auto.service:auto-service'
 
-    compileOnly 'org.springframework.boot:spring-boot-starter'
-    compileOnly project(":api")
+    compileOnly project(":app")
 
-    compileOnly 'com.fasterxml.jackson.core:jackson-databind'
-
-    compile ('com.networknt:json-schema-validator:0.1.19') {
-        exclude group: "org.slf4j"
-    }
+    compile 'com.networknt:json-schema-validator:0.1.19'
 
     compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
 

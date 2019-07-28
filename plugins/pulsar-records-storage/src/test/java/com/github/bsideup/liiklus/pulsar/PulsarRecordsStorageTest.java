@@ -1,13 +1,14 @@
 package com.github.bsideup.liiklus.pulsar;
 
+import com.github.bsideup.liiklus.ApplicationRunner;
 import com.github.bsideup.liiklus.records.RecordStorageTests;
 import com.github.bsideup.liiklus.records.RecordsStorage;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.apache.pulsar.client.admin.PulsarAdmin;
-import org.apache.pulsar.client.api.PulsarClient;
 import org.apache.pulsar.client.impl.Murmur3_32Hash;
 import org.apache.pulsar.client.util.MathUtils;
+import org.springframework.context.ApplicationContext;
 import org.testcontainers.containers.PulsarContainer;
 import reactor.core.publisher.Mono;
 
@@ -35,12 +36,17 @@ public class PulsarRecordsStorageTest implements RecordStorageTests {
 
     private static final PulsarContainer pulsar = new PulsarContainer();
 
+    static final ApplicationContext applicationContext;
+
     static {
         pulsar.start();
+        System.setProperty("pulsar.serviceUrl", pulsar.getPulsarBrokerUrl());
+
+        applicationContext = new ApplicationRunner("PULSAR", "MEMORY").run();
     }
 
     @Getter
-    RecordsStorage target;
+    RecordsStorage target = applicationContext.getBean(RecordsStorage.class);
 
     @Getter
     String topic = UUID.randomUUID().toString();
@@ -52,12 +58,6 @@ public class PulsarRecordsStorageTest implements RecordStorageTests {
                 .build();
 
         pulsarAdmin.topics().createPartitionedTopic(topic, getNumberOfPartitions());
-
-        this.target = new PulsarRecordsStorage(
-                PulsarClient.builder()
-                        .serviceUrl(pulsar.getPulsarBrokerUrl())
-                        .build()
-        );
     }
 
     @Override
