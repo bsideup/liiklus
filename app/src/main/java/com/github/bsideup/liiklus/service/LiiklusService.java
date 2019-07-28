@@ -113,11 +113,9 @@ public class LiiklusService {
                             autoOffsetReset = Optional.empty();
                     }
 
-                    var subscription = recordsStorage.subscribe(topic, groupId.getName(), autoOffsetReset);
-
                     var sessionId = UUID.randomUUID().toString();
 
-                    var storedSubscription = new StoredSubscription(subscription, topic, groupId);
+                    var storedSubscription = new StoredSubscription(topic, groupId);
                     subscriptions.put(sessionId, storedSubscription);
 
                     var sourcesByPartition = sources.computeIfAbsent(sessionId, __ -> new ConcurrentHashMap<>());
@@ -136,6 +134,8 @@ public class LiiklusService {
                                 )
                                 .toFuture();
                     };
+
+                    var subscription = recordsStorage.subscribe(topic, groupId.getName(), autoOffsetReset);
 
                     return Flux.from(subscription.getPublisher(offsetsProvider))
                             .flatMap(sources -> Flux.fromStream(sources).map(source -> {
@@ -299,8 +299,6 @@ public class LiiklusService {
 
     @Value
     private static class StoredSubscription {
-
-        Subscription subscription;
 
         String topic;
 

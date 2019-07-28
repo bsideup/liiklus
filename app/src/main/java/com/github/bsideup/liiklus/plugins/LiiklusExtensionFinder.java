@@ -3,6 +3,8 @@ package com.github.bsideup.liiklus.plugins;
 import org.pf4j.PluginManager;
 import org.pf4j.ServiceProviderExtensionFinder;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -10,6 +12,13 @@ class LiiklusExtensionFinder extends ServiceProviderExtensionFinder {
 
     LiiklusExtensionFinder(PluginManager pluginManager) {
         super(pluginManager);
+    }
+
+    @Override
+    public Map<String, Set<String>> readClasspathStorages() {
+        // The app does not provide any extensions,
+        // we can safely return an empty Map here to avoid an exception ('META-INF/services' not found)
+        return Collections.emptyMap();
     }
 
     @Override
