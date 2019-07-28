@@ -3,6 +3,7 @@ package com.github.bsideup.liiklus;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.loader.JarLauncher;
 import org.springframework.boot.loader.LaunchedURLClassLoader;
@@ -16,6 +17,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.Map;
 
 @RequiredArgsConstructor
+@Slf4j
 public class ApplicationRunner {
 
     @NonNull
@@ -51,6 +53,7 @@ public class ApplicationRunner {
                         var classFile = findResource(name.replace(".", "/") + ".class");
                         if (classFile != null) {
                             // If exists in the app.jar, load it from the system classloader instead
+                            log.debug("Loading class '{}' from the system ClassLoader instead", name);
                             return systemClassLoader.loadClass(name);
                         }
                         return super.loadClass(name, resolve);
