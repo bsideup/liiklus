@@ -1,11 +1,23 @@
+sourceSets.main.resources.srcDir tasks.findByPath(":app:bootJar").outputs.files.singleFile.parentFile
+
+compileJava.dependsOn(tasks.findByPath(":app:bootJar"))
+
 dependencies {
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
     compile project(":app")
+    compile 'org.springframework.boot:spring-boot-loader'
 
     compile 'org.junit.jupiter:junit-jupiter-api'
     compile 'org.assertj:assertj-core'
     compile 'io.projectreactor:reactor-test'
     compile 'org.awaitility:awaitility'
+
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
 }
+
+tasks.test.dependsOn(
+        rootProject.project(":inmemory-positions-storage").getTasksByName("jar", false),
+        rootProject.project(":inmemory-records-storage").getTasksByName("jar", false)
+)

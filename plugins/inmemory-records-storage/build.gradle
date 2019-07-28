@@ -11,22 +11,7 @@ jar {
     }
 }
 
-sourceSets {
-    e2eTest
-}
-
-task e2eTest(type: Test) {
-    group = 'verification'
-    testClassesDirs = sourceSets.e2eTest.output.classesDirs
-    classpath = sourceSets.e2eTest.runtimeClasspath
-}
-tasks.check.dependsOn(e2eTest)
-
-e2eTest {
-    useJUnitPlatform()
-}
-
-tasks.e2eTest.dependsOn(
+tasks.test.dependsOn(
         jar,
         rootProject.project(":inmemory-positions-storage").getTasksByName("jar", false)
 )
@@ -39,9 +24,8 @@ dependencies {
 
     compileOnly project(":app")
 
-    e2eTestCompileOnly 'org.projectlombok:lombok'
-    e2eTestAnnotationProcessor 'org.projectlombok:lombok'
-    e2eTestRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
-    e2eTestCompile project(":app")
-    e2eTestCompile project(":tck")
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+    testCompile project(":tck")
 }
