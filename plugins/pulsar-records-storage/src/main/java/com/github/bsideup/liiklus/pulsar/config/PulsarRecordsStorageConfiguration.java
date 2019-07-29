@@ -3,6 +3,7 @@ package com.github.bsideup.liiklus.pulsar.config;
 import com.github.bsideup.liiklus.pulsar.PulsarRecordsStorage;
 import com.github.bsideup.liiklus.records.RecordsStorage;
 import com.google.auto.service.AutoService;
+import com.google.common.annotations.VisibleForTesting;
 import lombok.Data;
 import lombok.SneakyThrows;
 import org.apache.pulsar.client.api.PulsarClient;
@@ -16,7 +17,6 @@ import org.springframework.validation.annotation.Validated;
 import javax.validation.constraints.NotEmpty;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 @AutoService(ApplicationContextInitializer.class)
 public class PulsarRecordsStorageConfiguration implements ApplicationContextInitializer<GenericApplicationContext> {
@@ -37,26 +37,25 @@ public class PulsarRecordsStorageConfiguration implements ApplicationContextInit
 
         var pulsarProperties = binder.bind("pulsar", PulsarProperties.class).get();
 
-        applicationContext.registerBean(RecordsStorage.class, new Supplier<RecordsStorage>() {
-            @Override
-            @SneakyThrows(PulsarClientException.class)
-            public RecordsStorage get() {
-                var clientBuilder = PulsarClient.builder()
-                        .serviceUrl(pulsarProperties.getServiceUrl());
+        applicationContext.registerBean(RecordsStorage.class, () -> createStorage(pulsarProperties));
+    }
 
-                pulsarProperties.getTlsTrustCertsFilePath().ifPresent(clientBuilder::tlsTrustCertsFilePath);
-                pulsarProperties.getAuthPluginClassName()
-                        .ifPresent(authClass -> {
-                            try {
-                                clientBuilder.authentication(authClass, pulsarProperties.getAuthPluginParams());
-                            } catch (PulsarClientException.UnsupportedAuthenticationException e) {
-                                throw new IllegalStateException(e);
-                            }
-                        });
+    @SneakyThrows
+    private RecordsStorage createStorage(PulsarProperties pulsarProperties) {
+        var clientBuilder = PulsarClient.builder()
+                .serviceUrl(pulsarProperties.getServiceUrl());
 
-                return new PulsarRecordsStorage(clientBuilder.build());
-            }
-        });
+        pulsarProperties.getTlsTrustCertsFilePath().ifPresent(clientBuilder::tlsTrustCertsFilePath);
+        pulsarProperties.getAuthPluginClassName()
+                .ifPresent(authClass -> {
+                    try {
+                        clientBuilder.authentication(authClass, pulsarProperties.getAuthPluginParams());
+                    } catch (PulsarClientException.UnsupportedAuthenticationException e) {
+                        throw new IllegalStateException(e);
+                    }
+                });
+
+        return new PulsarRecordsStorage(clientBuilder.build());
     }
 
     @Data
