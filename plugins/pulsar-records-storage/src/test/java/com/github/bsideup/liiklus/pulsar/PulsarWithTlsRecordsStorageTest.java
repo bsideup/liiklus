@@ -36,10 +36,6 @@ public class PulsarWithTlsRecordsStorageTest extends PulsarAbstractStorageTest i
         PulsarAdmin pulsarAdmin = PulsarAdmin.builder()
                 .serviceHttpUrl(pulsar.getHttpsServiceUrl())
                 .tlsTrustCertsFilePath(pulsar.getCaCert().toAbsolutePath().toString())
-                .authentication(new AuthenticationTls(
-                        pulsar.getUserCert().toAbsolutePath().toString(),
-                        pulsar.getUserKey().toAbsolutePath().toString()
-                ))
                 .build();
 
         pulsarAdmin.topics().createPartitionedTopic(topic, getNumberOfPartitions());
