@@ -9,6 +9,8 @@ import lombok.SneakyThrows;
 import org.apache.pulsar.client.admin.PulsarAdmin;
 import org.apache.pulsar.client.impl.auth.AuthenticationTls;
 import org.junit.jupiter.api.AfterAll;
+import org.springframework.boot.ExitCodeGenerator;
+import org.springframework.boot.SpringApplication;
 
 import java.util.Map;
 
@@ -45,6 +47,7 @@ public class PulsarWithTlsRecordsStorageTest extends PulsarAbstractStorageTest i
 
     @AfterAll
     static void tearDown() {
+        SpringApplication.exit(applicationContext, (ExitCodeGenerator) () -> 0);
         pulsar.stop();
     }
 }

@@ -7,6 +7,8 @@ import lombok.Getter;
 import lombok.SneakyThrows;
 import org.apache.pulsar.client.admin.PulsarAdmin;
 import org.junit.jupiter.api.AfterAll;
+import org.springframework.boot.ExitCodeGenerator;
+import org.springframework.boot.SpringApplication;
 import org.testcontainers.containers.PulsarContainer;
 
 public class PulsarRecordsStorageTest extends PulsarAbstractStorageTest implements RecordStorageTests {
@@ -34,6 +36,7 @@ public class PulsarRecordsStorageTest extends PulsarAbstractStorageTest implemen
 
     @AfterAll
     static void tearDown() {
+        SpringApplication.exit(applicationContext, (ExitCodeGenerator) () -> 0);
         pulsar.stop();
     }
 }
