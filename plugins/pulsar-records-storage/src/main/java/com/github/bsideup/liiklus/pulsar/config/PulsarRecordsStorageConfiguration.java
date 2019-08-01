@@ -3,7 +3,6 @@ package com.github.bsideup.liiklus.pulsar.config;
 import com.github.bsideup.liiklus.pulsar.PulsarRecordsStorage;
 import com.github.bsideup.liiklus.records.RecordsStorage;
 import com.google.auto.service.AutoService;
-import com.google.common.annotations.VisibleForTesting;
 import lombok.Data;
 import lombok.SneakyThrows;
 import org.apache.pulsar.client.api.PulsarClient;
@@ -37,30 +36,31 @@ public class PulsarRecordsStorageConfiguration implements ApplicationContextInit
 
         var pulsarProperties = binder.bind("pulsar", PulsarProperties.class).get();
 
-        applicationContext.registerBean(RecordsStorage.class, () -> createStorage(pulsarProperties));
+        applicationContext.registerBean(RecordsStorage.class, () -> {
+            return new PulsarRecordsStorage(createClient(pulsarProperties));
+        });
     }
 
     @SneakyThrows
-    private RecordsStorage createStorage(PulsarProperties pulsarProperties) {
+    PulsarClient createClient(PulsarProperties pulsarProperties) {
         var clientBuilder = PulsarClient.builder()
                 .serviceUrl(pulsarProperties.getServiceUrl());
 
         pulsarProperties.getTlsTrustCertsFilePath().ifPresent(clientBuilder::tlsTrustCertsFilePath);
-        pulsarProperties.getAuthPluginClassName()
-                .ifPresent(authClass -> {
-                    try {
-                        clientBuilder.authentication(authClass, pulsarProperties.getAuthPluginParams());
-                    } catch (PulsarClientException.UnsupportedAuthenticationException e) {
-                        throw new IllegalStateException(e);
-                    }
-                });
+        pulsarProperties.getAuthPluginClassName().ifPresent(authClass -> {
+            try {
+                clientBuilder.authentication(authClass, pulsarProperties.getAuthPluginParams());
+            } catch (PulsarClientException.UnsupportedAuthenticationException e) {
+                throw new IllegalStateException(e);
+            }
+        });
 
-        return new PulsarRecordsStorage(clientBuilder.build());
+        return clientBuilder.build();
     }
 
     @Data
     @Validated
-    private static class PulsarProperties {
+    static class PulsarProperties {
 
         @NotEmpty
         String serviceUrl;

@@ -24,12 +24,15 @@ dependencies {
 
     compileOnly project(":app")
 
-    compile 'org.apache.pulsar:pulsar-client:2.3.2'
+    compile 'org.apache.pulsar:pulsar-client-original:2.4.0'
 
     testCompileOnly 'org.projectlombok:lombok'
     testAnnotationProcessor 'org.projectlombok:lombok'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
     testCompile project(":tck")
     testCompile 'org.testcontainers:pulsar'
-    testCompile 'org.apache.pulsar:pulsar-client-admin:2.3.2'
+    testCompile 'org.testcontainers:junit-jupiter'
+    testCompile 'org.apache.pulsar:pulsar-client-admin-original:2.4.0', {
+        exclude group: "org.apache.pulsar", module: "pulsar-client-original"
+    }
 }
