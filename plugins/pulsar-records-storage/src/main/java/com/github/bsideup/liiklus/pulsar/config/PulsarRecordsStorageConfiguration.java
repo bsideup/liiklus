@@ -14,7 +14,8 @@ import org.springframework.core.env.Profiles;
 import org.springframework.validation.annotation.Validated;
 
 import javax.validation.constraints.NotEmpty;
-import java.util.function.Supplier;
+import java.util.Map;
+import java.util.Optional;
 
 @AutoService(ApplicationContextInitializer.class)
 public class PulsarRecordsStorageConfiguration implements ApplicationContextInitializer<GenericApplicationContext> {
@@ -35,22 +36,40 @@ public class PulsarRecordsStorageConfiguration implements ApplicationContextInit
 
         var pulsarProperties = binder.bind("pulsar", PulsarProperties.class).get();
 
-        applicationContext.registerBean(RecordsStorage.class, new Supplier<RecordsStorage>() {
-            @Override
-            @SneakyThrows(PulsarClientException.class)
-            public RecordsStorage get() {
-                return new PulsarRecordsStorage(
-                        PulsarClient.builder().serviceUrl(pulsarProperties.getServiceUrl()).build()
-                );
+        applicationContext.registerBean(RecordsStorage.class, () -> {
+            return new PulsarRecordsStorage(createClient(pulsarProperties));
+        });
+    }
+
+    @SneakyThrows
+    PulsarClient createClient(PulsarProperties pulsarProperties) {
+        var clientBuilder = PulsarClient.builder()
+                .serviceUrl(pulsarProperties.getServiceUrl());
+
+        pulsarProperties.getTlsTrustCertsFilePath().ifPresent(clientBuilder::tlsTrustCertsFilePath);
+        pulsarProperties.getAuthPluginClassName().ifPresent(authClass -> {
+            try {
+                clientBuilder.authentication(authClass, pulsarProperties.getAuthPluginParams());
+            } catch (PulsarClientException.UnsupportedAuthenticationException e) {
+                throw new IllegalStateException(e);
             }
         });
+
+        return clientBuilder.build();
     }
 
     @Data
     @Validated
-    private static class PulsarProperties {
+    static class PulsarProperties {
 
         @NotEmpty
         String serviceUrl;
+
+        Optional<String> tlsTrustCertsFilePath = Optional.empty();
+
+        Optional<String> authPluginClassName = Optional.empty();
+
+        Map<String, String> authPluginParams = Map.of();
+
     }
 }

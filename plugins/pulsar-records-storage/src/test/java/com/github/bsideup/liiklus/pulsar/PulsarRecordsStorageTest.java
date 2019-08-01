@@ -40,9 +40,10 @@ public class PulsarRecordsStorageTest implements RecordStorageTests {
 
     static {
         pulsar.start();
-        System.setProperty("pulsar.serviceUrl", pulsar.getPulsarBrokerUrl());
 
-        applicationContext = new ApplicationRunner("PULSAR", "MEMORY").run();
+        applicationContext = new ApplicationRunner("PULSAR", "MEMORY")
+                .withProperty("pulsar.serviceUrl", pulsar.getPulsarBrokerUrl())
+                .run();
     }
 
     @Getter

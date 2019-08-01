@@ -1,7 +1,6 @@
 package com.github.bsideup.liiklus;
 
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
@@ -14,17 +13,27 @@ import java.io.File;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.HashMap;
 import java.util.Map;
 
-@RequiredArgsConstructor
 @Slf4j
 public class ApplicationRunner {
 
-    @NonNull
-    final String recordsStorageType;
+    final Map<String, Object> properties = new HashMap<>(Map.of(
+            "server.port", 0,
+            "rsocket.enabled", false,
+            "grpc.enabled", false
+    ));
 
-    @NonNull
-    final String positionsStorageType;
+    public ApplicationRunner(@NonNull String recordsStorageType, @NonNull String positionsStorageType) {
+        withProperty("storage.records.type", recordsStorageType);
+        withProperty("storage.positions.type", positionsStorageType);
+    }
+
+    public ApplicationRunner withProperty(String key, Object value) {
+        properties.put(key, value);
+        return this;
+    }
 
     @SneakyThrows
     public ConfigurableApplicationContext run() {
@@ -72,13 +81,7 @@ public class ApplicationRunner {
             var createSpringApplicationMethod = applicationClass.getDeclaredMethod("createSpringApplication", String[].class);
 
             var application = (SpringApplication) createSpringApplicationMethod.invoke(null, (Object) new String[0]);
-            application.setDefaultProperties(Map.of(
-                    "server.port", 0,
-                    "rsocket.enabled", false,
-                    "grpc.enabled", false,
-                    "storage.records.type", recordsStorageType,
-                    "storage.positions.type", positionsStorageType
-            ));
+            application.setDefaultProperties(properties);
             return application.run();
         } finally {
             Thread.currentThread().setContextClassLoader(currentClassLoader);
