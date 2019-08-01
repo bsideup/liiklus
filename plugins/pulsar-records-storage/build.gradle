@@ -31,8 +31,5 @@ dependencies {
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
     testCompile project(":tck")
     testCompile 'org.testcontainers:pulsar'
-    testCompile 'org.testcontainers:junit-jupiter'
-    testCompile 'org.apache.pulsar:pulsar-client-admin-original:2.4.0', {
-        exclude group: "org.apache.pulsar", module: "pulsar-client-original"
-    }
+    testCompile 'org.apache.pulsar:pulsar-client-admin-original:2.4.0'
 }
