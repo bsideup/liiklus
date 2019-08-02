@@ -2,16 +2,14 @@ package com.github.bsideup.liiklus.dynamodb.config;
 
 import com.github.bsideup.liiklus.dynamodb.DynamoDBPositionsStorage;
 import com.github.bsideup.liiklus.positions.PositionsStorage;
+import com.github.bsideup.liiklus.util.PropertiesUtil;
 import com.google.auto.service.AutoService;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.context.properties.bind.Bindable;
-import org.springframework.boot.context.properties.bind.Binder;
-import org.springframework.boot.context.properties.bind.validation.ValidationBindHandler;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.validation.beanvalidation.SpringValidatorAdapter;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeDefinition;
 import software.amazon.awssdk.services.dynamodb.model.CreateTableRequest;
@@ -20,7 +18,6 @@ import software.amazon.awssdk.services.dynamodb.model.KeyType;
 import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughput;
 import software.amazon.awssdk.services.dynamodb.model.ScalarAttributeType;
 
-import javax.validation.Validation;
 import javax.validation.constraints.NotEmpty;
 import java.net.URI;
 import java.util.Optional;
@@ -37,13 +34,7 @@ public class DynamoDBConfiguration implements ApplicationContextInitializer<Gene
             return;
         }
 
-        var binder = Binder.get(environment);
-        var validationBindHandler = new ValidationBindHandler(
-                new SpringValidatorAdapter(Validation.buildDefaultValidatorFactory().getValidator())
-        );
-        var dynamoDBProperties = binder.bind("dynamodb", Bindable.of(DynamoDBProperties.class), validationBindHandler)
-                .orElseGet(DynamoDBProperties::new);
-
+        var dynamoDBProperties = PropertiesUtil.bind(environment, new DynamoDBProperties());
 
         applicationContext.registerBean(PositionsStorage.class, () -> {
             var builder = DynamoDbAsyncClient.builder();
@@ -84,6 +75,7 @@ public class DynamoDBConfiguration implements ApplicationContextInitializer<Gene
         });
     }
 
+    @ConfigurationProperties("dynamodb")
     @Data
     @Validated
     public static class DynamoDBProperties {

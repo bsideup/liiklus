@@ -3,6 +3,7 @@ package com.github.bsideup.liiklus.transport.rsocket.config;
 import com.github.bsideup.liiklus.protocol.LiiklusService;
 import com.github.bsideup.liiklus.protocol.LiiklusServiceServer;
 import com.github.bsideup.liiklus.transport.rsocket.RSocketLiiklusService;
+import com.github.bsideup.liiklus.util.PropertiesUtil;
 import com.google.auto.service.AutoService;
 import io.rsocket.RSocketFactory;
 import io.rsocket.rpc.rsocket.RequestHandlingRSocket;
@@ -11,16 +12,12 @@ import io.rsocket.transport.netty.server.TcpServerTransport;
 import lombok.Data;
 import org.hibernate.validator.group.GroupSequenceProvider;
 import org.hibernate.validator.spi.group.DefaultGroupSequenceProvider;
-import org.springframework.boot.context.properties.bind.Bindable;
-import org.springframework.boot.context.properties.bind.Binder;
-import org.springframework.boot.context.properties.bind.validation.ValidationBindHandler;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.env.Profiles;
-import org.springframework.validation.beanvalidation.SpringValidatorAdapter;
 import reactor.core.publisher.Mono;
 
-import javax.validation.Validation;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
 import java.util.ArrayList;
@@ -38,14 +35,7 @@ public class RSocketConfiguration implements ApplicationContextInitializer<Gener
             return;
         }
 
-        var binder = Binder.get(environment);
-
-        var validationBindHandler = new ValidationBindHandler(
-                new SpringValidatorAdapter(Validation.buildDefaultValidatorFactory().getValidator())
-        );
-        var bindable = Bindable.of(RSocketServerProperties.class).withExistingValue(new RSocketServerProperties());
-        var serverProperties = binder.bind("rsocket", bindable, validationBindHandler)
-                .orElseGet(RSocketServerProperties::new);
+        var serverProperties = PropertiesUtil.bind(environment, new RSocketServerProperties());
 
         if (!serverProperties.isEnabled()) {
             return;
@@ -70,7 +60,7 @@ public class RSocketConfiguration implements ApplicationContextInitializer<Gener
         );
     }
 
-
+    @ConfigurationProperties("rsocket")
     @Data
     @GroupSequenceProvider(RSocketServerProperties.EnabledSequenceProvider.class)
     static class RSocketServerProperties {

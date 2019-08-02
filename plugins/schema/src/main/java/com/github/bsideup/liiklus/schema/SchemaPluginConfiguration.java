@@ -2,20 +2,17 @@ package com.github.bsideup.liiklus.schema;
 
 import com.fasterxml.jackson.core.JsonPointer;
 import com.github.bsideup.liiklus.records.RecordPreProcessor;
+import com.github.bsideup.liiklus.util.PropertiesUtil;
 import com.google.auto.service.AutoService;
 import lombok.Data;
 import org.hibernate.validator.group.GroupSequenceProvider;
 import org.hibernate.validator.spi.group.DefaultGroupSequenceProvider;
-import org.springframework.boot.context.properties.bind.Bindable;
-import org.springframework.boot.context.properties.bind.Binder;
-import org.springframework.boot.context.properties.bind.validation.ValidationBindHandler;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.env.Profiles;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.validation.beanvalidation.SpringValidatorAdapter;
 
-import javax.validation.Validation;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.net.URL;
@@ -27,16 +24,12 @@ public class SchemaPluginConfiguration implements ApplicationContextInitializer<
 
     @Override
     public void initialize(GenericApplicationContext applicationContext) {
-        if (!applicationContext.getEnvironment().acceptsProfiles(Profiles.of("gateway"))) {
+        var environment = applicationContext.getEnvironment();
+        if (!environment.acceptsProfiles(Profiles.of("gateway"))) {
             return;
         }
 
-        var binder = Binder.get(applicationContext.getEnvironment());
-        var validationBindHandler = new ValidationBindHandler(
-                new SpringValidatorAdapter(Validation.buildDefaultValidatorFactory().getValidator())
-        );
-        var schemaProperties = binder.bind("schema", Bindable.of(SchemaProperties.class), validationBindHandler)
-                .orElseGet(SchemaProperties::new);
+        var schemaProperties = PropertiesUtil.bind(environment, new SchemaProperties());
 
         if (!schemaProperties.isEnabled()) {
             return;
@@ -51,6 +44,7 @@ public class SchemaPluginConfiguration implements ApplicationContextInitializer<
         });
     }
 
+    @ConfigurationProperties("schema")
     @Data
     @Validated
     @GroupSequenceProvider(SchemaProperties.EnabledSequenceProvider.class)
