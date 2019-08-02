@@ -3,6 +3,7 @@ package com.github.bsideup.liiklus.positions.redis.config;
 import com.github.bsideup.liiklus.positions.PositionsStorage;
 import com.github.bsideup.liiklus.positions.redis.RedisPositionsStorage;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.context.properties.bind.validation.BindValidationException;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.ApplicationContextInitializer;
 
@@ -17,6 +18,32 @@ class RedisPositionsConfigurationTest {
     void should_skip_when_position_storage_not_redis() {
         applicationContextRunner.run(context -> {
             assertThat(context).doesNotHaveBean(PositionsStorage.class);
+        });
+    }
+
+    @Test
+    void should_validate_poperties() {
+        applicationContextRunner = applicationContextRunner.withPropertyValues(
+                "storage.positions.type: REDIS"
+        );
+        applicationContextRunner.run(context -> {
+            assertThat(context)
+                    .getFailure()
+                    .hasCauseInstanceOf(BindValidationException.class);
+        });
+        applicationContextRunner = applicationContextRunner.withPropertyValues(
+                "redis.host: host"
+        );
+        applicationContextRunner.run(context -> {
+            assertThat(context)
+                    .getFailure()
+                    .hasCauseInstanceOf(BindValidationException.class);
+        });
+        applicationContextRunner = applicationContextRunner.withPropertyValues(
+                "redis.port: 8888"
+        );
+        applicationContextRunner.run(context -> {
+            assertThat(context).hasNotFailed();
         });
     }
 

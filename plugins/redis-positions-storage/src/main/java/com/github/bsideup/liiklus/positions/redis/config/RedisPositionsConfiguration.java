@@ -8,12 +8,16 @@ import io.lettuce.core.RedisURI;
 import io.lettuce.core.codec.StringCodec;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.boot.context.properties.bind.validation.ValidationBindHandler;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.validation.beanvalidation.SpringValidatorAdapter;
 import reactor.core.publisher.Mono;
 
+import javax.validation.Validation;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
 import java.util.function.Supplier;
@@ -31,9 +35,12 @@ public class RedisPositionsConfiguration implements ApplicationContextInitialize
             return;
         }
 
-        var redisProperties = Binder.get(environment)
-                .bind("redis", RedisProperties.class)
-                .orElseGet(RedisProperties::new);
+        var binder = Binder.get(environment);
+        var validationBindHandler = new ValidationBindHandler(
+                new SpringValidatorAdapter(Validation.buildDefaultValidatorFactory().getValidator())
+        );
+        var bindable = Bindable.of(RedisProperties.class).withExistingValue(new RedisProperties());
+        var redisProperties = binder.bind("redis", bindable, validationBindHandler).get();
 
         applicationContext.registerBean(PositionsStorage.class, () -> {
             var redisURI = RedisURI.builder()

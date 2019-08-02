@@ -65,4 +65,14 @@ dependencies {
 
     compile 'io.rsocket.rpc:rsocket-rpc-core'
     compile 'io.rsocket:rsocket-transport-netty'
+
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+    testCompile 'org.junit.jupiter:junit-jupiter-api'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+
+    testCompile project(":app")
+    testCompile 'org.springframework.boot:spring-boot-test'
+    testCompile 'org.assertj:assertj-core'
+    testCompile 'org.mockito:mockito-core'
 }

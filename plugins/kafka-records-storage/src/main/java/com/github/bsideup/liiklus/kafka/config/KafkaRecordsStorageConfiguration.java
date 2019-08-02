@@ -4,12 +4,16 @@ import com.github.bsideup.liiklus.kafka.KafkaRecordsStorage;
 import com.github.bsideup.liiklus.records.RecordsStorage;
 import com.google.auto.service.AutoService;
 import lombok.Data;
+import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.boot.context.properties.bind.validation.ValidationBindHandler;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.env.Profiles;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.validation.beanvalidation.SpringValidatorAdapter;
 
+import javax.validation.Validation;
 import javax.validation.constraints.NotEmpty;
 
 @AutoService(ApplicationContextInitializer.class)
@@ -29,8 +33,11 @@ public class KafkaRecordsStorageConfiguration implements ApplicationContextIniti
         }
 
         var binder = Binder.get(environment);
+        var validationBindHandler = new ValidationBindHandler(
+                new SpringValidatorAdapter(Validation.buildDefaultValidatorFactory().getValidator())
+        );
 
-        var kafkaProperties = binder.bind("kafka", KafkaProperties.class).get();
+        var kafkaProperties = binder.bind("kafka", Bindable.of(KafkaProperties.class), validationBindHandler).get();
 
         applicationContext.registerBean(RecordsStorage.class, () -> {
             return new KafkaRecordsStorage(kafkaProperties.getBootstrapServers());

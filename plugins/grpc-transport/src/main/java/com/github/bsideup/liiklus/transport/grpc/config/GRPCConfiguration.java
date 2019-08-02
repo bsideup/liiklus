@@ -7,12 +7,21 @@ import io.grpc.netty.NettyServerBuilder;
 import io.grpc.protobuf.services.ProtoReflectionService;
 import io.netty.channel.nio.NioEventLoopGroup;
 import lombok.Data;
+import org.hibernate.validator.group.GroupSequenceProvider;
+import org.hibernate.validator.spi.group.DefaultGroupSequenceProvider;
+import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.boot.context.properties.bind.validation.ValidationBindHandler;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.env.Profiles;
+import org.springframework.validation.beanvalidation.SpringValidatorAdapter;
 import reactor.core.scheduler.Schedulers;
 
+import javax.validation.Validation;
+import javax.validation.constraints.Min;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @AutoService(ApplicationContextInitializer.class)
@@ -28,7 +37,11 @@ public class GRPCConfiguration implements ApplicationContextInitializer<GenericA
 
         var binder = Binder.get(environment);
 
-        var serverProperties = binder.bind("grpc", GRpcServerProperties.class).orElseGet(GRpcServerProperties::new);
+        var validationBindHandler = new ValidationBindHandler(
+                new SpringValidatorAdapter(Validation.buildDefaultValidatorFactory().getValidator())
+        );
+        var bindable = Bindable.of(GRpcServerProperties.class).withExistingValue(new GRpcServerProperties());
+        var serverProperties = binder.bind("grpc", bindable, validationBindHandler).get();
 
         if (!serverProperties.isEnabled()) {
             return;
@@ -68,11 +81,28 @@ public class GRPCConfiguration implements ApplicationContextInitializer<GenericA
     }
 
     @Data
+    @GroupSequenceProvider(GRpcServerProperties.EnabledSequenceProvider.class)
     static class GRpcServerProperties {
 
-        int port = 6565;
-
         boolean enabled = true;
+
+        @Min(value = 0, groups = Enabled.class)
+        int port = -1;
+
+        interface Enabled {}
+
+        public static class EnabledSequenceProvider implements DefaultGroupSequenceProvider<GRpcServerProperties> {
+
+            @Override
+            public List<Class<?>> getValidationGroups(GRpcServerProperties object) {
+                var sequence = new ArrayList<Class<?>>();
+                sequence.add(GRpcServerProperties.class);
+                if (object != null && object.isEnabled()) {
+                    sequence.add(Enabled.class);
+                }
+                return sequence;
+            }
+        }
 
     }
 

@@ -7,12 +7,16 @@ import lombok.Data;
 import lombok.SneakyThrows;
 import org.apache.pulsar.client.api.PulsarClient;
 import org.apache.pulsar.client.api.PulsarClientException;
+import org.springframework.boot.context.properties.bind.Bindable;
 import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.boot.context.properties.bind.validation.ValidationBindHandler;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.env.Profiles;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.validation.beanvalidation.SpringValidatorAdapter;
 
+import javax.validation.Validation;
 import javax.validation.constraints.NotEmpty;
 import java.util.Map;
 import java.util.Optional;
@@ -33,8 +37,11 @@ public class PulsarRecordsStorageConfiguration implements ApplicationContextInit
         }
 
         var binder = Binder.get(environment);
+        var validationBindHandler = new ValidationBindHandler(
+                new SpringValidatorAdapter(Validation.buildDefaultValidatorFactory().getValidator())
+        );
 
-        var pulsarProperties = binder.bind("pulsar", PulsarProperties.class).get();
+        var pulsarProperties = binder.bind("pulsar", Bindable.of(PulsarProperties.class), validationBindHandler).get();
 
         applicationContext.registerBean(RecordsStorage.class, () -> {
             return new PulsarRecordsStorage(createClient(pulsarProperties));
