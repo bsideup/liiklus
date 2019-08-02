@@ -40,8 +40,8 @@ public class GRPCConfiguration implements ApplicationContextInitializer<GenericA
         var validationBindHandler = new ValidationBindHandler(
                 new SpringValidatorAdapter(Validation.buildDefaultValidatorFactory().getValidator())
         );
-        var bindable = Bindable.of(GRpcServerProperties.class).withExistingValue(new GRpcServerProperties());
-        var serverProperties = binder.bind("grpc", bindable, validationBindHandler).get();
+        var serverProperties = binder.bind("grpc", Bindable.of(GRpcServerProperties.class), validationBindHandler)
+                .orElseGet(GRpcServerProperties::new);
 
         if (!serverProperties.isEnabled()) {
             return;

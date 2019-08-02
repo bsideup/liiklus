@@ -39,8 +39,8 @@ public class RedisPositionsConfiguration implements ApplicationContextInitialize
         var validationBindHandler = new ValidationBindHandler(
                 new SpringValidatorAdapter(Validation.buildDefaultValidatorFactory().getValidator())
         );
-        var bindable = Bindable.of(RedisProperties.class).withExistingValue(new RedisProperties());
-        var redisProperties = binder.bind("redis", bindable, validationBindHandler).get();
+        var redisProperties = binder.bind("redis", Bindable.of(RedisProperties.class), validationBindHandler)
+                .orElseGet(RedisProperties::new);
 
         applicationContext.registerBean(PositionsStorage.class, () -> {
             var redisURI = RedisURI.builder()

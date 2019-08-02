@@ -35,8 +35,8 @@ public class SchemaPluginConfiguration implements ApplicationContextInitializer<
         var validationBindHandler = new ValidationBindHandler(
                 new SpringValidatorAdapter(Validation.buildDefaultValidatorFactory().getValidator())
         );
-        var bindable = Bindable.of(SchemaProperties.class).withExistingValue(new SchemaProperties());
-        var schemaProperties = binder.bind("schema", bindable, validationBindHandler).get();
+        var schemaProperties = binder.bind("schema", Bindable.of(SchemaProperties.class), validationBindHandler)
+                .orElseGet(SchemaProperties::new);
 
         if (!schemaProperties.isEnabled()) {
             return;

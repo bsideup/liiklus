@@ -44,7 +44,8 @@ public class RSocketConfiguration implements ApplicationContextInitializer<Gener
                 new SpringValidatorAdapter(Validation.buildDefaultValidatorFactory().getValidator())
         );
         var bindable = Bindable.of(RSocketServerProperties.class).withExistingValue(new RSocketServerProperties());
-        var serverProperties = binder.bind("rsocket", bindable, validationBindHandler).get();
+        var serverProperties = binder.bind("rsocket", bindable, validationBindHandler)
+                .orElseGet(RSocketServerProperties::new);
 
         if (!serverProperties.isEnabled()) {
             return;

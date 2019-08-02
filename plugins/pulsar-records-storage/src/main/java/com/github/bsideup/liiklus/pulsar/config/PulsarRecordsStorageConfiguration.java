@@ -41,7 +41,8 @@ public class PulsarRecordsStorageConfiguration implements ApplicationContextInit
                 new SpringValidatorAdapter(Validation.buildDefaultValidatorFactory().getValidator())
         );
 
-        var pulsarProperties = binder.bind("pulsar", Bindable.of(PulsarProperties.class), validationBindHandler).get();
+        var pulsarProperties = binder.bind("pulsar", Bindable.of(PulsarProperties.class), validationBindHandler)
+                .orElseGet(PulsarProperties::new);
 
         applicationContext.registerBean(RecordsStorage.class, () -> {
             return new PulsarRecordsStorage(createClient(pulsarProperties));

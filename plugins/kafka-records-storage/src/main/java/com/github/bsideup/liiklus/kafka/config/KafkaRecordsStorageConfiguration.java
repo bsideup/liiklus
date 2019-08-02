@@ -37,7 +37,8 @@ public class KafkaRecordsStorageConfiguration implements ApplicationContextIniti
                 new SpringValidatorAdapter(Validation.buildDefaultValidatorFactory().getValidator())
         );
 
-        var kafkaProperties = binder.bind("kafka", Bindable.of(KafkaProperties.class), validationBindHandler).get();
+        var kafkaProperties = binder.bind("kafka", Bindable.of(KafkaProperties.class), validationBindHandler)
+                .orElseGet(KafkaProperties::new);
 
         applicationContext.registerBean(RecordsStorage.class, () -> {
             return new KafkaRecordsStorage(kafkaProperties.getBootstrapServers());
