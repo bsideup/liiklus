@@ -41,7 +41,8 @@ public class DynamoDBConfiguration implements ApplicationContextInitializer<Gene
         var validationBindHandler = new ValidationBindHandler(
                 new SpringValidatorAdapter(Validation.buildDefaultValidatorFactory().getValidator())
         );
-        var dynamoDBProperties = binder.bind("dynamodb", Bindable.of(DynamoDBProperties.class), validationBindHandler).get();
+        var bindable = Bindable.of(DynamoDBProperties.class).withExistingValue(new DynamoDBProperties());
+        var dynamoDBProperties = binder.bind("dynamodb", bindable, validationBindHandler).get();
 
 
         applicationContext.registerBean(PositionsStorage.class, () -> {

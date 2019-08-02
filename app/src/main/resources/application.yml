@@ -9,3 +9,6 @@ rsocket:
 plugins:
   dir: ./plugins
   pathMatcher: "*.jar"
+
+schema:
+  enabled: false
