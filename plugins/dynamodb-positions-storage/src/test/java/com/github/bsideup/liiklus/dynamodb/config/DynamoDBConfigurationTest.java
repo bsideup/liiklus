@@ -1,7 +1,7 @@
-package com.github.bsideup.liiklus.positions.redis.config;
+package com.github.bsideup.liiklus.dynamodb.config;
 
+import com.github.bsideup.liiklus.dynamodb.DynamoDBPositionsStorage;
 import com.github.bsideup.liiklus.positions.PositionsStorage;
-import com.github.bsideup.liiklus.positions.redis.RedisPositionsStorage;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.BeansException;
 import org.springframework.boot.context.properties.bind.validation.BindValidationException;
@@ -11,26 +11,26 @@ import org.springframework.context.support.StaticApplicationContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class RedisPositionsConfigurationTest {
+class DynamoDBConfigurationTest {
 
     ApplicationContextRunner applicationContextRunner = new ApplicationContextRunner(() -> new StaticApplicationContext() {
         @Override
         public void refresh() throws BeansException, IllegalStateException {
         }
     })
-            .withInitializer((ApplicationContextInitializer) new RedisPositionsConfiguration());
+            .withInitializer((ApplicationContextInitializer) new DynamoDBConfiguration());
 
     @Test
-    void should_skip_when_position_storage_not_redis() {
+    void shouldSkipWhenNotDynamoDB() {
         applicationContextRunner.run(context -> {
             assertThat(context).doesNotHaveBean(PositionsStorage.class);
         });
     }
 
     @Test
-    void should_validate_properties() {
+    void shouldValidateProperties() {
         applicationContextRunner = applicationContextRunner.withPropertyValues(
-                "storage.positions.type: REDIS"
+                "storage.positions.type: DYNAMODB"
         );
         applicationContextRunner.run(context -> {
             assertThat(context)
@@ -38,15 +38,7 @@ class RedisPositionsConfigurationTest {
                     .hasCauseInstanceOf(BindValidationException.class);
         });
         applicationContextRunner = applicationContextRunner.withPropertyValues(
-                "redis.host: host"
-        );
-        applicationContextRunner.run(context -> {
-            assertThat(context)
-                    .getFailure()
-                    .hasCauseInstanceOf(BindValidationException.class);
-        });
-        applicationContextRunner = applicationContextRunner.withPropertyValues(
-                "redis.port: 8888"
+                "dynamodb.positionsTable: foo"
         );
         applicationContextRunner.run(context -> {
             assertThat(context).hasNotFailed();
@@ -54,14 +46,14 @@ class RedisPositionsConfigurationTest {
     }
 
     @Test
-    void should_register_positions_storage_bean_when_type_is_redis() {
+    void shouldRegisterWhenDynamoDB() {
         applicationContextRunner = applicationContextRunner.withPropertyValues(
-                "storage.positions.type: REDIS",
-                "redis.host: host",
-                "redis.port: 8888"
+                "storage.positions.type: DYNAMODB",
+                "dynamodb.positionsTable: foo"
         );
         applicationContextRunner.run(context -> {
-            assertThat(context).hasSingleBean(RedisPositionsStorage.class);
+            assertThat(context).hasSingleBean(DynamoDBPositionsStorage.class);
         });
     }
+
 }

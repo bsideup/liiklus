@@ -1,6 +1,5 @@
 package com.github.bsideup.liiklus.positions.redis.config;
 
-import com.github.bsideup.liiklus.positions.PositionsStorage;
 import com.github.bsideup.liiklus.positions.redis.RedisPositionsStorage;
 import com.github.bsideup.liiklus.util.PropertiesUtil;
 import com.google.auto.service.AutoService;
@@ -33,7 +32,7 @@ public class RedisPositionsConfiguration implements ApplicationContextInitialize
 
         var redisProperties = PropertiesUtil.bind(environment, new RedisProperties());
 
-        applicationContext.registerBean(PositionsStorage.class, () -> {
+        applicationContext.registerBean(RedisPositionsStorage.class, () -> {
             var redisURI = RedisURI.builder()
                     .withHost(redisProperties.getHost())
                     .withPort(redisProperties.getPort())

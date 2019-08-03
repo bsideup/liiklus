@@ -1,24 +1,22 @@
 package com.github.bsideup.liiklus.transport.grpc.config;
 
-import com.github.bsideup.liiklus.service.LiiklusService;
 import com.github.bsideup.liiklus.transport.grpc.GRPCLiiklusService;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import org.springframework.beans.BeansException;
 import org.springframework.boot.context.properties.bind.validation.BindValidationException;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.ApplicationContextInitializer;
-import org.springframework.context.support.GenericApplicationContext;
+import org.springframework.context.support.StaticApplicationContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class GRPCConfigurationTest {
 
-    ApplicationContextRunner applicationContextRunner = new ApplicationContextRunner()
-            .withInitializer(context -> {
-                ((GenericApplicationContext) context).registerBean(LiiklusService.class, () -> {
-                    return Mockito.mock(LiiklusService.class);
-                });
-            })
+    ApplicationContextRunner applicationContextRunner = new ApplicationContextRunner(() -> new StaticApplicationContext() {
+        @Override
+        public void refresh() throws BeansException, IllegalStateException {
+        }
+    })
             .withInitializer((ApplicationContextInitializer) new GRPCConfiguration());
 
     @Test

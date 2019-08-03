@@ -1,9 +1,11 @@
 package com.github.bsideup.liiklus.schema;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.BeansException;
 import org.springframework.boot.context.properties.bind.BindException;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.ApplicationContextInitializer;
+import org.springframework.context.support.StaticApplicationContext;
 
 import java.net.URL;
 
@@ -11,7 +13,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class SchemaPluginConfigurationTest {
 
-    ApplicationContextRunner applicationContextRunner = new ApplicationContextRunner()
+    ApplicationContextRunner applicationContextRunner = new ApplicationContextRunner(() -> new StaticApplicationContext() {
+        @Override
+        public void refresh() throws BeansException, IllegalStateException {
+        }
+    })
             .withInitializer((ApplicationContextInitializer) new SchemaPluginConfiguration());
 
     @Test

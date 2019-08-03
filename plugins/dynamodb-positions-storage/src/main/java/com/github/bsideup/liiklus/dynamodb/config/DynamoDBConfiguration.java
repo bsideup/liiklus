@@ -1,7 +1,6 @@
 package com.github.bsideup.liiklus.dynamodb.config;
 
 import com.github.bsideup.liiklus.dynamodb.DynamoDBPositionsStorage;
-import com.github.bsideup.liiklus.positions.PositionsStorage;
 import com.github.bsideup.liiklus.util.PropertiesUtil;
 import com.google.auto.service.AutoService;
 import lombok.Data;
@@ -36,7 +35,7 @@ public class DynamoDBConfiguration implements ApplicationContextInitializer<Gene
 
         var dynamoDBProperties = PropertiesUtil.bind(environment, new DynamoDBProperties());
 
-        applicationContext.registerBean(PositionsStorage.class, () -> {
+        applicationContext.registerBean(DynamoDBPositionsStorage.class, () -> {
             var builder = DynamoDbAsyncClient.builder();
 
             dynamoDBProperties.getEndpoint()
