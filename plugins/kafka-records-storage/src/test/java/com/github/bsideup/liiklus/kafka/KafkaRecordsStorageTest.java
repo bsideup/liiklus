@@ -39,9 +39,9 @@ public class KafkaRecordsStorageTest implements RecordStorageTests {
     static {
         kafka.start();
 
-        System.setProperty("kafka.bootstrapServers", kafka.getBootstrapServers());
-
-        applicationContext = new ApplicationRunner("KAFKA", "MEMORY").run();
+        applicationContext = new ApplicationRunner("KAFKA", "MEMORY")
+                .withProperty("kafka.bootstrapServers", kafka.getBootstrapServers())
+                .run();
     }
 
     @Getter
