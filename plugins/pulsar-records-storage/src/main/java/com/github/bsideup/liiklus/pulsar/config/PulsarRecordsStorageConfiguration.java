@@ -29,13 +29,13 @@ public class PulsarRecordsStorageConfiguration implements ApplicationContextInit
             return;
         }
 
-        if (!"PULSAR".equals(environment.getProperty("storage.records.type"))) {
+        if (!"PULSAR".equals(environment.getRequiredProperty("storage.records.type"))) {
             return;
         }
 
         var pulsarProperties = PropertiesUtil.bind(environment, new PulsarProperties());
 
-        applicationContext.registerBean(RecordsStorage.class, () -> {
+        applicationContext.registerBean(PulsarRecordsStorage.class, () -> {
             return new PulsarRecordsStorage(createClient(pulsarProperties));
         });
     }

@@ -25,7 +25,7 @@ public class RedisPositionsConfiguration implements ApplicationContextInitialize
     public void initialize(GenericApplicationContext applicationContext) {
         var environment = applicationContext.getEnvironment();
 
-        var type = environment.getProperty("storage.positions.type");
+        var type = environment.getRequiredProperty("storage.positions.type");
         if(!"REDIS".equals(type)) {
             return;
         }

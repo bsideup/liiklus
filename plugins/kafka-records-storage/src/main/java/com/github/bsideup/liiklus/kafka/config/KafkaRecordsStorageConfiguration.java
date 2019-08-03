@@ -16,7 +16,6 @@ import javax.validation.constraints.NotEmpty;
 @AutoService(ApplicationContextInitializer.class)
 public class KafkaRecordsStorageConfiguration implements ApplicationContextInitializer<GenericApplicationContext> {
 
-
     @Override
     public void initialize(GenericApplicationContext applicationContext) {
         var environment = applicationContext.getEnvironment();
@@ -25,13 +24,13 @@ public class KafkaRecordsStorageConfiguration implements ApplicationContextIniti
             return;
         }
 
-        if (!"KAFKA".equals(environment.getProperty("storage.records.type"))) {
+        if (!"KAFKA".equals(environment.getRequiredProperty("storage.records.type"))) {
             return;
         }
 
         var kafkaProperties = PropertiesUtil.bind(environment, new KafkaProperties());
 
-        applicationContext.registerBean(RecordsStorage.class, () -> {
+        applicationContext.registerBean(KafkaRecordsStorage.class, () -> {
             return new KafkaRecordsStorage(kafkaProperties.getBootstrapServers());
         });
     }

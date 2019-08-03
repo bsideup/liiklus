@@ -1,7 +1,7 @@
-package com.github.bsideup.liiklus.positions.redis.config;
+package com.github.bsideup.liiklus.kafka.config;
 
+import com.github.bsideup.liiklus.kafka.KafkaRecordsStorage;
 import com.github.bsideup.liiklus.positions.PositionsStorage;
-import com.github.bsideup.liiklus.positions.redis.RedisPositionsStorage;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.BeansException;
 import org.springframework.boot.context.properties.bind.validation.BindValidationException;
@@ -11,19 +11,27 @@ import org.springframework.context.support.StaticApplicationContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class RedisPositionsConfigurationTest {
+class KafkaRecordsStorageConfigurationTest {
 
     ApplicationContextRunner applicationContextRunner = new ApplicationContextRunner(() -> new StaticApplicationContext() {
         @Override
         public void refresh() throws BeansException, IllegalStateException {
         }
     })
-            .withInitializer((ApplicationContextInitializer) new RedisPositionsConfiguration());
+            .withInitializer((ApplicationContextInitializer) new KafkaRecordsStorageConfiguration());
 
     @Test
-    void should_skip_when_position_storage_not_redis() {
+    void shouldSkipWhenNotKafka() {
+        applicationContextRunner.run(context -> {
+            assertThat(context).doesNotHaveBean(PositionsStorage.class);
+        });
+    }
+
+    @Test
+    void shouldSkipIfNotGateway() {
         applicationContextRunner = applicationContextRunner.withPropertyValues(
-                "storage.positions.type: FOO"
+                "spring.profiles.active: not_gateway",
+                "storage.records.type: KAFKA"
         );
         applicationContextRunner.run(context -> {
             assertThat(context).doesNotHaveBean(PositionsStorage.class);
@@ -31,9 +39,10 @@ class RedisPositionsConfigurationTest {
     }
 
     @Test
-    void should_validate_properties() {
+    void shouldValidateProperties() {
         applicationContextRunner = applicationContextRunner.withPropertyValues(
-                "storage.positions.type: REDIS"
+                "spring.profiles.active: gateway",
+                "storage.records.type: KAFKA"
         );
         applicationContextRunner.run(context -> {
             assertThat(context)
@@ -41,30 +50,23 @@ class RedisPositionsConfigurationTest {
                     .hasCauseInstanceOf(BindValidationException.class);
         });
         applicationContextRunner = applicationContextRunner.withPropertyValues(
-                "redis.host: host"
+                "kafka.bootstrapServers: host:9092"
         );
         applicationContextRunner.run(context -> {
-            assertThat(context)
-                    .getFailure()
-                    .hasCauseInstanceOf(BindValidationException.class);
-        });
-        applicationContextRunner = applicationContextRunner.withPropertyValues(
-                "redis.port: 8888"
-        );
-        applicationContextRunner.run(context -> {
-            assertThat(context).hasNotFailed();
+            assertThat(context).hasSingleBean(KafkaRecordsStorage.class);
         });
     }
 
     @Test
-    void should_register_positions_storage_bean_when_type_is_redis() {
+    void shouldRegisterWhenKafka() {
         applicationContextRunner = applicationContextRunner.withPropertyValues(
-                "storage.positions.type: REDIS",
-                "redis.host: host",
-                "redis.port: 8888"
+                "spring.profiles.active: gateway",
+                "storage.records.type: KAFKA",
+                "kafka.bootstrapServers: host:9092"
         );
         applicationContextRunner.run(context -> {
-            assertThat(context).hasSingleBean(RedisPositionsStorage.class);
+            assertThat(context).hasSingleBean(KafkaRecordsStorage.class);
         });
     }
+
 }

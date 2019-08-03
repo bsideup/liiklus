@@ -29,7 +29,7 @@ public class DynamoDBConfiguration implements ApplicationContextInitializer<Gene
     public void initialize(GenericApplicationContext applicationContext) {
         var environment = applicationContext.getEnvironment();
 
-        if (!"DYNAMODB".equals(environment.getProperty("storage.positions.type"))) {
+        if (!"DYNAMODB".equals(environment.getRequiredProperty("storage.positions.type"))) {
             return;
         }
 

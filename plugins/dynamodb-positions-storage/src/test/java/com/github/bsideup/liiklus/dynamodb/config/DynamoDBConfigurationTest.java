@@ -22,6 +22,9 @@ class DynamoDBConfigurationTest {
 
     @Test
     void shouldSkipWhenNotDynamoDB() {
+        applicationContextRunner = applicationContextRunner.withPropertyValues(
+                "storage.positions.type: FOO"
+        );
         applicationContextRunner.run(context -> {
             assertThat(context).doesNotHaveBean(PositionsStorage.class);
         });
