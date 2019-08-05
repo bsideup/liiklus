@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
 import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -34,21 +35,17 @@ public interface EndOffsetsTest extends RecordStorageTestSupport {
     default void testEndOffsets() throws Exception {
         var topic = getTopic();
 
+        var lastReceivedOffsets = new HashMap<Integer, Long>();
         for (int partition = 0; partition < getNumberOfPartitions(); partition++) {
             for (int i = 0; i < partition + 1; i++) {
-                publish(keyByPartition(partition).getBytes(), new byte[1]);
+                var offset = publish(keyByPartition(partition).getBytes(), new byte[1]).getOffset();
+                lastReceivedOffsets.put(partition, offset);
             }
         }
 
         var offsets = getFiniteTarget().getEndOffsets(topic).toCompletableFuture().get(10, TimeUnit.SECONDS);
 
-        assertThat(offsets)
-                .hasSize(getNumberOfPartitions())
-                .allSatisfy((partition, offset) -> {
-                    assertThat(offset)
-                            .as("offset of p" + partition)
-                            .isEqualTo(partition.longValue());
-                });
+        assertThat(offsets).isEqualTo(lastReceivedOffsets);
     }
 
     @Test
