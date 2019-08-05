@@ -58,8 +58,8 @@ public class Application {
         environment.setDefaultProfiles("exporter", "gateway");
         environment.getPropertySources().addFirst(new SimpleCommandLinePropertySource(args));
 
-        var pluginsDir = environment.getRequiredProperty("plugins.dir", String.class);
-        var pathMatcher = environment.getRequiredProperty("plugins.pathMatcher", String.class);
+        var pluginsDir = environment.getProperty("plugins.dir", String.class, "./plugins");
+        var pathMatcher = environment.getProperty("plugins.pathMatcher", String.class, "*.jar");
 
         var pluginsRoot = Paths.get(pluginsDir).toAbsolutePath().normalize();
         log.info("Loading plugins from '{}' with matcher: '{}'", pluginsRoot, pathMatcher);
