@@ -1,5 +1,6 @@
 package com.github.bsideup.liiklus.pulsar;
 
+import com.github.bsideup.liiklus.records.FiniteRecordsStorage;
 import com.github.bsideup.liiklus.records.RecordsStorage;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -17,6 +18,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;

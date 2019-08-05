@@ -1,10 +1,11 @@
 package com.github.bsideup.liiklus.pulsar.config;
 
+import com.github.bsideup.liiklus.pulsar.PulsarFiniteRecordsStorage;
 import com.github.bsideup.liiklus.pulsar.PulsarRecordsStorage;
-import com.github.bsideup.liiklus.records.RecordsStorage;
 import com.google.auto.service.AutoService;
 import lombok.Data;
 import lombok.SneakyThrows;
+import org.apache.pulsar.client.admin.PulsarAdmin;
 import org.apache.pulsar.client.api.PulsarClient;
 import org.apache.pulsar.client.api.PulsarClientException;
 import org.springframework.boot.context.properties.bind.Binder;
@@ -36,9 +37,27 @@ public class PulsarRecordsStorageConfiguration implements ApplicationContextInit
 
         var pulsarProperties = binder.bind("pulsar", PulsarProperties.class).get();
 
-        applicationContext.registerBean(RecordsStorage.class, () -> {
-            return new PulsarRecordsStorage(createClient(pulsarProperties));
-        });
+        pulsarProperties.getAdminUrl().ifPresentOrElse(
+                adminUrl -> {
+                    applicationContext.registerBean(PulsarFiniteRecordsStorage.class, () -> {
+                        try {
+                            return new PulsarFiniteRecordsStorage(
+                                    createClient(pulsarProperties),
+                                    PulsarAdmin.builder()
+                                            .serviceHttpUrl(adminUrl)
+                                            .build()
+                        );
+                        } catch (PulsarClientException e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
+                },
+                () -> {
+                    applicationContext.registerBean(PulsarRecordsStorage.class, () -> {
+                        return new PulsarRecordsStorage(createClient(pulsarProperties));
+                    });
+                }
+        );
     }
 
     @SneakyThrows
@@ -64,6 +83,8 @@ public class PulsarRecordsStorageConfiguration implements ApplicationContextInit
 
         @NotEmpty
         String serviceUrl;
+
+        Optional<String> adminUrl = Optional.empty();
 
         Optional<String> tlsTrustCertsFilePath = Optional.empty();
 
