@@ -1,11 +1,11 @@
 package com.github.bsideup.liiklus.dynamodb.config;
 
 import com.github.bsideup.liiklus.dynamodb.DynamoDBPositionsStorage;
-import com.github.bsideup.liiklus.positions.PositionsStorage;
+import com.github.bsideup.liiklus.util.PropertiesUtil;
 import com.google.auto.service.AutoService;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.validation.annotation.Validated;
@@ -29,15 +29,13 @@ public class DynamoDBConfiguration implements ApplicationContextInitializer<Gene
     public void initialize(GenericApplicationContext applicationContext) {
         var environment = applicationContext.getEnvironment();
 
-        if (!"DYNAMODB".equals(environment.getProperty("storage.positions.type"))) {
+        if (!"DYNAMODB".equals(environment.getRequiredProperty("storage.positions.type"))) {
             return;
         }
 
-        var binder = Binder.get(environment);
-        var dynamoDBProperties = binder.bind("dynamodb", DynamoDBProperties.class).orElseGet(DynamoDBProperties::new);
+        var dynamoDBProperties = PropertiesUtil.bind(environment, new DynamoDBProperties());
 
-
-        applicationContext.registerBean(PositionsStorage.class, () -> {
+        applicationContext.registerBean(DynamoDBPositionsStorage.class, () -> {
             var builder = DynamoDbAsyncClient.builder();
 
             dynamoDBProperties.getEndpoint()
@@ -76,6 +74,7 @@ public class DynamoDBConfiguration implements ApplicationContextInitializer<Gene
         });
     }
 
+    @ConfigurationProperties("dynamodb")
     @Data
     @Validated
     public static class DynamoDBProperties {

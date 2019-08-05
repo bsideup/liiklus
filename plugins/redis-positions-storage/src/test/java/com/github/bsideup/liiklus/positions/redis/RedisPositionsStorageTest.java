@@ -29,10 +29,10 @@ class RedisPositionsStorageTest implements PositionsStorageTests {
     static {
         redis.start();
 
-        System.setProperty("redis.host", redis.getContainerIpAddress());
-        System.setProperty("redis.port", redis.getMappedPort(6379) + "");
-
-        applicationContext = new ApplicationRunner("MEMORY", "REDIS").run();
+        applicationContext = new ApplicationRunner("MEMORY", "REDIS")
+                .withProperty("redis.host", redis.getContainerIpAddress())
+                .withProperty("redis.port", redis.getMappedPort(6379) + "")
+                .run();
     }
 
     static final RedisClient redisClient = RedisClient.create(

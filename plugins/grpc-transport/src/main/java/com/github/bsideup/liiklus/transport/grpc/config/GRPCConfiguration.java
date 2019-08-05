@@ -1,18 +1,24 @@
 package com.github.bsideup.liiklus.transport.grpc.config;
 
 import com.github.bsideup.liiklus.transport.grpc.GRPCLiiklusService;
+import com.github.bsideup.liiklus.util.PropertiesUtil;
 import com.google.auto.service.AutoService;
 import io.grpc.*;
 import io.grpc.netty.NettyServerBuilder;
 import io.grpc.protobuf.services.ProtoReflectionService;
 import io.netty.channel.nio.NioEventLoopGroup;
 import lombok.Data;
-import org.springframework.boot.context.properties.bind.Binder;
+import org.hibernate.validator.group.GroupSequenceProvider;
+import org.hibernate.validator.spi.group.DefaultGroupSequenceProvider;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.env.Profiles;
 import reactor.core.scheduler.Schedulers;
 
+import javax.validation.constraints.Min;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @AutoService(ApplicationContextInitializer.class)
@@ -26,9 +32,7 @@ public class GRPCConfiguration implements ApplicationContextInitializer<GenericA
             return;
         }
 
-        var binder = Binder.get(environment);
-
-        var serverProperties = binder.bind("grpc", GRpcServerProperties.class).orElseGet(GRpcServerProperties::new);
+        var serverProperties = PropertiesUtil.bind(environment, new GRpcServerProperties());
 
         if (!serverProperties.isEnabled()) {
             return;
@@ -67,12 +71,30 @@ public class GRPCConfiguration implements ApplicationContextInitializer<GenericA
         );
     }
 
+    @ConfigurationProperties("grpc")
     @Data
+    @GroupSequenceProvider(GRpcServerProperties.EnabledSequenceProvider.class)
     static class GRpcServerProperties {
 
-        int port = 6565;
-
         boolean enabled = true;
+
+        @Min(value = 0, groups = Enabled.class)
+        int port = -1;
+
+        interface Enabled {}
+
+        public static class EnabledSequenceProvider implements DefaultGroupSequenceProvider<GRpcServerProperties> {
+
+            @Override
+            public List<Class<?>> getValidationGroups(GRpcServerProperties object) {
+                var sequence = new ArrayList<Class<?>>();
+                sequence.add(GRpcServerProperties.class);
+                if (object != null && object.isEnabled()) {
+                    sequence.add(Enabled.class);
+                }
+                return sequence;
+            }
+        }
 
     }
 

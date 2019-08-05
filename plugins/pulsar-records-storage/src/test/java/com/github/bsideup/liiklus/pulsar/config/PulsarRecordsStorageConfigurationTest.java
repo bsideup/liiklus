@@ -1,10 +1,17 @@
 package com.github.bsideup.liiklus.pulsar.config;
 
+import com.github.bsideup.liiklus.positions.PositionsStorage;
+import com.github.bsideup.liiklus.pulsar.PulsarRecordsStorage;
 import com.github.bsideup.liiklus.pulsar.config.PulsarRecordsStorageConfiguration.PulsarProperties;
 import com.github.bsideup.liiklus.pulsar.container.PulsarTlsContainer;
 import org.apache.pulsar.client.api.PulsarClientException;
 import org.apache.pulsar.client.impl.auth.AuthenticationBasic;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.BeansException;
+import org.springframework.boot.context.properties.bind.validation.BindValidationException;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.context.ApplicationContextInitializer;
+import org.springframework.context.support.StaticApplicationContext;
 import org.testcontainers.utility.MountableFile;
 
 import java.util.Map;
@@ -16,6 +23,62 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class PulsarRecordsStorageConfigurationTest {
+
+    ApplicationContextRunner applicationContextRunner = new ApplicationContextRunner(() -> new StaticApplicationContext() {
+        @Override
+        public void refresh() throws BeansException, IllegalStateException {
+        }
+    })
+            .withInitializer((ApplicationContextInitializer) new PulsarRecordsStorageConfiguration());
+
+    @Test
+    void shouldSkipWhenNotPulsar() {
+        applicationContextRunner.run(context -> {
+            assertThat(context).doesNotHaveBean(PositionsStorage.class);
+        });
+    }
+
+    @Test
+    void shouldSkipIfNotGateway() {
+        applicationContextRunner = applicationContextRunner.withPropertyValues(
+                "spring.profiles.active: not_gateway",
+                "storage.records.type: PULSAR"
+        );
+        applicationContextRunner.run(context -> {
+            assertThat(context).doesNotHaveBean(PositionsStorage.class);
+        });
+    }
+
+    @Test
+    void shouldValidateProperties() {
+        applicationContextRunner = applicationContextRunner.withPropertyValues(
+                "spring.profiles.active: gateway",
+                "storage.records.type: PULSAR"
+        );
+        applicationContextRunner.run(context -> {
+            assertThat(context)
+                    .getFailure()
+                    .hasCauseInstanceOf(BindValidationException.class);
+        });
+        applicationContextRunner = applicationContextRunner.withPropertyValues(
+                "pulsar.serviceUrl: host:6650"
+        );
+        applicationContextRunner.run(context -> {
+            assertThat(context).hasSingleBean(PulsarRecordsStorage.class);
+        });
+    }
+
+    @Test
+    void shouldRegisterWhenPulsar() {
+        applicationContextRunner = applicationContextRunner.withPropertyValues(
+                "spring.profiles.active: gateway",
+                "storage.records.type: PULSAR",
+                "pulsar.serviceUrl: host:6650"
+        );
+        applicationContextRunner.run(context -> {
+            assertThat(context).hasSingleBean(PulsarRecordsStorage.class);
+        });
+    }
 
     @Test
     void shouldSupportTLS() throws Exception {

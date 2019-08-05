@@ -19,17 +19,17 @@ class DynamoDBPositionsStorageTest implements PositionsStorageTests {
 
     static {
         localstack.start();
-
-        System.setProperty("dynamodb.autoCreateTable", "true");
-        System.setProperty("dynamodb.positionsTable", "positions-" + UUID.randomUUID());
         var endpointConfiguration = localstack.getEndpointConfiguration(Service.DYNAMODB);
-        System.setProperty("dynamodb.endpoint", endpointConfiguration.getServiceEndpoint());
         System.setProperty("aws.region", endpointConfiguration.getSigningRegion());
         var credentials = localstack.getDefaultCredentialsProvider().getCredentials();
         System.setProperty("aws.accessKeyId", credentials.getAWSAccessKeyId());
         System.setProperty("aws.secretAccessKey", credentials.getAWSSecretKey());
 
-        applicationContext = new ApplicationRunner("MEMORY", "DYNAMODB").run();
+        applicationContext = new ApplicationRunner("MEMORY", "DYNAMODB")
+                .withProperty("dynamodb.autoCreateTable", "true")
+                .withProperty("dynamodb.positionsTable", "positions-" + UUID.randomUUID())
+                .withProperty("dynamodb.endpoint", endpointConfiguration.getServiceEndpoint())
+                .run();
     }
 
     @Getter
