@@ -2,6 +2,10 @@
 grpc:
   port: 6565
 
+rsocket:
+  host: 0.0.0.0
+  port: 8081
+
 plugins:
   dir: ./plugins
   pathMatcher: "*.jar"

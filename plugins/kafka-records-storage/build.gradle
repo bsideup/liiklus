@@ -31,4 +31,5 @@ dependencies {
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
     testCompile project(":tck")
     testCompile 'org.testcontainers:kafka'
+    testCompile 'org.springframework.boot:spring-boot-test'
 }

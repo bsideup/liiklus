@@ -28,7 +28,7 @@ dependencies {
     testCompile 'org.junit.jupiter:junit-jupiter-api'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
 
-    testCompile project(":api")
+    testCompile project(":app")
+    testCompile 'org.springframework.boot:spring-boot-test'
     testCompile 'org.assertj:assertj-core'
-    testCompile 'org.slf4j:slf4j-api'
 }

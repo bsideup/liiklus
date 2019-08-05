@@ -3,8 +3,9 @@ package com.github.bsideup.liiklus.config;
 import com.github.bsideup.liiklus.records.RecordPostProcessor;
 import com.github.bsideup.liiklus.records.RecordPreProcessor;
 import com.github.bsideup.liiklus.service.LiiklusService;
+import com.github.bsideup.liiklus.util.PropertiesUtil;
 import lombok.Data;
-import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.env.Profiles;
@@ -24,8 +25,7 @@ public class GatewayConfiguration implements ApplicationContextInitializer<Gener
             return;
         }
 
-        var binder = Binder.get(environment);
-        var layersProperties = binder.bind("layers", LayersProperties.class).orElseGet(LayersProperties::new);
+        var layersProperties = PropertiesUtil.bind(environment, new LayersProperties());
 
         var comparator = Comparator
                 .comparingInt(it -> layersProperties.getOrders().getOrDefault(it.getClass().getName(), 0))
@@ -46,6 +46,7 @@ public class GatewayConfiguration implements ApplicationContextInitializer<Gener
         applicationContext.registerBean(LiiklusService.class);
     }
 
+    @ConfigurationProperties("layers")
     @Data
     static class LayersProperties {
 

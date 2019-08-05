@@ -1,14 +1,14 @@
 package com.github.bsideup.liiklus.pulsar.config;
 
-import com.github.bsideup.liiklus.pulsar.PulsarFiniteRecordsStorage;
 import com.github.bsideup.liiklus.pulsar.PulsarRecordsStorage;
+import com.github.bsideup.liiklus.records.RecordsStorage;
+import com.github.bsideup.liiklus.util.PropertiesUtil;
 import com.google.auto.service.AutoService;
 import lombok.Data;
 import lombok.SneakyThrows;
-import org.apache.pulsar.client.admin.PulsarAdmin;
 import org.apache.pulsar.client.api.PulsarClient;
 import org.apache.pulsar.client.api.PulsarClientException;
-import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.env.Profiles;
@@ -29,35 +29,15 @@ public class PulsarRecordsStorageConfiguration implements ApplicationContextInit
             return;
         }
 
-        if (!"PULSAR".equals(environment.getProperty("storage.records.type"))) {
+        if (!"PULSAR".equals(environment.getRequiredProperty("storage.records.type"))) {
             return;
         }
 
-        var binder = Binder.get(environment);
+        var pulsarProperties = PropertiesUtil.bind(environment, new PulsarProperties());
 
-        var pulsarProperties = binder.bind("pulsar", PulsarProperties.class).get();
-
-        pulsarProperties.getAdminUrl().ifPresentOrElse(
-                adminUrl -> {
-                    applicationContext.registerBean(PulsarFiniteRecordsStorage.class, () -> {
-                        try {
-                            return new PulsarFiniteRecordsStorage(
-                                    createClient(pulsarProperties),
-                                    PulsarAdmin.builder()
-                                            .serviceHttpUrl(adminUrl)
-                                            .build()
-                        );
-                        } catch (PulsarClientException e) {
-                            throw new RuntimeException(e);
-                        }
-                    });
-                },
-                () -> {
-                    applicationContext.registerBean(PulsarRecordsStorage.class, () -> {
-                        return new PulsarRecordsStorage(createClient(pulsarProperties));
-                    });
-                }
-        );
+        applicationContext.registerBean(PulsarRecordsStorage.class, () -> {
+            return new PulsarRecordsStorage(createClient(pulsarProperties));
+        });
     }
 
     @SneakyThrows
@@ -77,14 +57,13 @@ public class PulsarRecordsStorageConfiguration implements ApplicationContextInit
         return clientBuilder.build();
     }
 
+    @ConfigurationProperties("pulsar")
     @Data
     @Validated
     static class PulsarProperties {
 
         @NotEmpty
         String serviceUrl;
-
-        Optional<String> adminUrl = Optional.empty();
 
         Optional<String> tlsTrustCertsFilePath = Optional.empty();
 

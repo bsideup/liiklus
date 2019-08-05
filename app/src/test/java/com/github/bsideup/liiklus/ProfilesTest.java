@@ -24,9 +24,7 @@ public class ProfilesTest extends AbstractIntegrationTest {
             "storage.positions.type=MEMORY"
     );
 
-    Set<String> commonArgs = Sets.newHashSet(
-            "grpc.inProcessServerName=liiklus-profile-test"
-    );
+    Set<String> commonArgs = Sets.newHashSet();
 
     ConfigurableApplicationContext lastApplicationContext;
 
@@ -40,13 +38,13 @@ public class ProfilesTest extends AbstractIntegrationTest {
     @Test
     public void testRequired() throws Exception {
         assertThatAppWithProps(commonArgs)
-                .hasRootCauseInstanceOf(NoSuchBeanDefinitionException.class);
+                .hasMessageContaining("Required key");
 
         assertThatAppWithProps(commonArgs, RECORDS_PROPERTIES)
-                .hasRootCauseInstanceOf(NoSuchBeanDefinitionException.class);
+                .hasMessageContaining("Required key");
 
         assertThatAppWithProps(commonArgs, POSITIONS_PROPERTIES)
-                .hasRootCauseInstanceOf(NoSuchBeanDefinitionException.class);
+                .hasMessageContaining("Required key");
 
         assertThatAppWithProps(commonArgs, RECORDS_PROPERTIES, POSITIONS_PROPERTIES)
                 .doesNotThrowAnyException();
@@ -57,7 +55,7 @@ public class ProfilesTest extends AbstractIntegrationTest {
         commonArgs.add("spring.profiles.active=exporter");
 
         assertThatAppWithProps(commonArgs)
-                .hasRootCauseInstanceOf(NoSuchBeanDefinitionException.class);
+                .hasMessageContaining("Required key");
 
         assertThatAppWithProps(commonArgs, POSITIONS_PROPERTIES)
                 .doesNotThrowAnyException();
@@ -68,13 +66,13 @@ public class ProfilesTest extends AbstractIntegrationTest {
         commonArgs.add("spring.profiles.active=gateway");
 
         assertThatAppWithProps(commonArgs)
-                .hasRootCauseInstanceOf(NoSuchBeanDefinitionException.class);
+                .hasMessageContaining("Required key");
 
         assertThatAppWithProps(commonArgs, RECORDS_PROPERTIES)
-                .hasRootCauseInstanceOf(NoSuchBeanDefinitionException.class);
+                .hasMessageContaining("Required key");
 
         assertThatAppWithProps(commonArgs, POSITIONS_PROPERTIES)
-                .hasRootCauseInstanceOf(NoSuchBeanDefinitionException.class);
+                .hasMessageContaining("Required key");
 
         assertThatAppWithProps(commonArgs, RECORDS_PROPERTIES, POSITIONS_PROPERTIES)
                 .doesNotThrowAnyException();

@@ -20,6 +20,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -129,7 +130,7 @@ public interface ConsumerGroupTest extends RecordStorageTestSupport {
 
         var groupName = UUID.randomUUID().toString();
 
-        var receivedOffsets = new HashMap<Subscription, Set<Tuple2<Integer, Long>>>();
+        var receivedOffsets = new ConcurrentHashMap<Subscription, Set<Tuple2<Integer, Long>>>();
 
         var disposeAll = ReplayProcessor.<Boolean>create(1);
 
