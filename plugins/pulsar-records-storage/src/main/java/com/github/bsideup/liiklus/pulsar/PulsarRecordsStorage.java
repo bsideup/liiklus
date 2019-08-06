@@ -1,10 +1,11 @@
 package com.github.bsideup.liiklus.pulsar;
 
-import com.github.bsideup.liiklus.records.RecordsStorage;
+import com.github.bsideup.liiklus.records.FiniteRecordsStorage;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.apache.pulsar.client.api.*;
 import org.apache.pulsar.client.api.PulsarClientException.AlreadyClosedException;
+import org.apache.pulsar.client.impl.ConsumerImplAccessor;
 import org.apache.pulsar.client.impl.MessageIdImpl;
 import org.apache.pulsar.common.naming.TopicName;
 import org.reactivestreams.Publisher;
@@ -17,6 +18,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -26,7 +28,7 @@ import java.util.stream.Stream;
 
 @RequiredArgsConstructor
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
-public class PulsarRecordsStorage implements RecordsStorage {
+public class PulsarRecordsStorage implements FiniteRecordsStorage {
 
     public static MessageId fromOffset(long offset) {
         return new MessageIdImpl(offset >>> 28, offset & 0x0F_FF_FF_FFL, -1);
@@ -81,6 +83,35 @@ public class PulsarRecordsStorage implements RecordsStorage {
     @Override
     public Subscription subscribe(String topic, String groupName, Optional<String> autoOffsetReset) {
         return new PulsarSubscription(topic, groupName, autoOffsetReset);
+    }
+
+    @Override
+    public CompletionStage<Map<Integer, Long>> getEndOffsets(String topic) {
+        return Mono
+                .fromCompletionStage(() -> pulsarClient.getPartitionsForTopic(topic))
+                .flatMapIterable(it -> it)
+                .flatMap(partitionTopic -> {
+                    var partitionIndex = TopicName.getPartitionIndex(partitionTopic);
+
+                    var consumerFuture = pulsarClient.newConsumer()
+                            .subscriptionName(UUID.randomUUID().toString())
+                            .subscriptionType(SubscriptionType.Failover)
+                            .topic(partitionTopic)
+                            .subscribeAsync();
+
+                    return Mono.usingWhen(
+                            Mono.fromCompletionStage(() -> consumerFuture),
+                            consumer -> {
+                                return Mono
+                                        .fromCompletionStage(() -> ConsumerImplAccessor.getLastMessageIdAsync(consumer))
+                                        .map(messageId -> Map.entry(partitionIndex, toOffset(messageId)));
+                            },
+                            consumer -> Mono.fromCompletionStage(consumer.closeAsync()),
+                            consumer -> Mono.fromCompletionStage(consumer.closeAsync())
+                    );
+                })
+                .collectMap(Map.Entry::getKey, Map.Entry::getValue)
+                .toFuture();
     }
 
     @Value
