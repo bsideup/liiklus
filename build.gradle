@@ -75,7 +75,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
                 entry 'rsocket-core'
             }
 
-            dependencySet(group: 'io.rsocket.rpc', version: '0.2.12') {
+            dependencySet(group: 'io.rsocket.rpc', version: '0.2.19') {
                 entry 'rsocket-rpc-core'
                 entry 'rsocket-rpc-protobuf'
             }
