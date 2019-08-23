@@ -70,7 +70,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
 
             dependency 'org.pf4j:pf4j:3.0.1'
 
-            dependencySet(group: 'io.rsocket', version: '0.11.16') {
+            dependencySet(group: 'io.rsocket', version: '0.12.1') {
                 entry 'rsocket-transport-netty'
                 entry 'rsocket-core'
             }
