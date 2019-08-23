@@ -3,12 +3,13 @@ name: CI
 on: [push]
 
 jobs:
-  strategy:
-    matrix:
-      tasks:
-      - ":app:check"
-      - "check -x :app:check"
   build:
+    strategy:
+      matrix:
+        tasks:
+        - ":app:check"
+        - "check -x :app:check"
+
     runs-on: ubuntu-latest
 
     steps:
