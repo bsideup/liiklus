@@ -175,8 +175,8 @@ public class PulsarRecordsStorage implements FiniteRecordsStorage {
 
         @Override
         public Publisher<Record> getPublisher() {
-            return Flux.using(
-                    () -> {
+            return Flux.usingWhen(
+                    Mono.fromCompletionStage(() -> {
                         val consumerBuilder = pulsarClient.newConsumer()
                                 .subscriptionName(groupName)
                                 .subscriptionType(SubscriptionType.Failover)
@@ -196,41 +196,32 @@ public class PulsarRecordsStorage implements FiniteRecordsStorage {
                                 .ifPresent(consumerBuilder::subscriptionInitialPosition);
 
                         return consumerBuilder.subscribeAsync();
+                    }),
+                    consumer -> {
+                        return Mono
+                                .fromCompletionStage(consumer::receiveAsync)
+                                .repeat()
+                                .onErrorResume(AlreadyClosedException.class, __ -> Mono.empty())
+                                .map(message -> {
+                                    var key = message.getKey();
+                                    return new Record(
+                                            new Envelope(
+                                                    topic,
+                                                    key != null ? ByteBuffer.wrap(key.getBytes()) : null,
+                                                    ByteBuffer.wrap(message.getValue())
+                                            ),
+                                            Instant.ofEpochMilli(message.getEventTime()),
+                                            partition,
+                                            toOffset(message.getMessageId())
+                                    );
+                                })
+                                .delaySubscription(
+                                        initialOffset.flatMap(offset -> {
+                                            return Mono.fromCompletionStage(consumer.seekAsync(fromOffset(offset)));
+                                        })
+                                );
                     },
-                    future -> Mono
-                            .fromCompletionStage(future)
-                            .delayUntil(consumer -> {
-                                return initialOffset.delayUntil(offset -> {
-                                    return Mono.fromCompletionStage(consumer.seekAsync(fromOffset(offset)));
-                                });
-                            })
-                            .flatMapMany(consumer -> {
-                                return Mono
-                                        .fromCompletionStage(consumer::receiveAsync)
-                                        .repeat()
-                                        .onErrorResume(AlreadyClosedException.class, __ -> Mono.empty())
-                                        .map(message -> {
-                                            var key = message.getKey();
-                                            return new Record(
-                                                    new Envelope(
-                                                            topic,
-                                                            key != null ? ByteBuffer.wrap(key.getBytes()) : null,
-                                                            ByteBuffer.wrap(message.getValue())
-                                                    ),
-                                                    Instant.ofEpochMilli(message.getEventTime()),
-                                                    partition,
-                                                    toOffset(message.getMessageId())
-                                            );
-                                        });
-                            }),
-                    it -> {
-                        if (it.isDone()) {
-                            Consumer<byte[]> consumer = it.getNow(null);
-                            if (consumer != null && consumer.isConnected()) {
-                                consumer.closeAsync();
-                            }
-                        }
-                    }
+                    consumer -> Mono.fromCompletionStage(consumer.closeAsync())
             );
         }
     }
