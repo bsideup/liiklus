@@ -6,7 +6,6 @@ import com.google.auto.service.AutoService;
 import io.grpc.*;
 import io.grpc.netty.NettyServerBuilder;
 import io.grpc.protobuf.services.ProtoReflectionService;
-import io.netty.channel.nio.NioEventLoopGroup;
 import lombok.Data;
 import org.hibernate.validator.group.GroupSequenceProvider;
 import org.hibernate.validator.spi.group.DefaultGroupSequenceProvider;
@@ -14,7 +13,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.env.Profiles;
-import reactor.core.scheduler.Schedulers;
 
 import javax.validation.constraints.Min;
 import java.util.ArrayList;
@@ -45,7 +43,6 @@ public class GRPCConfiguration implements ApplicationContextInitializer<GenericA
                 () -> {
                     var serverBuilder = NettyServerBuilder
                             .forPort(serverProperties.getPort())
-                            .workerEventLoopGroup(new NioEventLoopGroup(Schedulers.DEFAULT_POOL_SIZE))
                             .permitKeepAliveTime(150, TimeUnit.SECONDS)
                             .permitKeepAliveWithoutCalls(true)
                             .directExecutor()
