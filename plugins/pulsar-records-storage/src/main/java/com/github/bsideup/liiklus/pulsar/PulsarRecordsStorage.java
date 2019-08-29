@@ -42,6 +42,15 @@ public class PulsarRecordsStorage implements FiniteRecordsStorage {
         return (msgId.getLedgerId() << 28) | msgId.getEntryId();
     }
 
+    private static Instant extractTime(Message<byte[]> message) {
+        // event time does not always exist
+        if (message.getEventTime() == 0) {
+            return Instant.ofEpochMilli(message.getPublishTime());
+        } else {
+            return Instant.ofEpochMilli(message.getEventTime());
+        }
+    }
+
     PulsarClient pulsarClient;
 
     ConcurrentMap<String, Mono<Producer<byte[]>>> producers = new ConcurrentHashMap<>();
@@ -210,7 +219,7 @@ public class PulsarRecordsStorage implements FiniteRecordsStorage {
                                                     key != null ? ByteBuffer.wrap(key.getBytes()) : null,
                                                     ByteBuffer.wrap(message.getValue())
                                             ),
-                                            Instant.ofEpochMilli(message.getEventTime()),
+                                            extractTime(message),
                                             partition,
                                             toOffset(message.getMessageId())
                                     );
