@@ -319,7 +319,7 @@ public class PulsarRecordsStorage implements FiniteRecordsStorage {
         }
 
         private Mono<Void> cleanConsumer(Consumer<byte[]> consumer) {
-            return Mono.fromCompletionStage(consumer.closeAsync())
+            return Mono.fromCompletionStage(consumer::closeAsync)
                     .doOnSuccess(__ -> log.debug(
                             "clean-consumer: subscription {}, topic {}, partition {} cleanup succeed",
                             groupName, topic, partition
