@@ -7,7 +7,12 @@ import reactor.core.publisher.DirectProcessor;
 
 import java.nio.ByteBuffer;
 import java.time.Duration;
-import java.util.*;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -142,6 +147,27 @@ public interface SubscribeTest extends RecordStorageTestSupport {
                 .isNotNull()
                 .satisfies(it -> {
                     assertThat(it.getOffset()).isEqualTo(offsetInfo.getOffset());
+                });
+    }
+
+    @Test
+    default void testValidTimestamp() throws Exception {
+        var topic = getTopic();
+        var offsetInfo = publish(new RecordsStorage.Envelope(
+                topic,
+                null,
+                ByteBuffer.wrap("hello".getBytes())
+        ));
+        int partition = offsetInfo.getPartition();
+
+        var record = subscribeToPartition(partition)
+                .flatMap(RecordsStorage.PartitionSource::getPublisher)
+                .blockFirst(Duration.ofSeconds(10));
+
+        assertThat(record)
+                .isNotNull()
+                .satisfies(it -> {
+                    assertThat(it.getTimestamp()).isAfter(Instant.ofEpochMilli(0));
                 });
     }
 }
