@@ -210,25 +210,25 @@ public class PulsarRecordsStorage implements FiniteRecordsStorage {
         public Publisher<Record> getPublisher() {
             return Flux.usingWhen(createConsumer(), this::consumeMessage, this::cleanConsumer)
                     .doOnSubscribe(__ -> log.debug(
-                            "pulsar-source: subscription {}, topic {}, partition {} subscribed",
+                            "subscription {}, topic {}, partition {} subscribed",
                             groupName, topic, partition
                     ))
                     .doOnComplete(() -> log.debug(
-                            "pulsar-source: subscription {}, topic {}, partition {} completed",
+                            "subscription {}, topic {}, partition {} completed",
                             groupName, topic, partition
                     ))
                     .onErrorMap(CompletionException.class, Throwable::getCause)
                     .doOnError(
                             e -> !(e instanceof PulsarClientException.ConsumerBusyException),
                             e -> log.error(
-                                    "pulsar-source: subscription {}, topic {}, partition {} failed",
+                                    "subscription {}, topic {}, partition {} failed",
                                     groupName, topic, partition, e
                             )
                     )
                     .doOnError(
                             e -> e instanceof PulsarClientException.ConsumerBusyException,
                             e -> log.trace(
-                                    "pulsar-source: subscription {}, topic {}, partition {} already connected",
+                                    "subscription {}, topic {}, partition {} already connected",
                                     groupName, topic, partition
                             )
                     )
@@ -266,21 +266,21 @@ public class PulsarRecordsStorage implements FiniteRecordsStorage {
                         return consumerBuilder.subscribeAsync();
                     })
                     .doOnNext(__ -> log.debug(
-                            "consumer-creation: subscription {}, topic {}, partition {} success",
+                            "subscription {}, topic {}, partition {} consumer created",
                             groupName, topic, partition
                     ))
                     .onErrorMap(CompletionException.class, Throwable::getCause)
                     .doOnError(
                             e -> !(e instanceof PulsarClientException.ConsumerBusyException),
                             e -> log.error(
-                                    "consumer-creation: subscription {}, topic {}, partition {} failed",
+                                    "subscription {}, topic {}, partition {} failed to create consumer",
                                     groupName, topic, partition, e
                             )
                     )
                     .doOnError(
                             e -> e instanceof PulsarClientException.ConsumerBusyException,
                             e -> log.trace(
-                                    "consumer-creation: subscription {}, topic {}, partition {} already connected",
+                                    "subscription {}, topic {}, partition {} already connected",
                                     groupName, topic, partition
                             )
                     );
@@ -309,11 +309,11 @@ public class PulsarRecordsStorage implements FiniteRecordsStorage {
         private Mono<Void> resetSubscriptionOffset(Consumer<byte[]> consumer, Long offset) {
             return Mono.fromCompletionStage(consumer.seekAsync(adaptForSeek(fromOffset(offset))))
                     .doOnSuccess(__ -> log.debug(
-                            "reset-subscription: subscription {}, topic {}, partition {} is reset to {}",
+                            "subscription {}, topic {}, partition {} is reset to {}",
                             groupName, topic, partition, offset
                     ))
                     .doOnError(e -> log.debug(
-                            "reset-subscription: subscription {}, topic {}, partition {} reset to {} failed",
+                            "subscription {}, topic {}, partition {} reset to {} failed",
                             groupName, topic, partition, offset, e
                     ));
         }
@@ -321,11 +321,11 @@ public class PulsarRecordsStorage implements FiniteRecordsStorage {
         private Mono<Void> cleanConsumer(Consumer<byte[]> consumer) {
             return Mono.fromCompletionStage(consumer::closeAsync)
                     .doOnSuccess(__ -> log.debug(
-                            "clean-consumer: subscription {}, topic {}, partition {} cleanup succeed",
+                            "subscription {}, topic {}, partition {} cleanup succeed",
                             groupName, topic, partition
                     ))
                     .doOnError(e -> log.debug(
-                            "clean-consumer: subscription {}, topic {}, partition {} cleanup failed",
+                            "subscription {}, topic {}, partition {} cleanup failed",
                             groupName, topic, partition, e
                     ));
         }
