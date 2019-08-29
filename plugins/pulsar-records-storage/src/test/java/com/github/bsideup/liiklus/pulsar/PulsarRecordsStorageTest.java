@@ -94,7 +94,6 @@ public class PulsarRecordsStorageTest implements RecordStorageTests {
             pulsarClient.newProducer()
                     .topic(topic)
                     .hashingScheme(HashingScheme.Murmur3_32Hash)
-                    // .enableBatching(false)
                     .create()
                     .newMessage()
                     .key(key)
