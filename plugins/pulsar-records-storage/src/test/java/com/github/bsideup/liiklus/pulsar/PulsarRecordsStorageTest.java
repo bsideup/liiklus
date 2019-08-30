@@ -3,6 +3,7 @@ package com.github.bsideup.liiklus.pulsar;
 import com.github.bsideup.liiklus.ApplicationRunner;
 import com.github.bsideup.liiklus.records.RecordStorageTests;
 import com.github.bsideup.liiklus.records.RecordsStorage;
+import com.github.bsideup.liiklus.records.RecordsStorage.PartitionSource;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.apache.pulsar.client.admin.PulsarAdmin;
@@ -21,7 +22,6 @@ import reactor.core.publisher.ReplayProcessor;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
-import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -261,42 +261,34 @@ public class PulsarRecordsStorageTest implements RecordStorageTests {
     }
 
     @Test
-    void testEventTimestampPreference() throws Exception {
-        PulsarClient pulsarClient = PulsarClient.builder()
-                .serviceUrl(pulsar.getPulsarBrokerUrl())
-                .build();
-
-        byte[] key = UUID.randomUUID().toString().getBytes();
-        Instant eventTimestamp = Instant.now().minusSeconds(1000).truncatedTo(ChronoUnit.MILLIS);
-
-        pulsarClient.newProducer()
-                .topic(topic)
-                .hashingScheme(HashingScheme.Murmur3_32Hash)
-                .enableBatching(false)
-                .create()
-                .newMessage()
-                .keyBytes(key)
-                .value("hello".getBytes())
-                .eventTime(eventTimestamp.toEpochMilli())
-                .send();
-
+    void shouldPreferEventTimeOverPublishTime() throws Exception {
         var topic = getTopic();
-        var offsetInfo = publish(new RecordsStorage.Envelope(
-                topic,
-                ByteBuffer.wrap(key),
-                ByteBuffer.wrap("hello".getBytes())
-        ));
-        int partition = offsetInfo.getPartition();
+        var partition = 0;
+        var key = keyByPartition(partition);
+        var eventTimestamp = Instant.now().minusSeconds(1000).truncatedTo(ChronoUnit.MILLIS);
 
-        var records = subscribeToPartition(partition)
-                .flatMap(RecordsStorage.PartitionSource::getPublisher)
-                .take(2)
-                .collectList()
-                .block(Duration.ofSeconds(10));
+        try (
+                var pulsarClient = PulsarClient.builder()
+                        .serviceUrl(pulsar.getPulsarBrokerUrl())
+                        .build()
+        ) {
+            pulsarClient.newProducer()
+                    .topic(topic)
+                    .hashingScheme(HashingScheme.Murmur3_32Hash)
+                    .create()
+                    .newMessage()
+                    .key(key)
+                    .value("hello".getBytes())
+                    .eventTime(eventTimestamp.toEpochMilli())
+                    .send();
+        }
 
-        assertThat(records)
-                .hasSize(2)
-                .anySatisfy(it -> assertThat(it.getTimestamp()).isEqualTo(eventTimestamp))
-                .anySatisfy(it -> assertThat(it.getTimestamp()).isAfter(eventTimestamp));
+        var record = subscribeToPartition(partition)
+                .flatMap(PartitionSource::getPublisher)
+                .blockFirst(Duration.ofSeconds(10));
+
+        assertThat(record).satisfies(it -> {
+            assertThat(it.getTimestamp()).isEqualTo(eventTimestamp);
+        });
     }
 }
