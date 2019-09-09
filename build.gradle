@@ -58,7 +58,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
         overriddenByDependencies = false
 
         imports {
-            mavenBom 'org.junit:junit-bom:5.5.1'
+            mavenBom 'org.junit:junit-bom:5.5.2'
             mavenBom org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES
             mavenBom 'org.testcontainers:testcontainers-bom:1.12.0'
             mavenBom 'io.grpc:grpc-bom:1.23.0'
