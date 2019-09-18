@@ -22,6 +22,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -187,6 +188,7 @@ public class PulsarRecordsStorage implements FiniteRecordsStorage {
             return Flux.usingWhen(
                     Mono.fromCompletionStage(() -> {
                         val consumerBuilder = pulsarClient.newConsumer()
+                                .acknowledgmentGroupTime(0, TimeUnit.SECONDS) // we don't ack here at all
                                 .subscriptionName(groupName)
                                 .subscriptionType(SubscriptionType.Failover)
                                 .topic(TopicName.get(topic).getPartition(partition).toString());
