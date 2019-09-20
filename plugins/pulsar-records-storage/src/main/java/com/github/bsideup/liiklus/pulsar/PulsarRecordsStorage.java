@@ -205,7 +205,7 @@ public class PulsarRecordsStorage implements FiniteRecordsStorage {
 
         Optional<String> autoOffsetReset;
 
-        Mono<Long> initialOffset;
+        Mono<Long> lastOffset;
 
         @Override
         public Publisher<Record> getPublisher() {
@@ -305,19 +305,54 @@ public class PulsarRecordsStorage implements FiniteRecordsStorage {
                                 toOffset(message.getMessageId())
                         );
                     })
-                    .delaySubscription(initialOffset.flatMap(offset -> resetSubscriptionOffset(consumer, offset)));
+                    .delaySubscription(resetSubscriptionOffset(consumer));
         }
 
-        private Mono<Void> resetSubscriptionOffset(Consumer<byte[]> consumer, Long offset) {
-            return Mono.fromCompletionStage(consumer.seekAsync(adaptForSeek(fromOffset(offset))))
-                    .doOnSuccess(__ -> log.debug(
-                            "subscription {}, topic {}, partition {} is reset to {}",
-                            groupName, topic, partition, offset
-                    ))
-                    .doOnError(e -> log.debug(
-                            "subscription {}, topic {}, partition {} reset to {} failed",
-                            groupName, topic, partition, offset, e
-                    ));
+        private Mono<Void> resetSubscriptionOffset(Consumer<byte[]> consumer) {
+            return lastOffset
+                    .map(PulsarRecordsStorage::fromOffset)
+                    .cast(MessageIdImpl.class)
+                    .flatMap(messageId -> convertToOffset(consumer, messageId))
+                    .switchIfEmpty(initialOffset())
+                    .flatMap(offset -> Mono.fromCompletionStage(consumer.seekAsync(offset))
+                            .doOnSuccess(__ -> log.debug(
+                                    "succeeded to seek offset {} at consumer {} for {} {}",
+                                    offset, groupName, topic, partition
+                            ))
+                            .doOnError(e -> log.error(
+                                    "failed to seek offset {} at consumer {} for {} {}",
+                                    offset, groupName, topic, partition, e
+                            ))
+                    );
+        }
+
+        private Mono<MessageId> convertToOffset(Consumer<byte[]> consumer, MessageIdImpl messageId) {
+            return Mono.fromCompletionStage(() -> ConsumerImplAccessor.getLastMessageIdAsync(consumer))
+                    .map(last -> {
+                        var msg = (MessageIdImpl) last;
+
+                        if (msg.getLedgerId() == messageId.getLedgerId()) {
+                            return messageId;
+                        }
+
+                        return adaptForSeek(messageId);
+                    });
+        }
+
+        private Mono<MessageId> initialOffset() {
+            return Mono.fromSupplier(() -> autoOffsetReset
+                    .map(it -> {
+                        switch (it) {
+                            case "earliest":
+                                return MessageId.earliest;
+                            case "latest":
+                                return MessageId.latest;
+                            default:
+                                return null;
+                        }
+                    })
+                    .orElse(null)
+            );
         }
 
         private Mono<Void> cleanConsumer(Consumer<byte[]> consumer) {
