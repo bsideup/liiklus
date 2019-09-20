@@ -37,6 +37,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -242,6 +243,7 @@ public class PulsarRecordsStorage implements FiniteRecordsStorage {
             return Mono
                     .fromCompletionStage(() -> {
                         val consumerBuilder = pulsarClient.newConsumer()
+                                .acknowledgmentGroupTime(0, TimeUnit.SECONDS) // we don't ack here at all
                                 .subscriptionName(groupName)
                                 // failover subscription type does not failover properly
                                 // in case it works, unacked messaged will be re-delivered to other consumer
