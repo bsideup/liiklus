@@ -11,6 +11,7 @@ import org.apache.pulsar.client.api.HashingScheme;
 import org.apache.pulsar.client.api.PulsarClient;
 import org.apache.pulsar.client.impl.Murmur3_32Hash;
 import org.apache.pulsar.client.util.MathUtils;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationContext;
 import org.testcontainers.containers.PulsarContainer;
@@ -77,6 +78,12 @@ public class PulsarRecordsStorageTest implements RecordStorageTests {
     @Override
     public int getNumberOfPartitions() {
         return NUM_OF_PARTITIONS;
+    }
+
+    @Override
+    @Test
+    @Disabled("#180 - Pulsar should fix the way seek works, not disconnecting consumers (apache/pulsar/pull/5022)")
+    public void shouldAlwaysUseEarliestOffsetOnEmptyOffsetsInTheInitialProvider() {
     }
 
     @Test
