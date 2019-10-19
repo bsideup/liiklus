@@ -2,16 +2,6 @@ test {
     useJUnit()
 }
 
-jar {
-    manifest {
-        attributes(
-                'Manifest-Version': '1.0',
-                'Implementation-Version': "${project.version}",
-                'Implementation-Title': "${project.name}"
-        )
-    }
-}
-
 dependencies {
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'

@@ -52,16 +52,6 @@ idea {
     }
 }
 
-jar {
-    manifest {
-        attributes(
-                'Manifest-Version': '1.0',
-                'Implementation-Version': "${project.version}",
-                'Implementation-Title': "${project.name}"
-        )
-    }
-}
-
 sourceCompatibility = targetCompatibility = 8
 
 test {
