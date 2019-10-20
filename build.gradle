@@ -50,6 +50,16 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
         }
     }
 
+    jar {
+        manifest {
+            attributes(
+                    'Manifest-Version': '1.0',
+                    'Implementation-Version': "${project.version}",
+                    'Implementation-Title': "${project.name}"
+            )
+        }
+    }
+
     project.afterEvaluate {
         project.tasks.findByName("install")?.dependsOn(tasks.findByName("assemble"))
     }
