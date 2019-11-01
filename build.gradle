@@ -70,8 +70,8 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
         imports {
             mavenBom 'org.junit:junit-bom:5.5.2'
             mavenBom org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES
-            mavenBom 'org.testcontainers:testcontainers-bom:1.12.2'
-            mavenBom 'io.grpc:grpc-bom:1.24.0'
+            mavenBom 'org.testcontainers:testcontainers-bom:1.12.3'
+            mavenBom 'io.grpc:grpc-bom:1.24.1'
             mavenBom 'com.google.protobuf:protobuf-bom:3.10.0'
         }
 
@@ -90,16 +90,16 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
                 entry 'rsocket-rpc-protobuf'
             }
 
-            dependency 'io.prometheus:simpleclient_common:0.7.0'
+            dependency 'io.prometheus:simpleclient_common:0.8.0'
 
             dependency 'org.springframework.fu:spring-fu-autoconfigure-adapter:0.0.5'
 
-            dependency 'com.google.protobuf:protoc:3.9.1'
+            dependency 'com.google.protobuf:protoc:3.10.1'
 
             dependency 'com.google.auto.service:auto-service:1.0-rc6'
 
             // Override kafka-clients' version, otherwise it comes from Spring Boot
-            dependency 'org.apache.kafka:kafka-clients:2.3.0'
+            dependency 'org.apache.kafka:kafka-clients:2.3.1'
 
             dependency 'com.salesforce.servicelibs:reactor-grpc-stub:0.10.0'
 
