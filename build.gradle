@@ -82,7 +82,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
 
             dependency 'io.prometheus:simpleclient_common:0.7.0'
 
-            dependency 'org.springframework.fu:spring-fu-autoconfigure-adapter:0.0.5'
+            dependency 'org.springframework.fu:spring-fu-autoconfigure-adapter:0.2.1'
 
             dependency 'com.google.protobuf:protoc:3.9.1'
 
