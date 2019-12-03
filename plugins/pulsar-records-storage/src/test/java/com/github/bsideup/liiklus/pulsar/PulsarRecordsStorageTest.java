@@ -4,6 +4,7 @@ import com.github.bsideup.liiklus.ApplicationRunner;
 import com.github.bsideup.liiklus.records.RecordStorageTests;
 import com.github.bsideup.liiklus.records.RecordsStorage;
 import com.github.bsideup.liiklus.records.RecordsStorage.PartitionSource;
+import com.github.bsideup.liiklus.support.DisabledUntil;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.apache.pulsar.client.admin.PulsarAdmin;
@@ -79,6 +80,13 @@ public class PulsarRecordsStorageTest implements RecordStorageTests {
         return NUM_OF_PARTITIONS;
     }
 
+    @Override
+    @Test
+    @DisabledUntil(value = "2020-01-01", comment = "#180 - Pulsar should fix the way seek works, not disconnecting consumers (apache/pulsar/pull/5022)")
+    public void shouldAlwaysUseEarliestOffsetOnEmptyOffsetsInTheInitialProvider() {
+        RecordStorageTests.super.shouldAlwaysUseEarliestOffsetOnEmptyOffsetsInTheInitialProvider();
+    }
+
     @Test
     void shouldPreferEventTimeOverPublishTime() throws Exception {
         var topic = getTopic();
@@ -86,7 +94,7 @@ public class PulsarRecordsStorageTest implements RecordStorageTests {
         var key = keyByPartition(partition);
         var eventTimestamp = Instant.now().minusSeconds(1000).truncatedTo(ChronoUnit.MILLIS);
 
-        try(
+        try (
                 var pulsarClient = PulsarClient.builder()
                         .serviceUrl(pulsar.getPulsarBrokerUrl())
                         .build()

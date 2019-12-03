@@ -1,6 +1,7 @@
 package com.github.bsideup.liiklus.records.tests;
 
 import com.github.bsideup.liiklus.records.RecordStorageTestSupport;
+import com.github.bsideup.liiklus.records.RecordsStorage;
 import com.github.bsideup.liiklus.records.RecordsStorage.OffsetInfo;
 import com.github.bsideup.liiklus.records.RecordsStorage.PartitionSource;
 import com.github.bsideup.liiklus.records.RecordsStorage.Subscription;
@@ -12,16 +13,20 @@ import reactor.core.publisher.ReplayProcessor;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -169,5 +174,44 @@ public interface ConsumerGroupTest extends RecordStorageTestSupport {
         } finally {
             disposeAll.onNext(true);
         }
+    }
+
+
+    @Test
+    default void shouldAlwaysUseEarliestOffsetOnEmptyOffsetsInTheInitialProvider() {
+        String groupName = "name";
+        var earliest = "earliest";
+        int count = 10;
+        int offsetShift = 5;
+
+        var published = publishMany(UUID.randomUUID().toString().getBytes(), count);
+        var latest = published.get(published.size() - 1);
+
+        RecordsStorage.Record latestRecord = subscribeToPartitionWithGroup(groupName, latest.getPartition(), earliest, () -> CompletableFuture.completedStage(Map.of(latest.getPartition(), latest.getOffset() - offsetShift)))
+                .flatMap(PartitionSource::getPublisher)
+                .takeUntil(next -> next.getOffset() == latest.getOffset())
+                .blockLast(Duration.ofSeconds(10));
+
+        assertThat(latestRecord.getOffset()).describedAs("latest offset").isEqualTo(latest.getOffset());
+
+        List<RecordsStorage.Record> records = subscribeToPartitionWithGroup(groupName, latest.getPartition(), earliest, () -> CompletableFuture.completedStage(Map.of()))
+                .flatMap(PartitionSource::getPublisher)
+                .takeUntil(next -> next.getOffset() == latest.getOffset())
+                .collectList()
+                .block(Duration.ofSeconds(10));
+
+        assertThat(records).hasSize(count);
+    }
+
+
+    default Flux<? extends RecordsStorage.PartitionSource> subscribeToPartitionWithGroup(
+            String groupName,
+            int partition,
+            String offsetReset,
+            Supplier<CompletionStage<Map<Integer, Long>>> offsetsProvider
+    ) {
+        return Flux.from(getTarget().subscribe(getTopic(), groupName, Optional.of(offsetReset)).getPublisher(offsetsProvider))
+                .flatMapIterable(it -> it::iterator)
+                .filter(it -> partition == it.getPartition());
     }
 }
