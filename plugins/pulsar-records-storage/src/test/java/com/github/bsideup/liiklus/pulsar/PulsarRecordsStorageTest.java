@@ -4,6 +4,7 @@ import com.github.bsideup.liiklus.ApplicationRunner;
 import com.github.bsideup.liiklus.records.RecordStorageTests;
 import com.github.bsideup.liiklus.records.RecordsStorage;
 import com.github.bsideup.liiklus.records.RecordsStorage.PartitionSource;
+import com.github.bsideup.liiklus.support.DisabledUntil;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.apache.pulsar.client.admin.PulsarAdmin;
@@ -12,29 +13,18 @@ import org.apache.pulsar.client.api.PulsarClient;
 import org.apache.pulsar.client.impl.Murmur3_32Hash;
 import org.apache.pulsar.client.util.MathUtils;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ConditionEvaluationResult;
-import org.junit.jupiter.api.extension.ExecutionCondition;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.extension.ExtensionContext;
 import org.springframework.context.ApplicationContext;
 import org.testcontainers.containers.PulsarContainer;
 import reactor.core.publisher.Mono;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.platform.commons.support.AnnotationSupport.findAnnotation;
 
 public class PulsarRecordsStorageTest implements RecordStorageTests {
 
@@ -94,6 +84,7 @@ public class PulsarRecordsStorageTest implements RecordStorageTests {
     @Test
     @DisabledUntil(value = "2020-01-01", comment = "#180 - Pulsar should fix the way seek works, not disconnecting consumers (apache/pulsar/pull/5022)")
     public void shouldAlwaysUseEarliestOffsetOnEmptyOffsetsInTheInitialProvider() {
+        RecordStorageTests.super.shouldAlwaysUseEarliestOffsetOnEmptyOffsetsInTheInitialProvider();
     }
 
     @Test
@@ -127,36 +118,4 @@ public class PulsarRecordsStorageTest implements RecordStorageTests {
             assertThat(it.getTimestamp()).isEqualTo(eventTimestamp);
         });
     }
-
-
-    @Target({ElementType.TYPE, ElementType.METHOD})
-    @Retention(RetentionPolicy.RUNTIME)
-    @ExtendWith(DisabledUntil.DisabledCondition.class)
-    public @interface DisabledUntil {
-        String value();
-
-        String comment();
-
-        class DisabledCondition implements ExecutionCondition {
-
-            @Override
-            public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {
-                Optional<DisabledUntil> until = findAnnotation(context.getElement(), DisabledUntil.class);
-                if (until.isPresent()
-                        && until.map(DisabledUntil::value)
-                        .map(date -> LocalDate.parse(date).isAfter(LocalDate.now()))
-                        .orElse(false)
-                ) {
-                    String reason = until.map(DisabledUntil::comment).orElse("Disabled for now");
-                    return ConditionEvaluationResult.disabled(reason);
-                }
-
-                return ConditionEvaluationResult.enabled("Enabled");
-            }
-
-        }
-
-    }
-
-
 }
