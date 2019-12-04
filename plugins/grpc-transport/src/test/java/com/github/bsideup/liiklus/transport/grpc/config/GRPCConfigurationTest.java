@@ -1,12 +1,18 @@
 package com.github.bsideup.liiklus.transport.grpc.config;
 
+import com.github.bsideup.liiklus.service.LiiklusService;
 import com.github.bsideup.liiklus.transport.grpc.GRPCLiiklusService;
+import com.github.bsideup.liiklus.transport.grpc.GRPCLiiklusTransportConfigurer;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.BeansException;
 import org.springframework.boot.context.properties.bind.validation.BindValidationException;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.ApplicationContextInitializer;
+import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.context.support.StaticApplicationContext;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -67,4 +73,27 @@ class GRPCConfigurationTest {
         });
     }
 
+    @Test
+    void shouldConsiderTransportConfigurers() {
+        var counter = new AtomicInteger();
+        new ApplicationContextRunner()
+                .withInitializer((ApplicationContextInitializer) new GRPCConfiguration())
+                .withPropertyValues(
+                        "spring.profiles.active: gateway",
+                        "grpc.port: 0"
+                )
+                .withInitializer(ctx -> {
+                    var context = (GenericApplicationContext) ctx;
+                    context.registerBean(LiiklusService.class, () -> Mockito.mock(LiiklusService.class));
+                    context.registerBean(GRPCLiiklusTransportConfigurer.class, () -> builder -> counter.incrementAndGet());
+                })
+                .run(context -> {
+                    assertThat(context)
+                            .hasNotFailed()
+                            .hasSingleBean(GRPCLiiklusService.class)
+                            .hasSingleBean(GRPCLiiklusTransportConfigurer.class);
+                });
+
+        assertThat(counter).describedAs(".apply() called").hasValue(1);
+    }
 }
