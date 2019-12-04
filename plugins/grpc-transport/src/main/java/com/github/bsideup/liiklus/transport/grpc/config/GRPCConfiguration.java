@@ -12,7 +12,6 @@ import org.hibernate.validator.spi.group.DefaultGroupSequenceProvider;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.support.GenericApplicationContext;
-import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Profiles;
 
 import javax.validation.constraints.Min;
@@ -21,10 +20,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @AutoService(ApplicationContextInitializer.class)
-@Order(GRPCConfiguration.GRPC_CONFIGURATION_ORDER)
 public class GRPCConfiguration implements ApplicationContextInitializer<GenericApplicationContext> {
-
-    public static final int GRPC_CONFIGURATION_ORDER = 0;
 
     @Override
     public void initialize(GenericApplicationContext applicationContext) {
