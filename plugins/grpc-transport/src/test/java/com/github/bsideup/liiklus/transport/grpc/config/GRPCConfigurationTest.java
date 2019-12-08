@@ -3,6 +3,8 @@ package com.github.bsideup.liiklus.transport.grpc.config;
 import com.github.bsideup.liiklus.service.LiiklusService;
 import com.github.bsideup.liiklus.transport.grpc.GRPCLiiklusService;
 import com.github.bsideup.liiklus.transport.grpc.GRPCLiiklusTransportConfigurer;
+import io.grpc.Server;
+import io.grpc.ServerServiceDefinition;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.BeansException;
@@ -11,8 +13,6 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.context.support.StaticApplicationContext;
-
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -75,7 +75,8 @@ class GRPCConfigurationTest {
 
     @Test
     void shouldConsiderTransportConfigurers() {
-        var counter = new AtomicInteger();
+        var service = ServerServiceDefinition.builder("test").build();
+
         new ApplicationContextRunner()
                 .withInitializer((ApplicationContextInitializer) new GRPCConfiguration())
                 .withPropertyValues(
@@ -85,15 +86,19 @@ class GRPCConfigurationTest {
                 .withInitializer(ctx -> {
                     var context = (GenericApplicationContext) ctx;
                     context.registerBean(LiiklusService.class, () -> Mockito.mock(LiiklusService.class));
-                    context.registerBean(GRPCLiiklusTransportConfigurer.class, () -> builder -> counter.incrementAndGet());
+                    context.registerBean(GRPCLiiklusTransportConfigurer.class, () -> builder -> builder.addService(() -> service));
                 })
                 .run(context -> {
                     assertThat(context)
                             .hasNotFailed()
                             .hasSingleBean(GRPCLiiklusService.class)
                             .hasSingleBean(GRPCLiiklusTransportConfigurer.class);
-                });
 
-        assertThat(counter).describedAs(".apply() called").hasValue(1);
+                    assertThat(context)
+                            .getBean(Server.class)
+                            .satisfies(server -> {
+                                assertThat(server.getServices()).contains(service);
+                            });
+                });
     }
 }
