@@ -92,7 +92,7 @@ class GRPCConfigurationTest {
                     assertThat(context)
                             .hasNotFailed()
                             .hasSingleBean(GRPCLiiklusService.class)
-                            .hasSingleBean(GRPCLiiklusTransportConfigurer.class);
+                            .getBeans(GRPCLiiklusTransportConfigurer.class).isNotEmpty();
 
                     assertThat(context)
                             .getBean(Server.class)
