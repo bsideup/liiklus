@@ -1,6 +1,7 @@
 package com.github.bsideup.liiklus.transport.grpc.config;
 
 import com.github.bsideup.liiklus.transport.grpc.GRPCLiiklusService;
+import com.github.bsideup.liiklus.transport.grpc.GRPCLiiklusTransportConfigurer;
 import com.github.bsideup.liiklus.util.PropertiesUtil;
 import com.google.auto.service.AutoService;
 import io.grpc.*;
@@ -57,6 +58,10 @@ public class GRPCConfiguration implements ApplicationContextInitializer<GenericA
 
                     for (var bindableService : applicationContext.getBeansOfType(BindableService.class).values()) {
                         serverBuilder.addService(bindableService);
+                    }
+
+                    for (var transportConfigurer : applicationContext.getBeansOfType(GRPCLiiklusTransportConfigurer.class).values()) {
+                        transportConfigurer.apply(serverBuilder);
                     }
 
                     return serverBuilder.build();
