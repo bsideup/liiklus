@@ -89,8 +89,6 @@ class GRPCConfigurationTest {
                     context.registerBean(GRPCLiiklusTransportConfigurer.class, () -> builder -> builder.addService(() -> service));
                 })
                 .run(context -> {
-                    assertThat(context).hasNotFailed();
-                    assertThat(context).getBeans(GRPCLiiklusService.class).isNotEmpty();
                     assertThat(context).getBeans(GRPCLiiklusTransportConfigurer.class).isNotEmpty();
 
                     assertThat(context)
