@@ -1,9 +1,6 @@
 package com.github.bsideup.liiklus;
 
-import com.github.bsideup.liiklus.protocol.PublishRequest;
-import com.github.bsideup.liiklus.protocol.ReceiveReply;
-import com.github.bsideup.liiklus.protocol.ReceiveRequest;
-import com.github.bsideup.liiklus.protocol.SubscribeRequest;
+import com.github.bsideup.liiklus.protocol.*;
 import com.github.bsideup.liiklus.records.RecordsStorage;
 import com.github.bsideup.liiklus.test.AbstractIntegrationTest;
 import com.google.protobuf.ByteString;
@@ -63,7 +60,14 @@ public class SmokeTest extends AbstractIntegrationTest {
                         PublishRequest.newBuilder()
                                 .setTopic(subscribeAction.getTopic())
                                 .setKey(ByteString.copyFromUtf8(key))
-                                .setValue(ByteString.copyFromUtf8(it))
+                                .setLiiklusEvent(
+                                        LiiklusEvent.newBuilder()
+                                                .setId(UUID.randomUUID().toString())
+                                                .setType("com.example.event")
+                                                .setSource("/tests")
+                                                .setDataContentType("application/json")
+                                                .setData(ByteString.copyFromUtf8(it))
+                                )
                                 .build()
                 ))
                 .thenMany(
@@ -71,6 +75,7 @@ public class SmokeTest extends AbstractIntegrationTest {
                                 .flatMap(it -> stub.receive(
                                         ReceiveRequest.newBuilder()
                                                 .setAssignment(it.getAssignment())
+                                                .setFormat(ReceiveRequest.ContentFormat.LIIKLUS_EVENT)
                                                 .build()
                                 ))
                 )
@@ -81,13 +86,14 @@ public class SmokeTest extends AbstractIntegrationTest {
 
         assertThat(records)
                 .hasSize(10)
-                .are(new Condition<ReceiveReply>("key is '" + key + "'") {
+                .extracting(ReceiveReply::getLiiklusEventRecord)
+                .are(new Condition<>("key is '" + key + "'") {
                     @Override
-                    public boolean matches(ReceiveReply value) {
-                        return key.equals(value.getRecord().getKey().toStringUtf8());
+                    public boolean matches(ReceiveReply.LiiklusEventRecord value) {
+                        return key.equals(value.getKey().toStringUtf8());
                     }
                 })
-                .extracting(it -> it.getRecord().getValue().toStringUtf8())
+                .extracting(it -> it.getEvent().getData().toStringUtf8())
                 .containsSubsequence(values.toArray(new String[values.size()]));
     }
 

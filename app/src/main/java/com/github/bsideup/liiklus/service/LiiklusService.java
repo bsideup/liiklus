@@ -11,19 +11,25 @@ import com.github.bsideup.liiklus.records.RecordPreProcessor;
 import com.github.bsideup.liiklus.records.RecordsStorage;
 import com.github.bsideup.liiklus.records.RecordsStorage.Envelope;
 import com.github.bsideup.liiklus.records.RecordsStorage.Record;
-import com.github.bsideup.liiklus.records.RecordsStorage.Subscription;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
 import com.google.protobuf.Timestamp;
+import io.cloudevents.CloudEvent;
+import io.cloudevents.json.Json;
+import io.cloudevents.v1.CloudEventBuilder;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.SignalType;
 
+import java.net.URI;
+import java.nio.ByteBuffer;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
@@ -55,11 +61,7 @@ public class LiiklusService {
 
     public Mono<PublishReply> publish(Mono<PublishRequest> requestMono) {
         return requestMono
-                .map(request -> new Envelope(
-                        request.getTopic(),
-                        request.getKey().asReadOnlyByteBuffer(),
-                        request.getValue().asReadOnlyByteBuffer()
-                ))
+                .map(LiiklusService::toEnvelope)
                 .transform(mono -> {
                     for (RecordPreProcessor processor : recordPreProcessorChain.getAll()) {
                         mono = mono.flatMap(envelope -> {
@@ -81,6 +83,42 @@ public class LiiklusService {
                         .build()
                 )
                 .log("publish", Level.SEVERE, SignalType.ON_ERROR);
+    }
+
+    private static Envelope toEnvelope(PublishRequest request) {
+        var eventCase = request.getEventCase();
+        switch (eventCase) {
+            case EVENT_NOT_SET:
+                return new Envelope(
+                        request.getTopic(),
+                        request.getKey().asReadOnlyByteBuffer(),
+                        request.getValue().asReadOnlyByteBuffer()
+                );
+            case LIIKLUSEVENT:
+                var cloudEvent = request.getLiiklusEvent();
+                var cloudEventBuilder = CloudEventBuilder.builder()
+                        .withId(cloudEvent.getId())
+                        .withType(cloudEvent.getType())
+                        .withSource(URI.create(cloudEvent.getSource()))
+                        .withDataContentType(cloudEvent.getDataContentType())
+                        .withData(cloudEvent.getData().toByteArray());
+
+                if (!StringUtils.isEmpty(cloudEvent.getTime())) {
+                    cloudEventBuilder = cloudEventBuilder.withTime(
+                            ZonedDateTime.parse(cloudEvent.getTime())
+                    );
+                }
+
+                return new Envelope(
+                        request.getTopic(),
+                        request.getKey().asReadOnlyByteBuffer(),
+                        it -> (ByteBuffer) it,
+                        cloudEventBuilder.build(),
+                        it -> ByteBuffer.wrap(Json.binaryEncode(it)).asReadOnlyBuffer()
+                );
+            default:
+                throw new IllegalStateException("Unknown event case: " + eventCase);
+        }
     }
 
     public Flux<SubscribeReply> subscribe(Mono<SubscribeRequest> requestFlux) {
@@ -183,35 +221,87 @@ public class LiiklusService {
                         log.warn("Source is null, returning empty Publisher. Request: {}", request.toString().replace("\n", "\\n"));
                         return Mono.empty();
                     }
-
-                    return getLatestOffsetsOfGroup(storedSource.getTopic(), storedSource.getGroupId().getName()).flatMapMany(latestAckedOffsets -> {
-                        Flux<Record> records = storedSource.getRecords();
-
-                        for (RecordPostProcessor processor : recordPostProcessorChain.getAll()) {
-                            records = records.transform(processor::postProcess);
-                        }
-                        return records
-                                .map(consumerRecord -> {
-                                    var envelope = consumerRecord.getEnvelope();
-
-                                    var replyBuilder = ReceiveReply.Record.newBuilder()
-                                            .setOffset(consumerRecord.getOffset())
-                                            .setReplay(consumerRecord.getOffset() <= latestAckedOffsets.getOrDefault(partition, Optional.empty()).orElse(-1L))
-                                            .setValue(ByteString.copyFrom(envelope.getValue()))
-                                            .setTimestamp(Timestamp.newBuilder()
-                                                    .setSeconds(consumerRecord.getTimestamp().getEpochSecond())
-                                                    .setNanos(consumerRecord.getTimestamp().getNano())
-                                            );
-
-                                    if (envelope.getKey() != null) {
-                                        replyBuilder.setKey(ByteString.copyFrom(envelope.getKey()));
-                                    }
-
-                                    return ReceiveReply.newBuilder().setRecord(replyBuilder).build();
-                                });
-                    });
+                    return getLatestOffsetsOfGroup(storedSource.getTopic(), storedSource.getGroupId().getName())
+                            .map(it -> it.getOrDefault(partition, Optional.empty()).orElse(-1L))
+                            .flatMapMany(latestAckedOffset -> {
+                                return storedSource.getRecords()
+                                        .as(flux -> {
+                                            for (RecordPostProcessor processor : recordPostProcessorChain.getAll()) {
+                                                flux = flux.transform(processor::postProcess);
+                                            }
+                                            return flux;
+                                        })
+                                        .map(record -> toReply(request.getFormat(), record, latestAckedOffset));
+                            });
                 })
                 .log("receive", Level.SEVERE, SignalType.ON_ERROR);
+    }
+
+    private static ReceiveReply toReply(ReceiveRequest.ContentFormat format, Record consumerRecord, long latestAckedOffset) {
+        var envelope = consumerRecord.getEnvelope();
+        var offset = consumerRecord.getOffset();
+        var isReplay = offset <= latestAckedOffset;
+        var timestamp = Timestamp.newBuilder()
+                .setSeconds(consumerRecord.getTimestamp().getEpochSecond())
+                .setNanos(consumerRecord.getTimestamp().getNano());
+
+        var key = envelope.getKey() != null
+                ? ByteString.copyFrom(envelope.getKey())
+                : null;
+
+        switch (format) {
+            case BINARY:
+                var replyBuilder = ReceiveReply.Record.newBuilder()
+                        .setOffset(offset)
+                        .setReplay(isReplay)
+                        .setTimestamp(timestamp)
+                        .setValue(ByteString.copyFrom(envelope.getValue()));
+
+                if (key != null) {
+                    replyBuilder.setKey(key);
+                }
+
+                return ReceiveReply.newBuilder().setRecord(replyBuilder).build();
+            case LIIKLUS_EVENT:
+                var rawValue = envelope.getRawValue();
+                if (!(rawValue instanceof CloudEvent)) {
+                    throw new IllegalStateException("value must be a CloudEvent! Got: " + rawValue);
+                }
+
+                var cloudEvent = (CloudEvent<?, byte[]>) rawValue;
+
+                var liiklusEventRecord = ReceiveReply.LiiklusEventRecord.newBuilder()
+                        .setOffset(offset)
+                        .setReplay(isReplay)
+                        .setTimestamp(timestamp)
+                        .setEvent(toLiiklusEventBuilder(cloudEvent));
+
+                if (key != null) {
+                    liiklusEventRecord.setKey(key);
+                }
+
+                return ReceiveReply.newBuilder().setLiiklusEventRecord(liiklusEventRecord).build();
+            default:
+                throw new IllegalArgumentException("Unknown format: " + format);
+        }
+    }
+
+    private static LiiklusEvent.Builder toLiiklusEventBuilder(CloudEvent<?, byte[]> cloudEvent) {
+        var attributes = cloudEvent.getAttributes();
+        var result = LiiklusEvent.newBuilder()
+                .setId(attributes.getId())
+                .setType(attributes.getType())
+                .setSource(attributes.getSource().toString());
+
+        // TODO time
+
+        attributes.getMediaType().ifPresent(result::setDataContentType);
+
+        cloudEvent.getData().ifPresent(it -> {
+            result.setData(ByteString.copyFrom(it));
+        });
+
+        return result;
     }
 
     public Mono<Empty> ack(Mono<AckRequest> request) {
