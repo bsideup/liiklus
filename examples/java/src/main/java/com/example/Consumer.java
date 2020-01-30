@@ -24,7 +24,7 @@ public class Consumer {
 
         var channel = NettyChannelBuilder.forTarget(liiklusTarget)
                 .directExecutor()
-                .usePlaintext(true)
+                .usePlaintext()
                 .build();
 
         var subscribeAction = SubscribeRequest.newBuilder()
@@ -72,9 +72,11 @@ public class Consumer {
                                         .onBackpressureLatest()
                                         .delayUntil(record -> {
                                             log.info("ACKing partition {} offset {}", assignment.getPartition(), record.getOffset());
+                                            @SuppressWarnings("deprecation")
+                                            var ackBuilder = AckRequest.newBuilder()
+                                                    .setAssignment(assignment);
                                             return stub.ack(
-                                                    AckRequest.newBuilder()
-                                                            .setAssignment(assignment)
+                                                    ackBuilder
                                                             .setOffset(record.getOffset())
                                                             .build()
                                             );
