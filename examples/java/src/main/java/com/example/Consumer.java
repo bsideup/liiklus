@@ -72,11 +72,12 @@ public class Consumer {
                                         .onBackpressureLatest()
                                         .delayUntil(record -> {
                                             log.info("ACKing partition {} offset {}", assignment.getPartition(), record.getOffset());
-                                            @SuppressWarnings("deprecation")
-                                            var ackBuilder = AckRequest.newBuilder()
-                                                    .setAssignment(assignment);
                                             return stub.ack(
-                                                    ackBuilder
+                                                    AckRequest.newBuilder()
+                                                            .setTopic(subscribeAction.getTopic())
+                                                            .setGroup(subscribeAction.getGroup())
+                                                            .setGroupVersion(subscribeAction.getGroupVersion())
+                                                            .setPartition(assignment.getPartition())
                                                             .setOffset(record.getOffset())
                                                             .build()
                                             );
@@ -88,16 +89,12 @@ public class Consumer {
     }
 
     private static String getLiiklusTarget() {
-        var kafka = new KafkaContainer()
-                .withEnv("KAFKA_NUM_PARTITIONS", "4");
-
-        GenericContainer liiklus = new GenericContainer<>("bsideup/liiklus:0.1.8")
-                .withNetwork(kafka.getNetwork())
+        GenericContainer<?> liiklus = new GenericContainer<>("bsideup/liiklus:0.9.0")
                 .withExposedPorts(6565)
-                .withEnv("kafka_bootstrapServers", kafka.getNetworkAliases().get(0) + ":9093")
+                .withEnv("storage_records_type", "MEMORY")
                 .withEnv("storage_positions_type", "MEMORY"); // Fine for testing, NOT FINE I WARNED YOU for production :D
 
-        Stream.of(kafka, liiklus).parallel().forEach(GenericContainer::start);
+        liiklus.start();
 
         log.info("Containers started");
 
