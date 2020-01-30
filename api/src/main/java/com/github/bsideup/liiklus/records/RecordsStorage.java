@@ -3,7 +3,7 @@ package com.github.bsideup.liiklus.records;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
-import lombok.experimental.Wither;
+import lombok.With;
 import org.reactivestreams.Publisher;
 
 import java.nio.ByteBuffer;
@@ -117,7 +117,7 @@ public interface RecordsStorage {
     }
 
     @Value
-    @Wither
+    @With
     class Record {
 
         Envelope envelope;

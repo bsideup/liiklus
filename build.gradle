@@ -39,6 +39,13 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
 
     sourceCompatibility = targetCompatibility = 11
 
+    tasks.withType(JavaCompile) {
+        options.compilerArgs = [
+                '-Xlint:deprecation',
+                '-Werror'
+        ]
+    }
+
     test {
         useJUnitPlatform()
 

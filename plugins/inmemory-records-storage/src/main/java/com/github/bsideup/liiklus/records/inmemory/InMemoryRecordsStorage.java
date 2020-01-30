@@ -123,22 +123,22 @@ public class InMemoryRecordsStorage implements FiniteRecordsStorage {
                             );
                             return Mono.defer(() -> Mono.fromCompletionStage(offsetsProvider.get()))
                                     .defaultIfEmpty(Collections.emptyMap())
-                                    .flatMapMany(offsets -> storedPartition.getProcessor()
-                                            .compose(flux -> {
-                                                if (offsets.containsKey(partition)) {
-                                                    return flux.skip(offsets.get(partition));
-                                                }
-                                                switch (autoOffsetReset.orElse("")) {
-                                                    case "latest":
-                                                        long nextOffset = storedPartition.getNextOffset().get();
-                                                        if (nextOffset > 0) {
-                                                            return flux.skip(nextOffset);
-                                                        }
-                                                    default:
-                                                        return flux;
-                                                }
-                                            })
-                                    )
+                                    .flatMapMany(offsets -> {
+                                        return storedPartition.getProcessor().transform(flux -> {
+                                            if (offsets.containsKey(partition)) {
+                                                return flux.skip(offsets.get(partition));
+                                            }
+                                            switch (autoOffsetReset.orElse("")) {
+                                                case "latest":
+                                                    long nextOffset = storedPartition.getNextOffset().get();
+                                                    if (nextOffset > 0) {
+                                                        return flux.skip(nextOffset);
+                                                    }
+                                                default:
+                                                    return flux;
+                                            }
+                                        });
+                                    })
                                     .filter(it -> storedTopic.isAssigned(groupName, subscription, partition))
                                     .map(it -> new Record(
                                             new Envelope(

@@ -221,8 +221,12 @@ public class LiiklusService {
                     GroupId groupId;
                     int partition;
 
-                    if (ack.hasAssignment()) {
-                        var subscription = subscriptions.get(ack.getAssignment().getSessionId());
+                    @SuppressWarnings("deprecation")
+                    var hasAssignment = ack.hasAssignment();
+                    if (hasAssignment) {
+                        @SuppressWarnings("deprecation")
+                        var assignment = ack.getAssignment();
+                        var subscription = subscriptions.get(assignment.getSessionId());
 
                         if (subscription == null) {
                             log.warn("Subscription is null, returning empty Publisher. Request: {}", ack.toString().replace("\n", "\\n"));
@@ -231,7 +235,7 @@ public class LiiklusService {
 
                         topic = subscription.getTopic();
                         groupId = subscription.getGroupId();
-                        partition = ack.getAssignment().getPartition();
+                        partition = assignment.getPartition();
                     } else {
                         topic = ack.getTopic();
                         groupId = GroupId.of(ack.getGroup(), ack.getGroupVersion());
