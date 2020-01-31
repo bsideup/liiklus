@@ -271,6 +271,11 @@ public class KafkaRecordsStorage implements FiniteRecordsStorage {
         }
 
         @Override
+        public int hashCode() {
+            return System.identityHashCode(this);
+        }
+
+        @Override
         public boolean equals(Object o) {
             return this == o;
         }

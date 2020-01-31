@@ -5,11 +5,13 @@ import com.github.bsideup.liiklus.test.AbstractIntegrationTest;
 import com.google.protobuf.ByteString;
 import org.junit.Before;
 import org.junit.Test;
+import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -103,11 +105,15 @@ public class AckTest extends AbstractIntegrationTest {
     public void testAlwaysLatest() throws Exception {
         Integer partition = stub.subscribe(subscribeRequest)
                 .map(SubscribeReply::getAssignment)
-                .delayUntil(assignment ->
-                        stub.ack(AckRequest.newBuilder().setAssignment(assignment).setOffset(10).build())
+                .delayUntil(new Function<>() {
+                    @Override
+                    @SuppressWarnings("deprecation")
+                    public Publisher<?> apply(Assignment assignment) {
+                        return stub.ack(AckRequest.newBuilder().setAssignment(assignment).setOffset(10).build())
                                 .then(stub.ack(AckRequest.newBuilder().setAssignment(assignment).setOffset(200).build()))
-                                .then(stub.ack(AckRequest.newBuilder().setAssignment(assignment).setOffset(100).build()))
-                )
+                                .then(stub.ack(AckRequest.newBuilder().setAssignment(assignment).setOffset(100).build()));
+                    }
+                })
                 .take(1)
                 .map(Assignment::getPartition)
                 .blockFirst(Duration.ofSeconds(10));
@@ -150,14 +156,18 @@ public class AckTest extends AbstractIntegrationTest {
                                                 .receive(ReceiveRequest.newBuilder().setAssignment(it.getAssignment()).build())
                                                 .map(ReceiveReply::getRecord)
                                                 .buffer(5)
-                                                .delayUntil(batch -> stub
-                                                        .ack(
-                                                                AckRequest.newBuilder()
-                                                                        .setAssignment(it.getAssignment())
-                                                                        .setOffset(batch.get(batch.size() - 1).getOffset())
-                                                                        .build()
-                                                        )
-                                                )
+                                                .delayUntil(batch -> {
+                                                    @SuppressWarnings("deprecation")
+                                                    var builder = AckRequest.newBuilder()
+                                                            .setAssignment(it.getAssignment());
+
+                                                    return stub
+                                                            .ack(
+                                                                    builder
+                                                                            .setOffset(batch.get(batch.size() - 1).getOffset())
+                                                                            .build()
+                                                            );
+                                                })
                                         )
                                         .take(1)
                                 )

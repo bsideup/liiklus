@@ -41,7 +41,7 @@ public class MetricsConfiguration implements ApplicationContextInitializer<Gener
                                         TextFormat.write004(writer, Collections.enumeration(metrics));
                                         return ServerResponse.ok()
                                                 .contentType(MediaType.valueOf(TextFormat.CONTENT_TYPE_004))
-                                                .syncBody(writer.toString());
+                                                .bodyValue(writer.toString());
                                     } catch (IOException e) {
                                         return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
                                     }

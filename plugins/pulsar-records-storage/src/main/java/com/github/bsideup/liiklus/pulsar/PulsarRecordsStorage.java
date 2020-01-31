@@ -117,6 +117,7 @@ public class PulsarRecordsStorage implements FiniteRecordsStorage {
                                         .map(messageId -> Map.entry(partitionIndex, toOffset(messageId)));
                             },
                             consumer -> Mono.fromCompletionStage(consumer.closeAsync()),
+                            (consumer, e) -> Mono.fromCompletionStage(consumer.closeAsync()),
                             consumer -> Mono.fromCompletionStage(consumer.closeAsync())
                     );
                 })
@@ -158,6 +159,11 @@ public class PulsarRecordsStorage implements FiniteRecordsStorage {
                                         })
                         ));
                     });
+        }
+
+        @Override
+        public int hashCode() {
+            return System.identityHashCode(this);
         }
 
         @Override
