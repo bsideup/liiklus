@@ -66,12 +66,16 @@ public class PositionsTest extends AbstractIntegrationTest {
                 .flatMap(it -> stub.receive(ReceiveRequest.newBuilder().setAssignment(it.getAssignment()).build())
                         .map(ReceiveReply::getRecord)
                         .filter(record -> key.equals(record.getKey().toStringUtf8()))
-                        .delayUntil(record -> stub.ack(
-                                AckRequest.newBuilder()
-                                        .setAssignment(it.getAssignment())
-                                        .setOffset(record.getOffset())
-                                        .build()
-                        ))
+                        .delayUntil(record -> {
+                            @SuppressWarnings("deprecation")
+                            var builder = AckRequest.newBuilder()
+                                    .setAssignment(it.getAssignment());
+                            return stub.ack(
+                                    builder
+                                            .setOffset(record.getOffset())
+                                            .build()
+                            );
+                        })
                 )
                 .blockFirst(Duration.ofSeconds(10));
 

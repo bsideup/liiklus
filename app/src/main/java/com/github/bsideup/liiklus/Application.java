@@ -93,7 +93,7 @@ public class Application {
                 (GenericApplicationContext applicationContext) -> {
                     applicationContext.registerBean("health", RouterFunction.class, () -> {
                         return RouterFunctions.route()
-                                .GET("/health", __ -> ServerResponse.ok().syncBody("OK"))
+                                .GET("/health", __ -> ServerResponse.ok().bodyValue("OK"))
                                 .build();
                     });
 
