@@ -1,14 +1,7 @@
 package com.github.bsideup.liiklus.records.inmemory;
 
 import com.github.bsideup.liiklus.records.FiniteRecordsStorage;
-import io.cloudevents.CloudEvent;
 import io.cloudevents.format.Wire;
-import io.cloudevents.format.builder.EventStep;
-import io.cloudevents.format.builder.HeadersStep;
-import io.cloudevents.json.Json;
-import io.cloudevents.v1.AttributesImpl;
-import io.cloudevents.v1.http.Marshallers;
-import io.cloudevents.v1.http.Unmarshallers;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
@@ -40,10 +33,6 @@ import java.util.stream.Stream;
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 public class InMemoryRecordsStorage implements FiniteRecordsStorage {
 
-    static final EventStep<AttributesImpl, Object, String, String> EVENT_MARSHALLER = Marshallers.binary();
-
-    static final HeadersStep<AttributesImpl, byte[], String> EVENT_UNMARSHALLER = Unmarshallers.binary(byte[].class);
-
     public static int partitionByKey(String key, int numberOfPartitions) {
         return partitionByKey(ByteBuffer.wrap(key.getBytes()), numberOfPartitions);
     }
@@ -70,36 +59,26 @@ public class InMemoryRecordsStorage implements FiniteRecordsStorage {
         );
 
         var offset = storedPartition.getNextOffset().getAndIncrement();
-        storedPartition.getProcessor().onNext(toStoredRecord(offset, envelope));
+
+        Wire<ByteBuffer, String, String> wire;
+        try {
+            wire = toWire(envelope);
+        } catch (Exception e) {
+            return CompletableFuture.failedFuture(e);
+        }
+
+        storedPartition.getProcessor().onNext(new StoredTopic.Partition.Record(
+                offset,
+                envelope.getKey(),
+                wire.getPayload().orElse(null),
+                wire.getHeaders()
+        ));
 
         return CompletableFuture.completedFuture(new OffsetInfo(
                 topic,
                 partition,
                 offset
         ));
-    }
-
-    private static StoredTopic.Partition.Record toStoredRecord(long offset, Envelope envelope) {
-        // TODO assert
-        if (envelope.getRawValue() instanceof CloudEvent) {
-            final Wire<String, String, String> wire = EVENT_MARSHALLER
-                    .withEvent(() -> (CloudEvent) envelope.getRawValue())
-                    .marshal();
-
-            return new StoredTopic.Partition.Record(
-                    offset,
-                    envelope.getKey(),
-                    wire.getPayload().orElse(null),
-                    wire.getHeaders()
-            );
-        } else {
-            return new StoredTopic.Partition.Record(
-                    offset,
-                    envelope.getKey(),
-                    envelope.getValue(),
-                    Collections.emptyMap()
-            );
-        }
     }
 
     @Override
@@ -169,7 +148,7 @@ public class InMemoryRecordsStorage implements FiniteRecordsStorage {
                                     })
                                     .filter(it -> storedTopic.isAssigned(groupName, subscription, partition))
                                     .map(it -> new Record(
-                                            toEnvelope(topic, it),
+                                            toEnvelope(topic, it.getKey(), it.getValue(), it.getHeaders()),
                                             it.getTimestamp(),
                                             partition,
                                             it.getOffset()
@@ -179,39 +158,6 @@ public class InMemoryRecordsStorage implements FiniteRecordsStorage {
                 });
             }
         };
-    }
-
-    private static Envelope toEnvelope(String topic, StoredTopic.Partition.Record record) {
-        ByteBuffer keyBuffer = record.getKey();
-        Object valueBuffer = record.getValue();
-        Map<String, String> headers = record.getHeaders();
-
-        var key = keyBuffer != null ? keyBuffer.asReadOnlyBuffer() : null;
-        var specVersion = headers.get("ce-specversion");
-        if (specVersion == null) {
-            return new Envelope(
-                    topic,
-                    key,
-                    ((ByteBuffer) valueBuffer).asReadOnlyBuffer()
-            );
-        }
-        switch (specVersion) {
-            case "1.0":
-                return new Envelope(
-                        topic,
-
-                        key,
-                        it -> (ByteBuffer) it,
-
-                        EVENT_UNMARSHALLER
-                                .withHeaders(() -> (Map) headers)
-                                .withPayload(() -> (String) valueBuffer)
-                                .unmarshal(),
-                        it -> ByteBuffer.wrap(Json.binaryEncode(it)).asReadOnlyBuffer()
-                );
-            default:
-                throw new IllegalStateException("Unknown CloudEvents version: " + specVersion);
-        }
     }
 
     @Value
@@ -273,7 +219,7 @@ public class InMemoryRecordsStorage implements FiniteRecordsStorage {
 
                 ByteBuffer key;
 
-                Object value;
+                ByteBuffer value;
 
                 Map<String, String> headers;
             }

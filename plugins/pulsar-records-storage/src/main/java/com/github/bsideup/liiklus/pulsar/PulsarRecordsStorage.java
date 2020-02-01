@@ -58,7 +58,7 @@ public class PulsarRecordsStorage implements FiniteRecordsStorage {
 
     @Override
     public CompletionStage<OffsetInfo> publish(Envelope envelope) {
-        val topic = envelope.getTopic();
+        var topic = envelope.getTopic();
         return producers
                 .computeIfAbsent(topic, __ -> {
                     return Mono.fromCompletionStage(
@@ -70,10 +70,17 @@ public class PulsarRecordsStorage implements FiniteRecordsStorage {
                     ).cache();
                 })
                 .flatMap(producer -> {
-                    val valueBytes = new byte[envelope.getValue().remaining()];
-                    envelope.getValue().duplicate().get(valueBytes);
+                    var wire = toWire(envelope);
+
                     var typedMessageBuilder = producer.newMessage()
-                            .value(valueBytes);
+                            .properties(wire.getHeaders());
+
+                    wire.getPayload().ifPresent(it -> {
+                        var valueBytes = new byte[it.remaining()];
+                        it.duplicate().get(valueBytes);
+                        typedMessageBuilder.value(valueBytes);
+                    });
+
                     var key = envelope.getKey();
                     if (key != null) {
                         typedMessageBuilder.key(StandardCharsets.UTF_8.decode(key.duplicate()).toString());
@@ -123,6 +130,15 @@ public class PulsarRecordsStorage implements FiniteRecordsStorage {
                 })
                 .collectMap(Map.Entry::getKey, Map.Entry::getValue)
                 .toFuture();
+    }
+
+    private Envelope toEnvelope(String topic, String key, Message<byte[]> message) {
+        return toEnvelope(
+                topic,
+                key != null ? ByteBuffer.wrap(key.getBytes()) : null,
+                ByteBuffer.wrap(message.getData()),
+                message.getProperties()
+        );
     }
 
     @Value
@@ -193,7 +209,7 @@ public class PulsarRecordsStorage implements FiniteRecordsStorage {
         public Publisher<Record> getPublisher() {
             return Flux.usingWhen(
                     Mono.fromCompletionStage(() -> {
-                        val consumerBuilder = pulsarClient.newConsumer()
+                        var consumerBuilder = pulsarClient.newConsumer()
                                 .acknowledgmentGroupTime(0, TimeUnit.SECONDS) // we don't ack here at all
                                 .subscriptionName(groupName)
                                 .subscriptionType(SubscriptionType.Failover)
@@ -222,11 +238,7 @@ public class PulsarRecordsStorage implements FiniteRecordsStorage {
                                 .map(message -> {
                                     var key = message.getKey();
                                     return new Record(
-                                            new Envelope(
-                                                    topic,
-                                                    key != null ? ByteBuffer.wrap(key.getBytes()) : null,
-                                                    ByteBuffer.wrap(message.getValue())
-                                            ),
+                                            toEnvelope(topic, key, message),
                                             extractTime(message),
                                             partition,
                                             toOffset(message.getMessageId())

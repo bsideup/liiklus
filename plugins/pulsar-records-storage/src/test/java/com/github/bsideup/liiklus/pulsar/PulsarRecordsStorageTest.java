@@ -43,7 +43,8 @@ public class PulsarRecordsStorageTest implements RecordStorageTests {
             .filter(it -> it.size() == NUM_OF_PARTITIONS)
             .blockFirst(Duration.ofSeconds(10));
 
-    private static final PulsarContainer pulsar = new PulsarContainer();
+    private static final PulsarContainer pulsar = new PulsarContainer()
+            .withReuse(true);
 
     static final ApplicationContext applicationContext;
 

@@ -1,5 +1,13 @@
 package com.github.bsideup.liiklus.records;
 
+import io.cloudevents.CloudEvent;
+import io.cloudevents.format.Wire;
+import io.cloudevents.format.builder.EventStep;
+import io.cloudevents.format.builder.HeadersStep;
+import io.cloudevents.json.Json;
+import io.cloudevents.v1.AttributesImpl;
+import io.cloudevents.v1.http.Marshallers;
+import io.cloudevents.v1.http.Unmarshallers;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
@@ -7,6 +15,7 @@ import lombok.With;
 import org.reactivestreams.Publisher;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
@@ -26,6 +35,69 @@ public interface RecordsStorage {
         Publisher<Stream<? extends PartitionSource>> getPublisher(
                 Supplier<CompletionStage<Map<Integer, Long>>> offsetsProvider
         );
+    }
+
+    default Wire<ByteBuffer, String, String> toWire(Envelope envelope) throws IllegalArgumentException {
+        Object rawValue = envelope.getRawValue();
+
+        if (!(rawValue instanceof CloudEvent)) {
+            // TODO Add Envelope#event and make CloudEvent a fist-class citizen
+            throw new IllegalArgumentException("Must be a CloudEvent!");
+        }
+
+        CloudEvent<?, ?> event = (CloudEvent<?, ?>) rawValue;
+
+        final Wire<String, String, String> wire;
+        String specVersion = event.getAttributes().getSpecversion();
+        switch (specVersion) {
+            case "1.0":
+                wire = RecordsStorageInternal.EVENT_MARSHALLER
+                        .withEvent(() -> (CloudEvent) event)
+                        .marshal();
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown CloudEvents version: " + specVersion);
+        }
+
+        return new Wire(
+                wire.getPayload().map(it -> ByteBuffer.wrap(it.getBytes())).orElse(null),
+                wire.getHeaders()
+        );
+    }
+
+    default Envelope toEnvelope(
+            String topic,
+            ByteBuffer keyBuffer,
+            ByteBuffer valueBuffer,
+            Map<String, String> headers
+    ) {
+        ByteBuffer key = keyBuffer != null ? keyBuffer.asReadOnlyBuffer() : null;
+        String specVersion = headers.get("ce-specversion");
+        if (specVersion == null) {
+            return new Envelope(
+                    topic,
+                    key,
+                    valueBuffer.asReadOnlyBuffer()
+            );
+        }
+
+        switch (specVersion) {
+            case "1.0":
+                return new Envelope(
+                        topic,
+
+                        key,
+                        it -> (ByteBuffer) it,
+
+                        RecordsStorageInternal.EVENT_UNMARSHALLER
+                                .withHeaders(() -> (Map) headers)
+                                .withPayload(() -> StandardCharsets.UTF_8.decode(valueBuffer.duplicate()).toString())
+                                .unmarshal(),
+                        it -> ByteBuffer.wrap(Json.binaryEncode(it)).asReadOnlyBuffer()
+                );
+            default:
+                throw new IllegalStateException("Unsupported CloudEvents version: " + specVersion);
+        }
     }
 
     @Value
@@ -56,6 +128,7 @@ public interface RecordsStorage {
         Function<Object, ByteBuffer> valueEncoder;
 
         @Getter(lazy = true)
+        @Deprecated
         ByteBuffer value = valueEncoder.apply(rawValue);
 
         public Envelope(String topic, ByteBuffer key, ByteBuffer value) {
@@ -135,4 +208,10 @@ public interface RecordsStorage {
 
         Publisher<Record> getPublisher();
     }
+}
+
+class RecordsStorageInternal {
+    static final EventStep<AttributesImpl, Object, String, String> EVENT_MARSHALLER = Marshallers.binary();
+
+    static final HeadersStep<AttributesImpl, byte[], String> EVENT_UNMARSHALLER = Unmarshallers.binary(byte[].class);
 }

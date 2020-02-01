@@ -1,12 +1,16 @@
 package com.github.bsideup.liiklus.records;
 
+import io.cloudevents.json.Json;
+import io.cloudevents.v1.CloudEventBuilder;
 import lombok.SneakyThrows;
 import org.awaitility.core.ConditionFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.time.Duration;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -27,11 +31,23 @@ public interface RecordStorageTestSupport {
         return createEnvelope(key, UUID.randomUUID().toString().getBytes());
     }
 
+    @Deprecated
     default RecordsStorage.Envelope createEnvelope(byte[] key, byte[] value) {
         return new RecordsStorage.Envelope(
                 getTopic(),
-                ByteBuffer.wrap(key),
-                ByteBuffer.wrap(value)
+
+                ByteBuffer.wrap(key).asReadOnlyBuffer(),
+                ByteBuffer.class::cast,
+
+                CloudEventBuilder.builder()
+                        .withId(UUID.randomUUID().toString())
+                        .withType("com.example.event")
+                        .withSource(URI.create("/tck/RecordStorageTestSupport"))
+                        .withDataContentType("application/json")
+                        .withTime(ZonedDateTime.now())
+                        .withData(value)
+                        .build(),
+                it -> ByteBuffer.wrap(Json.binaryEncode(it)).asReadOnlyBuffer()
         );
     }
 

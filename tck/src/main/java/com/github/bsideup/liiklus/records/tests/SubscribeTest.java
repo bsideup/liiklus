@@ -2,6 +2,8 @@ package com.github.bsideup.liiklus.records.tests;
 
 import com.github.bsideup.liiklus.records.RecordStorageTestSupport;
 import com.github.bsideup.liiklus.records.RecordsStorage;
+import io.cloudevents.CloudEvent;
+import io.cloudevents.json.Json;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.DirectProcessor;
 
@@ -78,7 +80,9 @@ public interface SubscribeTest extends RecordStorageTestSupport {
                 assertThat(recordsSoFar)
                         .hasSize(1)
                         .allSatisfy(it -> {
-                            assertThat(it.getEnvelope()).as("envelope").isEqualTo(envelope);
+                            assertThat(it.getEnvelope()).as("envelope")
+                                    .usingComparatorForType(Comparator.comparing(Json::encode), CloudEvent.class)
+                                    .isEqualToIgnoringGivenFields(envelope, "keyEncoder", "valueEncoder");
                             assertThat(it.getPartition()).as("partition").isEqualTo(offsetInfo.getPartition());
                             assertThat(it.getOffset()).as("offset").isEqualTo(offsetInfo.getOffset());
                         });
@@ -127,12 +131,7 @@ public interface SubscribeTest extends RecordStorageTestSupport {
 
     @Test
     default void testNullKey() throws Exception {
-        var topic = getTopic();
-        var offsetInfo = publish(new RecordsStorage.Envelope(
-                topic,
-                null,
-                ByteBuffer.wrap("hello".getBytes())
-        ));
+        var offsetInfo = publish(createEnvelope(new byte[0]).withKey(null));
         int partition = offsetInfo.getPartition();
 
         var record = subscribeToPartition(partition)
@@ -148,12 +147,7 @@ public interface SubscribeTest extends RecordStorageTestSupport {
 
     @Test
     default void testValidTimestamp() throws Exception {
-        var topic = getTopic();
-        var offsetInfo = publish(new RecordsStorage.Envelope(
-                topic,
-                null,
-                ByteBuffer.wrap("hello".getBytes())
-        ));
+        var offsetInfo = publish(createEnvelope(new byte[0]).withKey(null));
         int partition = offsetInfo.getPartition();
 
         var record = subscribeToPartition(partition)

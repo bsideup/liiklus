@@ -89,6 +89,7 @@ public class LiiklusService {
         var eventCase = request.getEventCase();
         switch (eventCase) {
             case EVENT_NOT_SET:
+                // We assume that there is a plugin that will upcast binary values into CloudEvents
                 @SuppressWarnings("deprecation")
                 var value = request.getValue();
 
@@ -258,7 +259,7 @@ public class LiiklusService {
                         .setOffset(offset)
                         .setReplay(isReplay)
                         .setTimestamp(timestamp)
-                        .setValue(ByteString.copyFrom(envelope.getValue()));
+                        .setValue(ByteString.copyFrom(envelope.getValueEncoder().apply(envelope.getRawValue())));
 
                 if (key != null) {
                     replyBuilder.setKey(key);

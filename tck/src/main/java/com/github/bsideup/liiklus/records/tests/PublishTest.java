@@ -2,9 +2,12 @@ package com.github.bsideup.liiklus.records.tests;
 
 import com.github.bsideup.liiklus.records.RecordStorageTestSupport;
 import com.github.bsideup.liiklus.records.RecordsStorage;
+import io.cloudevents.CloudEvent;
+import io.cloudevents.json.Json;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
+import java.util.Comparator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -12,9 +15,9 @@ public interface PublishTest extends RecordStorageTestSupport {
 
     @Test
     default void testPublish() throws Exception {
-        var record = createEnvelope("key".getBytes());
+        var envelope = createEnvelope("key".getBytes());
 
-        var offsetInfo = publish(record);
+        var offsetInfo = publish(envelope);
 
         assertThat(offsetInfo)
                 .satisfies(info -> {
@@ -27,7 +30,13 @@ public interface PublishTest extends RecordStorageTestSupport {
                 .flatMap(RecordsStorage.PartitionSource::getPublisher)
                 .blockFirst(Duration.ofSeconds(10));
 
-        assertThat(receivedRecord.getEnvelope()).as("envelope").isEqualTo(record);
+        assertThat(receivedRecord.getEnvelope()).as("envelope")
+                .usingComparatorForType(Comparator.comparing(Json::encode), CloudEvent.class)
+                .isEqualToIgnoringGivenFields(envelope, "keyEncoder", "valueEncoder")
+                .satisfies(it -> {
+                    assertThat(it.getRawValue()).isInstanceOf(CloudEvent.class);
+                });
+
         assertThat(receivedRecord.getPartition()).as("partition").isEqualTo(offsetInfo.getPartition());
         assertThat(receivedRecord.getOffset()).as("offset").isEqualTo(offsetInfo.getOffset());
     }
