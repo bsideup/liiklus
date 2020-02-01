@@ -7,14 +7,12 @@ import io.grpc.netty.NettyChannelBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.reactivestreams.Publisher;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.KafkaContainer;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.UUID;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 @Slf4j
 public class Consumer {
@@ -42,7 +40,14 @@ public class Consumer {
                         PublishRequest.newBuilder()
                                 .setTopic(subscribeAction.getTopic())
                                 .setKey(ByteString.copyFromUtf8(UUID.randomUUID().toString()))
-                                .setValue(ByteString.copyFromUtf8(UUID.randomUUID().toString()))
+                                .setLiiklusEvent(
+                                        LiiklusEvent.newBuilder()
+                                                .setId(UUID.randomUUID().toString())
+                                                .setType("com.example.event")
+                                                .setSource("/example")
+                                                .setDataContentType("text/plain")
+                                                .setData(ByteString.copyFromUtf8(UUID.randomUUID().toString()))
+                                )
                                 .build()
                 ))
                 .subscribe();

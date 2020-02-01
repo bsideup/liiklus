@@ -89,10 +89,13 @@ public class LiiklusService {
         var eventCase = request.getEventCase();
         switch (eventCase) {
             case EVENT_NOT_SET:
+                @SuppressWarnings("deprecation")
+                var value = request.getValue();
+
                 return new Envelope(
                         request.getTopic(),
                         request.getKey().asReadOnlyByteBuffer(),
-                        request.getValue().asReadOnlyByteBuffer()
+                        value.asReadOnlyByteBuffer()
                 );
             case LIIKLUSEVENT:
                 var cloudEvent = request.getLiiklusEvent();

@@ -28,14 +28,12 @@ public class AckTest extends AbstractIntegrationTest {
                 .build();
 
         // Will create a topic
-        stub
-                .publish(
-                        PublishRequest.newBuilder()
-                                .setTopic(subscribeRequest.getTopic())
-                                .setValue(ByteString.copyFromUtf8("bar"))
-                                .build()
-                )
-                .block();
+        @SuppressWarnings("deprecation")
+        var publishRequest = PublishRequest.newBuilder()
+                .setTopic(subscribeRequest.getTopic())
+                .setValue(ByteString.copyFromUtf8("bar"))
+                .build();
+        stub.publish(publishRequest).block();
     }
 
     @Test
@@ -140,13 +138,15 @@ public class AckTest extends AbstractIntegrationTest {
         ByteString keyBytes = ByteString.copyFromUtf8(key);
 
         Map<String, Integer> receiveStatus = Flux.range(0, 10)
-                .concatMap(i -> stub.publish(
-                        PublishRequest.newBuilder()
-                                .setTopic(subscribeRequest.getTopic())
-                                .setKey(keyBytes)
-                                .setValue(ByteString.copyFromUtf8("foo-" + i))
-                                .build()
-                ))
+                .concatMap(i -> {
+                    @SuppressWarnings("deprecation")
+                    var publishRequest = PublishRequest.newBuilder()
+                            .setTopic(subscribeRequest.getTopic())
+                            .setKey(keyBytes)
+                            .setValue(ByteString.copyFromUtf8("foo-" + i))
+                            .build();
+                    return stub.publish(publishRequest);
+                })
                 .thenMany(
                         Flux
                                 .defer(() -> stub

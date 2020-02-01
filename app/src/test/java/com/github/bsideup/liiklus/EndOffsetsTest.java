@@ -26,12 +26,14 @@ public class EndOffsetsTest extends AbstractIntegrationTest {
 
         for (int partition = 0; partition < NUM_PARTITIONS; partition++) {
             for (int i = 0; i < partition + 1; i++) {
-                stub.publish(PublishRequest.newBuilder()
+                @SuppressWarnings("deprecation")
+                var publishRequest = PublishRequest.newBuilder()
                         .setTopic(topic)
                         .setKey(ByteString.copyFromUtf8(PARTITION_KEYS.get(partition)))
                         .setValue(value)
-                        .build()
-                ).block();
+                        .build();
+
+                stub.publish(publishRequest).block();
             }
         }
 
