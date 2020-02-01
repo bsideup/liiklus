@@ -12,13 +12,17 @@ import com.networknt.schema.JsonMetaSchema;
 import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.ValidationMessage;
+import io.cloudevents.CloudEvent;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 
 import java.io.ByteArrayInputStream;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
@@ -61,11 +65,41 @@ public class JsonSchemaPreProcessor implements RecordPreProcessor {
     @Override
     public CompletionStage<Envelope> preProcess(Envelope envelope) {
         try {
-            var event = envelope.getRawValue() instanceof ObjectNode
-                    ? (ObjectNode) envelope.getRawValue()
-                    : (ObjectNode) JSON_MAPPER.readTree(new ByteBufferBackedInputStream(envelope.getValue().duplicate()));
+            var rawValue = envelope.getRawValue();
 
-            var eventType = event.at(eventTypePointer).asText(null);
+            final ObjectNode event;
+            final String eventType;
+            if (rawValue instanceof CloudEvent) {
+                var cloudEvent = (CloudEvent<?, byte[]>) rawValue;
+
+                var mediaType = cloudEvent.getAttributes().getMediaType()
+                        .map(MediaType::parseMediaType)
+                        .orElse(null);
+
+                if (mediaType == null) {
+                    return CompletableFuture.failedFuture(
+                            new IllegalArgumentException("Media type is not set")
+                    );
+                }
+
+                if (!mediaType.isCompatibleWith(MediaType.APPLICATION_JSON)) {
+                    return CompletableFuture.failedFuture(
+                            new IllegalArgumentException("Media type isn't compatible with 'application/json'")
+                    );
+                }
+
+                event = (ObjectNode) JSON_MAPPER.readTree(cloudEvent.getData().orElse(null));
+
+                eventType = cloudEvent.getAttributes().getType();
+            } else {
+                @SuppressWarnings("deprecation")
+                var value = envelope.getValue();
+                event = rawValue instanceof ObjectNode
+                        ? (ObjectNode) rawValue
+                        : (ObjectNode) JSON_MAPPER.readTree(new ByteBufferBackedInputStream(value.duplicate()));
+
+                eventType = event.at(eventTypePointer).asText(null);
+            }
 
             if (eventType == null) {
                 var result = new CompletableFuture<Envelope>();
@@ -73,21 +107,7 @@ public class JsonSchemaPreProcessor implements RecordPreProcessor {
                 return result;
             }
 
-            JsonSchema eventSchema = schemas
-                    .computeIfAbsent(eventType, key -> {
-                        try {
-                            var refSchemaNode = (ObjectNode) schema.getRefSchemaNode("#/events/" + URLEncoder.encode(key, "utf-8"));
-
-                            var refSchema = jsonSchemaFactory.getSchema(refSchemaNode);
-                            return Optional.of(refSchema);
-                        } catch (Exception e) {
-                            log.error("Failed to get schema for {}", key, e);
-                            return Optional.empty();
-                        }
-                    })
-                    .orElseThrow(() -> new IllegalStateException("No schema for '" + eventType + "'"));
-
-            var validationMessages = eventSchema.validate(event);
+            var validationMessages = validate(eventType, event);
 
             if (validationMessages.isEmpty()) {
                 return CompletableFuture.completedFuture(envelope);
@@ -102,5 +122,22 @@ public class JsonSchemaPreProcessor implements RecordPreProcessor {
             result.completeExceptionally(e);
             return result;
         }
+    }
+
+    private Set<ValidationMessage> validate(String eventType, ObjectNode event) {
+        JsonSchema eventSchema = schemas
+                .computeIfAbsent(eventType, key -> {
+                    try {
+                        var refSchemaNode = (ObjectNode) schema.getRefSchemaNode("#/events/" + URLEncoder.encode(key, StandardCharsets.UTF_8));
+
+                        var refSchema = jsonSchemaFactory.getSchema(refSchemaNode);
+                        return Optional.of(refSchema);
+                    } catch (Exception e) {
+                        log.error("Failed to get schema for {}", key, e);
+                        return Optional.empty();
+                    }
+                })
+                .orElseThrow(() -> new IllegalStateException("No schema for '" + eventType + "'"));
+        return eventSchema.validate(event);
     }
 }

@@ -3,11 +3,17 @@ package com.github.bsideup.liiklus.schema;
 import com.fasterxml.jackson.core.JsonPointer;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.bsideup.liiklus.records.RecordsStorage.Envelope;
+import io.cloudevents.CloudEvent;
+import io.cloudevents.json.Json;
+import io.cloudevents.v1.CloudEventBuilder;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 
+import java.net.URI;
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -60,8 +66,86 @@ class JsonSchemaPreProcessorTest {
     void testMissingEventType() {
         var processor = getProcessor();
 
-        assertThatThrownBy(() -> preProcess(processor, null))
+        assertThatThrownBy(() -> preProcess(processor, (String) null))
                 .hasMessageContaining("/eventType is null");
+    }
+
+    @Test
+    void testCloudEvent() throws Exception {
+        var processor = getProcessor();
+
+        assertThatThrownBy(() -> {
+            preProcess(processor,
+                    CloudEventBuilder.builder()
+                            .withId(UUID.randomUUID().toString())
+                            .withType("com.example.cloudevent")
+                            .withSource(URI.create("/tests"))
+                            .withDataContentType("application/json")
+                            .withData(
+                                    JsonSchemaPreProcessor.JSON_MAPPER.writeValueAsBytes(
+                                            Map.of("foo", 123)
+                                    )
+                            )
+                            .build()
+            );
+        }).hasMessageContaining("$.foo: integer found, string expected");
+
+        preProcess(
+                processor,
+                CloudEventBuilder.builder()
+                        .withId(UUID.randomUUID().toString())
+                        .withType("com.example.cloudevent")
+                        .withSource(URI.create("/tests"))
+                        .withDataContentType("application/json")
+                        .withData(
+                                JsonSchemaPreProcessor.JSON_MAPPER.writeValueAsBytes(
+                                        Map.of("foo", "bar")
+                                )
+                        )
+                        .build()
+        );
+    }
+
+    @Test
+    void testCloudEventWithCompatibleMediaType() {
+        var processor = getProcessor();
+
+        assertThatThrownBy(() -> {
+            preProcess(processor,
+                    CloudEventBuilder.builder()
+                            .withId(UUID.randomUUID().toString())
+                            .withType("com.example.cloudevent")
+                            .withSource(URI.create("/tests"))
+                            .withDataContentType("application/json;v2")
+                            .withData(
+                                    JsonSchemaPreProcessor.JSON_MAPPER.writeValueAsBytes(
+                                            Map.of("foo", 123)
+                                    )
+                            )
+                            .build()
+            );
+        }).hasMessageContaining("$.foo: integer found, string expected");
+    }
+
+    @Test
+    void testCloudEventWithWrongMimeType() {
+        var processor = getProcessor();
+
+        assertThatThrownBy(() -> {
+            preProcess(processor,
+                    CloudEventBuilder.builder()
+                            .withId(UUID.randomUUID().toString())
+                            .withType("com.example.cloudevent")
+                            .withSource(URI.create("/tests"))
+                            .withDataContentType("text/plain")
+                            .withData(
+                                    JsonSchemaPreProcessor.JSON_MAPPER.writeValueAsBytes(
+                                            Map.of("foo", 123)
+                                    )
+                            )
+                            .build()
+            );
+        }).hasMessageContaining("Media type isn't compatible with 'application/json'");
     }
 
     private JsonSchemaPreProcessor getProcessor() {
@@ -103,6 +187,21 @@ class JsonSchemaPreProcessorTest {
                             throw new RuntimeException(e);
                         }
                     }
+            )).toCompletableFuture().get(5, TimeUnit.SECONDS);
+        } catch (ExecutionException e) {
+            throw e.getCause();
+        }
+    }
+
+    @SneakyThrows
+    private void preProcess(JsonSchemaPreProcessor processor, CloudEvent<?, ?> cloudEvent) {
+        try {
+            processor.preProcess(new Envelope(
+                    "topic",
+                    null,
+                    __ -> ByteBuffer.wrap("key".getBytes()),
+                    cloudEvent,
+                    it -> ByteBuffer.wrap(Json.binaryEncode(it)).asReadOnlyBuffer()
             )).toCompletableFuture().get(5, TimeUnit.SECONDS);
         } catch (ExecutionException e) {
             throw e.getCause();

@@ -27,3 +27,11 @@ events:
     properties:
       eventType: { type: string }
       foo: { type: string }
+
+  "com.example.cloudevent":
+    type: object
+    additionalProperties: false
+    required:
+      - foo
+    properties:
+      foo: { type: string }
