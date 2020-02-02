@@ -27,15 +27,15 @@ public class ConsumerGroupsTest extends AbstractIntegrationTest {
 
         // Will create a topic and initialize every partition
         Flux.fromIterable(PARTITION_UNIQUE_KEYS)
-                .flatMap(key -> {
-                    @SuppressWarnings("deprecation")
-                    var publishRequest = PublishRequest.newBuilder()
-                            .setTopic(subscribeRequest.getTopic())
-                            .setKey(ByteString.copyFromUtf8(key))
-                            .setValue(ByteString.copyFromUtf8("bar"))
-                            .build();
-                    return stub.publish(publishRequest);
-                })
+                .flatMap(key -> stub
+                        .publish(
+                                PublishRequest.newBuilder()
+                                        .setTopic(subscribeRequest.getTopic())
+                                        .setKey(ByteString.copyFromUtf8(key))
+                                        .setLiiklusEvent(LIIKLUS_EVENT_EXAMPLE)
+                                        .build()
+                        )
+                )
                 .blockLast();
     }
 

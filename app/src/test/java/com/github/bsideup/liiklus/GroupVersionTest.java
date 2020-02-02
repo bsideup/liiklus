@@ -32,15 +32,13 @@ public class GroupVersionTest extends AbstractIntegrationTest {
         groupName = testName.getMethodName();
 
         Flux.range(0, NUM_OF_RECORDS_PER_PARTITION)
-                .flatMap(__ -> {
-                    @SuppressWarnings("deprecation")
-                    var publishRequest = PublishRequest.newBuilder()
-                            .setTopic(topic)
-                            .setKey(ByteString.copyFromUtf8(PARTITION_KEYS.get(PARTITION)))
-                            .setValue(ByteString.copyFromUtf8(UUID.randomUUID().toString()))
-                            .build();
-                    return stub.publish(publishRequest);
-                })
+                .flatMap(__ -> stub.publish(
+                        PublishRequest.newBuilder()
+                                .setTopic(topic)
+                                .setKey(ByteString.copyFromUtf8(PARTITION_KEYS.get(PARTITION)))
+                                .setLiiklusEvent(LIIKLUS_EVENT_EXAMPLE)
+                                .build()
+                ))
                 .blockLast(Duration.ofSeconds(10));
     }
 

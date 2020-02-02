@@ -28,15 +28,15 @@ public class PositionsTest extends AbstractIntegrationTest {
         // Will create a topic and initialize every partition
         Flux.fromIterable(PARTITION_UNIQUE_KEYS)
                 .flatMap(key -> Mono
-                        .defer(() -> {
-                            @SuppressWarnings("deprecation")
-                            var publishRequest = PublishRequest.newBuilder()
-                                    .setTopic(subscribeRequest.getTopic())
-                                    .setKey(ByteString.copyFromUtf8(key))
-                                    .setValue(ByteString.copyFromUtf8("bar"))
-                                    .build();
-                            return stub.publish(publishRequest);
-                        })
+                        .defer(() -> stub
+                                .publish(
+                                        PublishRequest.newBuilder()
+                                                .setTopic(subscribeRequest.getTopic())
+                                                .setKey(ByteString.copyFromUtf8(key))
+                                                .setLiiklusEvent(LIIKLUS_EVENT_EXAMPLE)
+                                                .build()
+                                )
+                        )
                         .repeat(10)
                 )
                 .blockLast();
@@ -47,14 +47,13 @@ public class PositionsTest extends AbstractIntegrationTest {
         var key = UUID.randomUUID().toString();
         var partition = getPartitionByKey(key);
 
-        @SuppressWarnings("deprecation")
-        var publishRequest = PublishRequest.newBuilder()
-                .setTopic(subscribeRequest.getTopic())
-                .setKey(ByteString.copyFromUtf8(key))
-                .setValue(ByteString.copyFromUtf8("bar"))
-                .build();
-
-        var publishReply = stub.publish(publishRequest).block(Duration.ofSeconds(10));
+        var publishReply = stub.publish(
+                PublishRequest.newBuilder()
+                        .setTopic(subscribeRequest.getTopic())
+                        .setKey(ByteString.copyFromUtf8(key))
+                        .setLiiklusEvent(LIIKLUS_EVENT_EXAMPLE)
+                        .build()
+        ).block(Duration.ofSeconds(10));
 
         assertThat(publishReply)
                 .hasFieldOrPropertyWithValue("partition", partition);

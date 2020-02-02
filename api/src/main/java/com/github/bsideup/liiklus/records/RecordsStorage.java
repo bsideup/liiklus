@@ -2,12 +2,12 @@ package com.github.bsideup.liiklus.records;
 
 import io.cloudevents.CloudEvent;
 import io.cloudevents.format.Wire;
-import io.cloudevents.format.builder.EventStep;
-import io.cloudevents.format.builder.HeadersStep;
 import io.cloudevents.json.Json;
 import io.cloudevents.v1.AttributesImpl;
-import io.cloudevents.v1.http.Marshallers;
-import io.cloudevents.v1.http.Unmarshallers;
+import io.cloudevents.v1.CloudEventBuilder;
+import io.cloudevents.v1.CloudEventImpl;
+import io.cloudevents.v1.http.AttributeMapper;
+import io.cloudevents.v1.http.HeaderMapper;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
@@ -15,8 +15,8 @@ import lombok.With;
 import org.reactivestreams.Publisher;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
@@ -47,22 +47,21 @@ public interface RecordsStorage {
 
         CloudEvent<?, ?> event = (CloudEvent<?, ?>) rawValue;
 
-        final Wire<String, String, String> wire;
-        String specVersion = event.getAttributes().getSpecversion();
-        switch (specVersion) {
-            case "1.0":
-                wire = RecordsStorageInternal.EVENT_MARSHALLER
-                        .withEvent(() -> (CloudEvent) event)
-                        .marshal();
-                break;
-            default:
-                throw new IllegalArgumentException("Unknown CloudEvents version: " + specVersion);
-        }
+        if (event instanceof CloudEventImpl) {
+            CloudEventImpl<?> cloudEvent = (CloudEventImpl) event;
+            Map<String, String> attributes = AttributesImpl.marshal(cloudEvent.getAttributes());
+            // TODO extensions
+            Map<String, String> extensions = Collections.emptyMap();
 
-        return new Wire(
-                wire.getPayload().map(it -> ByteBuffer.wrap(it.getBytes())).orElse(null),
-                wire.getHeaders()
-        );
+            return new Wire<>(
+                    cloudEvent.getData()
+                            .map(data -> ByteBuffer.wrap((byte[]) data).asReadOnlyBuffer())
+                            .orElse(null),
+                    HeaderMapper.map(attributes, extensions)
+            );
+        } else {
+            throw new IllegalArgumentException("Unknown CloudEvents type: " + event.getClass());
+        }
     }
 
     default Envelope toEnvelope(
@@ -83,16 +82,27 @@ public interface RecordsStorage {
 
         switch (specVersion) {
             case "1.0":
+                headers = AttributeMapper.map((Map) headers);
+                AttributesImpl attributes = AttributesImpl.unmarshal(headers);
+
+                // TODO
+                Map<String, String> extensions = Collections.emptyMap();
+
+                byte[] data = new byte[valueBuffer.remaining()];
+                valueBuffer.duplicate().get(data);
+
                 return new Envelope(
                         topic,
 
                         key,
                         it -> (ByteBuffer) it,
 
-                        RecordsStorageInternal.EVENT_UNMARSHALLER
-                                .withHeaders(() -> (Map) headers)
-                                .withPayload(() -> StandardCharsets.UTF_8.decode(valueBuffer.duplicate()).toString())
-                                .unmarshal(),
+                        CloudEventBuilder.<byte[]>builder().build(
+                                data,
+                                attributes,
+                                // TODO
+                                Collections.emptyList()
+                        ),
                         it -> ByteBuffer.wrap(Json.binaryEncode(it)).asReadOnlyBuffer()
                 );
             default:
@@ -208,10 +218,4 @@ public interface RecordsStorage {
 
         Publisher<Record> getPublisher();
     }
-}
-
-class RecordsStorageInternal {
-    static final EventStep<AttributesImpl, Object, String, String> EVENT_MARSHALLER = Marshallers.binary();
-
-    static final HeadersStep<AttributesImpl, byte[], String> EVENT_UNMARSHALLER = Unmarshallers.binary(byte[].class);
 }

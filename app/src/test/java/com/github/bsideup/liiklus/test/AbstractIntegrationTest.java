@@ -4,15 +4,18 @@ import com.github.bsideup.liiklus.Application;
 import com.github.bsideup.liiklus.GRPCLiiklusClient;
 import com.github.bsideup.liiklus.LiiklusClient;
 import com.github.bsideup.liiklus.RSocketLiiklusClient;
+import com.github.bsideup.liiklus.protocol.LiiklusEvent;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Server;
 import io.rsocket.RSocketFactory;
 import io.rsocket.transport.netty.client.TcpClientTransport;
 import io.rsocket.transport.netty.server.CloseableChannel;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 import org.pf4j.PluginManager;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.GenericApplicationContext;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 
@@ -22,6 +25,13 @@ import java.time.Duration;
 import java.util.*;
 
 public abstract class AbstractIntegrationTest {
+
+    public static final LiiklusEvent LIIKLUS_EVENT_EXAMPLE = LiiklusEvent.newBuilder()
+            .setId(UUID.randomUUID().toString())
+            .setType("com.example.event")
+            .setSource("/tests")
+            .setDataContentType("application/json")
+            .buildPartial();
 
     public static final int NUM_PARTITIONS = 32;
 
@@ -48,6 +58,8 @@ public abstract class AbstractIntegrationTest {
 
     protected static final ApplicationContext applicationContext;
 
+    protected static final ProcessorPluginMock processorPluginMock = new ProcessorPluginMock();
+
     static {
         System.setProperty("plugins.dir", "../plugins");
         System.setProperty("plugins.pathMatcher", "*/build/libs/*.jar");
@@ -58,9 +70,17 @@ public abstract class AbstractIntegrationTest {
                 "rsocket.port=0",
                 "grpc.port=0",
                 "server.port=0"
-        );
+        ).stream().map(it -> "--" + it).toArray(String[]::new);
 
-        applicationContext = Application.start(args.stream().map(it -> "--" + it).toArray(String[]::new));
+        var springApplication = Application.createSpringApplication(args);
+        springApplication.addInitializers(applicationContext -> {
+            ((GenericApplicationContext) applicationContext).registerBean(
+                    "processorPluginMock",
+                    ProcessorPluginMock.class,
+                    () -> processorPluginMock
+            );
+        });
+        applicationContext = springApplication.run(args);
         var pluginManager = applicationContext.getBean(PluginManager.class);
 
         boolean useGrpc = false;
@@ -104,4 +124,10 @@ public abstract class AbstractIntegrationTest {
 
     @Rule
     public TestName testName = new TestName();
+
+    @Before
+    public void setUpAbstractIntegrationTest() throws Exception {
+        processorPluginMock.getPreProcessors().clear();
+        processorPluginMock.getPostProcessors().clear();
+    }
 }

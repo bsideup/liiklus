@@ -22,18 +22,14 @@ public class EndOffsetsTest extends AbstractIntegrationTest {
 
     @Test
     public void testEndOffsets() {
-        var value = ByteString.copyFromUtf8("foo");
-
         for (int partition = 0; partition < NUM_PARTITIONS; partition++) {
             for (int i = 0; i < partition + 1; i++) {
-                @SuppressWarnings("deprecation")
-                var publishRequest = PublishRequest.newBuilder()
+                stub.publish(PublishRequest.newBuilder()
                         .setTopic(topic)
                         .setKey(ByteString.copyFromUtf8(PARTITION_KEYS.get(partition)))
-                        .setValue(value)
-                        .build();
-
-                stub.publish(publishRequest).block();
+                        .setLiiklusEvent(LIIKLUS_EVENT_EXAMPLE)
+                        .build()
+                ).block();
             }
         }
 

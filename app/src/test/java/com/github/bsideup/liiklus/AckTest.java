@@ -11,6 +11,7 @@ import reactor.core.publisher.Flux;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,12 +29,14 @@ public class AckTest extends AbstractIntegrationTest {
                 .build();
 
         // Will create a topic
-        @SuppressWarnings("deprecation")
-        var publishRequest = PublishRequest.newBuilder()
-                .setTopic(subscribeRequest.getTopic())
-                .setValue(ByteString.copyFromUtf8("bar"))
-                .build();
-        stub.publish(publishRequest).block();
+        stub
+                .publish(
+                        PublishRequest.newBuilder()
+                                .setTopic(subscribeRequest.getTopic())
+                                .setLiiklusEvent(LIIKLUS_EVENT_EXAMPLE)
+                                .build()
+                )
+                .block();
     }
 
     @Test
@@ -138,15 +141,16 @@ public class AckTest extends AbstractIntegrationTest {
         ByteString keyBytes = ByteString.copyFromUtf8(key);
 
         Map<String, Integer> receiveStatus = Flux.range(0, 10)
-                .concatMap(i -> {
-                    @SuppressWarnings("deprecation")
-                    var publishRequest = PublishRequest.newBuilder()
-                            .setTopic(subscribeRequest.getTopic())
-                            .setKey(keyBytes)
-                            .setValue(ByteString.copyFromUtf8("foo-" + i))
-                            .build();
-                    return stub.publish(publishRequest);
-                })
+                .concatMap(i -> stub.publish(
+                        PublishRequest.newBuilder()
+                                .setTopic(subscribeRequest.getTopic())
+                                .setKey(keyBytes)
+                                .setLiiklusEvent(
+                                        LiiklusEvent.newBuilder(LIIKLUS_EVENT_EXAMPLE)
+                                                .setData(ByteString.copyFromUtf8(UUID.randomUUID().toString()))
+                                )
+                                .build()
+                ))
                 .thenMany(
                         Flux
                                 .defer(() -> stub
@@ -161,12 +165,11 @@ public class AckTest extends AbstractIntegrationTest {
                                                     var builder = AckRequest.newBuilder()
                                                             .setAssignment(it.getAssignment());
 
-                                                    return stub
-                                                            .ack(
-                                                                    builder
-                                                                            .setOffset(batch.get(batch.size() - 1).getOffset())
-                                                                            .build()
-                                                            );
+                                                    return stub.ack(
+                                                            builder
+                                                                    .setOffset(batch.get(batch.size() - 1).getOffset())
+                                                                    .build()
+                                                    );
                                                 })
                                         )
                                         .take(1)
@@ -182,8 +185,10 @@ public class AckTest extends AbstractIntegrationTest {
                 })
                 .blockLast(Duration.ofSeconds(30));
 
-        assertThat(receiveStatus.values())
+        assertThat(receiveStatus)
                 .hasSize(10)
-                .containsOnly(1);
+                .allSatisfy((__, value) -> {
+                    assertThat(value).isEqualTo(1);
+                });
     }
 }

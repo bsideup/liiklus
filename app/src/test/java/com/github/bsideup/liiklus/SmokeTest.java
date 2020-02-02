@@ -4,14 +4,16 @@ import com.github.bsideup.liiklus.protocol.*;
 import com.github.bsideup.liiklus.records.RecordsStorage;
 import com.github.bsideup.liiklus.test.AbstractIntegrationTest;
 import com.google.protobuf.ByteString;
+import io.cloudevents.json.Json;
+import io.cloudevents.v1.CloudEventBuilder;
 import org.assertj.core.api.Condition;
 import org.junit.Test;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.SignalType;
 
+import java.net.URI;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
@@ -61,11 +63,7 @@ public class SmokeTest extends AbstractIntegrationTest {
                                 .setTopic(subscribeAction.getTopic())
                                 .setKey(ByteString.copyFromUtf8(key))
                                 .setLiiklusEvent(
-                                        LiiklusEvent.newBuilder()
-                                                .setId(UUID.randomUUID().toString())
-                                                .setType("com.example.event")
-                                                .setSource("/tests")
-                                                .setDataContentType("application/json")
+                                        LiiklusEvent.newBuilder(LIIKLUS_EVENT_EXAMPLE)
                                                 .setData(ByteString.copyFromUtf8(it))
                                 )
                                 .build()
@@ -110,7 +108,15 @@ public class SmokeTest extends AbstractIntegrationTest {
         recordsStorage.publish(new RecordsStorage.Envelope(
                 subscribeAction.getTopic(),
                 null, // intentionally
-                ByteBuffer.wrap(value.getBytes(StandardCharsets.UTF_8))
+                ByteBuffer.class::cast,
+                CloudEventBuilder.builder()
+                        .withId(UUID.randomUUID().toString())
+                        .withType("com.example.event")
+                        .withSource(URI.create("/tests"))
+                        .withDataContentType("text/plain")
+                        .withData(value.getBytes())
+                        .build(),
+                it -> ByteBuffer.wrap(Json.binaryEncode(it)).asReadOnlyBuffer()
         )).toCompletableFuture().join();
 
         var record = stub
@@ -118,15 +124,16 @@ public class SmokeTest extends AbstractIntegrationTest {
                 .flatMap(it -> stub.receive(
                         ReceiveRequest.newBuilder()
                                 .setAssignment(it.getAssignment())
+                                .setFormat(ReceiveRequest.ContentFormat.LIIKLUS_EVENT)
                                 .build()
                 ))
-                .map(ReceiveReply::getRecord)
                 .blockFirst(Duration.ofSeconds(10));
 
         assertThat(record)
                 .isNotNull()
                 .satisfies(it -> {
-                    assertThat(it.getValue().toStringUtf8()).as("value").isEqualTo(value);
+                    var event = it.getLiiklusEventRecord().getEvent();
+                    assertThat(event.getData().toStringUtf8()).as("value").isEqualTo(value);
                 });
     }
 }
