@@ -1,9 +1,6 @@
 package com.github.bsideup.liiklus.benchmark;
 
-import com.github.bsideup.liiklus.Application;
-import com.github.bsideup.liiklus.GRPCLiiklusClient;
-import com.github.bsideup.liiklus.LiiklusClient;
-import com.github.bsideup.liiklus.RSocketLiiklusClient;
+import com.github.bsideup.liiklus.*;
 import com.github.bsideup.liiklus.protocol.ReceiveRequest;
 import com.github.bsideup.liiklus.protocol.SubscribeReply;
 import com.github.bsideup.liiklus.protocol.SubscribeRequest;
@@ -14,9 +11,11 @@ import io.rsocket.transport.netty.client.TcpClientTransport;
 import lombok.SneakyThrows;
 import org.openjdk.jmh.annotations.*;
 import org.springframework.context.ConfigurableApplicationContext;
+import reactor.core.Disposable;
 
 import java.io.IOException;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 @State(Scope.Benchmark)
@@ -41,12 +40,24 @@ public class TransportBenchmark {
     @Param
     Transport transport;
 
-    final ConfigurableApplicationContext applicationContext = Application.start(new String[]{
-            "--storage.positions.type=FAKE",
-            "--storage.records.type=FAKE",
-    });
+    final ConfigurableApplicationContext applicationContext;
+
+    {
+        var args = new String[]{
+                "--storage.positions.type=FAKE",
+                "--storage.records.type=FAKE",
+        };
+        var application = Application.createSpringApplication(args);
+        application.addInitializers(
+                new FakePositionsStorage(),
+                new FakeRecordsStorage()
+        );
+        applicationContext = application.run(args);
+    }
 
     LiiklusClient liiklusClient;
+
+    Disposable disposable;
 
     @TearDown(Level.Trial)
     @SneakyThrows
@@ -99,12 +110,14 @@ public class TransportBenchmark {
     @TearDown(Level.Invocation)
     @SneakyThrows
     public void doTearDownInvocation() {
+        disposable.dispose();
         liiklusClient.close();
     }
 
     @Benchmark
     public void measure() {
-        liiklusClient
+        var future = new CompletableFuture<Void>();
+        disposable = liiklusClient
                 .subscribe(
                         SubscribeRequest.newBuilder()
                                 .setTopic("topic")
@@ -122,7 +135,10 @@ public class TransportBenchmark {
                         Integer.MAX_VALUE
                 )
                 .take(LIMIT)
-                .ignoreElements()
-                .block();
+                .doOnError(future::completeExceptionally)
+                .doFinally(__ -> future.complete(null))
+                .subscribe();
+
+        future.join();
     }
 }

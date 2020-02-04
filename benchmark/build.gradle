@@ -26,6 +26,4 @@ dependencies {
 
     jmh 'org.testcontainers:kafka'
     jmh 'org.apache.kafka:kafka-clients'
-
-    jmh "org.openjdk.jmh:jmh-generator-annprocess:${jmh.jmhVersion}"
 }
