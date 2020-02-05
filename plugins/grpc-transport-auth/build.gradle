@@ -1,0 +1,38 @@
+jar {
+    manifest {
+        attributes(
+                'Plugin-Id': "${project.name}",
+                'Plugin-Version': "${project.version}",
+        )
+    }
+
+    into('lib') {
+        from(configurations.compile - configurations.compileOnly)
+    }
+}
+
+dependencies {
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    compileOnly 'com.google.auto.service:auto-service'
+    annotationProcessor 'com.google.auto.service:auto-service'
+
+    compileOnly project(":app")
+    compile project(":grpc-transport")
+    compile 'com.auth0:java-jwt'
+    compile 'com.avast.grpc.jwt:grpc-java-jwt'
+
+    compileOnly project(":api")
+
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+    testCompile 'org.junit.jupiter:junit-jupiter-engine'
+    testCompile 'org.junit.jupiter:junit-jupiter-params'
+    testCompile project(":app")
+    testCompile project(":testing")
+    testCompile project(":client")
+    testCompile 'org.springframework.boot:spring-boot-starter-test'
+    testCompile 'org.springframework.boot:spring-boot-starter-validation'
+    testCompile 'com.fasterxml.jackson.core:jackson-databind'
+
+}
