@@ -6,8 +6,6 @@ import io.cloudevents.json.Json;
 import io.cloudevents.v1.AttributesImpl;
 import io.cloudevents.v1.CloudEventBuilder;
 import io.cloudevents.v1.CloudEventImpl;
-import io.cloudevents.v1.http.AttributeMapper;
-import io.cloudevents.v1.http.HeaderMapper;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
@@ -71,7 +69,7 @@ public interface RecordsStorage {
             Map<String, String> headers
     ) {
         ByteBuffer key = keyBuffer != null ? keyBuffer.asReadOnlyBuffer() : null;
-        String specVersion = headers.get("ce-specversion");
+        String specVersion = headers.get("ce_specversion");
         if (specVersion == null) {
             return new Envelope(
                     topic,
@@ -82,7 +80,7 @@ public interface RecordsStorage {
 
         switch (specVersion) {
             case "1.0":
-                headers = AttributeMapper.map((Map) headers);
+                headers = AttributeMapper.map(headers);
                 AttributesImpl attributes = AttributesImpl.unmarshal(headers);
 
                 // TODO
