@@ -15,7 +15,6 @@ import reactor.core.publisher.Mono;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -24,7 +23,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 @RequiredArgsConstructor
@@ -140,10 +138,9 @@ public class PulsarRecordsStorage implements FiniteRecordsStorage {
         ) {
             return Mono
                     .defer(() -> Mono.fromCompletionStage(pulsarClient.getPartitionsForTopic(topic)))
-                    .map(List::size)
                     .mergeWith(Flux.never()) // Never complete
-                    .map(numberOfPartitions -> {
-                        return IntStream.range(0, numberOfPartitions).mapToObj(partition -> new PulsarPartitionSource(
+                    .map(partitions -> {
+                        return partitions.stream().map(TopicName::getPartitionIndex).map(partition -> new PulsarPartitionSource(
                                 topic,
                                 partition,
                                 groupName,
