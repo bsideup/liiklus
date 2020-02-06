@@ -18,11 +18,10 @@ dependencies {
     annotationProcessor 'com.google.auto.service:auto-service'
 
     compileOnly project(":app")
-    compile project(":grpc-transport")
+    compileOnly project(":grpc-transport")
+
     compile 'com.auth0:java-jwt'
     compile 'com.avast.grpc.jwt:grpc-java-jwt'
-
-    compileOnly project(":api")
 
     testCompileOnly 'org.projectlombok:lombok'
     testAnnotationProcessor 'org.projectlombok:lombok'
@@ -30,9 +29,7 @@ dependencies {
     testCompile 'org.junit.jupiter:junit-jupiter-params'
     testCompile project(":app")
     testCompile project(":testing")
-    testCompile project(":client")
+    testCompile project(":grpc-transport")
     testCompile 'org.springframework.boot:spring-boot-starter-test'
-    testCompile 'org.springframework.boot:spring-boot-starter-validation'
-    testCompile 'com.fasterxml.jackson.core:jackson-databind'
 
 }
