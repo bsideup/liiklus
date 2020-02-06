@@ -5,8 +5,8 @@ import com.github.bsideup.liiklus.records.RecordStorageTests;
 import com.github.bsideup.liiklus.records.RecordsStorage;
 import com.github.bsideup.liiklus.support.DisabledUntil;
 import lombok.Getter;
-import org.apache.pulsar.client.api.HashingScheme;
 import org.apache.pulsar.client.api.PulsarClient;
+import org.apache.pulsar.client.impl.MessageIdImpl;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationContext;
 import org.testcontainers.containers.PulsarContainer;
@@ -49,24 +49,23 @@ abstract class AbstractPulsarRecordsStorageTest implements RecordStorageTests {
     @Test
     void shouldPreferEventTimeOverPublishTime() throws Exception {
         var topic = getTopic();
-        var partition = 0;
-        var key = keyByPartition(partition);
         var eventTimestamp = Instant.now().minusSeconds(1000).truncatedTo(ChronoUnit.MILLIS);
 
+        int partition;
         try (
                 var pulsarClient = PulsarClient.builder()
                         .serviceUrl(pulsar.getPulsarBrokerUrl())
                         .build()
         ) {
-            pulsarClient.newProducer()
+            var messageId = pulsarClient.newProducer()
                     .topic(topic)
-                    .hashingScheme(HashingScheme.Murmur3_32Hash)
                     .create()
                     .newMessage()
-                    .key(key)
                     .value("hello".getBytes())
                     .eventTime(eventTimestamp.toEpochMilli())
                     .send();
+
+            partition = ((MessageIdImpl) messageId).getPartitionIndex();
         }
 
         var record = subscribeToPartition(partition)
