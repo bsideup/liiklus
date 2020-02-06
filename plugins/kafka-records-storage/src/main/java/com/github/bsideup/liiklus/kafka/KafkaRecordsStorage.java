@@ -1,6 +1,7 @@
 package com.github.bsideup.liiklus.kafka;
 
 import com.github.bsideup.liiklus.records.FiniteRecordsStorage;
+import com.github.bsideup.liiklus.records.LiiklusCloudEvent;
 import lombok.SneakyThrows;
 import lombok.Value;
 import lombok.experimental.FieldDefaults;
@@ -112,15 +113,22 @@ public class KafkaRecordsStorage implements FiniteRecordsStorage {
     }
 
     private ProducerRecord<ByteBuffer, ByteBuffer> toProducerRecord(Envelope envelope) {
-        var wire = toWire(envelope);
+        Object rawValue = envelope.getRawValue();
+
+        if (!(rawValue instanceof LiiklusCloudEvent)) {
+            // TODO Add Envelope#event and make CloudEvent a fist-class citizen
+            throw new IllegalArgumentException("Must be a CloudEvent!");
+        }
+
+        var cloudEvent = (LiiklusCloudEvent) rawValue;
 
         var producerRecord = new ProducerRecord<>(
                 envelope.getTopic(),
                 envelope.getKey(),
-                wire.getPayload().orElse(null)
+                cloudEvent.getDataOrNull()
         );
 
-        wire.getHeaders().forEach((key, value) -> {
+        cloudEvent.forEachHeader((key, value) -> {
             producerRecord.headers().add(key, value.getBytes());
         });
         return producerRecord;

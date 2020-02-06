@@ -1,20 +1,19 @@
 package com.github.bsideup.liiklus;
 
 import com.github.bsideup.liiklus.protocol.*;
+import com.github.bsideup.liiklus.records.LiiklusCloudEvent;
 import com.github.bsideup.liiklus.records.RecordsStorage;
 import com.github.bsideup.liiklus.test.AbstractIntegrationTest;
 import com.google.protobuf.ByteString;
-import io.cloudevents.json.Json;
-import io.cloudevents.v1.CloudEventBuilder;
 import org.assertj.core.api.Condition;
 import org.junit.Test;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.SignalType;
 
-import java.net.URI;
 import java.nio.ByteBuffer;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -109,14 +108,17 @@ public class SmokeTest extends AbstractIntegrationTest {
                 subscribeAction.getTopic(),
                 null, // intentionally
                 ByteBuffer.class::cast,
-                CloudEventBuilder.builder()
-                        .withId(UUID.randomUUID().toString())
-                        .withType("com.example.event")
-                        .withSource(URI.create("/tests"))
-                        .withDataContentType("text/plain")
-                        .withData(value.getBytes())
-                        .build(),
-                it -> ByteBuffer.wrap(Json.binaryEncode(it)).asReadOnlyBuffer()
+
+                new LiiklusCloudEvent(
+                        UUID.randomUUID().toString(),
+                        "com.example.event",
+                        "/tests",
+                        "text/plain",
+                        null,
+                        ByteBuffer.wrap(value.getBytes()).asReadOnlyBuffer(),
+                        Collections.emptyMap()
+                ),
+                LiiklusCloudEvent::asJson
         )).toCompletableFuture().join();
 
         var record = stub
@@ -135,5 +137,38 @@ public class SmokeTest extends AbstractIntegrationTest {
                     var event = it.getLiiklusEventRecord().getEvent();
                     assertThat(event.getData().toStringUtf8()).as("value").isEqualTo(value);
                 });
+    }
+
+    @Test
+    public void testRoundTrip() {
+        var subscribeAction = SubscribeRequest.newBuilder()
+                .setTopic(testName.getMethodName())
+                .setGroup(testName.getMethodName())
+                .setAutoOffsetReset(SubscribeRequest.AutoOffsetReset.EARLIEST)
+                .build();
+
+        var key = "foo";
+        var event = LiiklusEvent.newBuilder(LIIKLUS_EVENT_EXAMPLE)
+                .setData(ByteString.copyFromUtf8(UUID.randomUUID().toString()))
+                .build();
+
+        var publishRequest = PublishRequest.newBuilder()
+                .setTopic(subscribeAction.getTopic())
+                .setKey(ByteString.copyFromUtf8(key))
+                .setLiiklusEvent(event)
+                .build();
+        stub.publish(publishRequest).block(Duration.ofSeconds(10));
+
+        var record = stub.subscribe(subscribeAction)
+                .flatMap(it -> stub.receive(
+                        ReceiveRequest.newBuilder()
+                                .setAssignment(it.getAssignment())
+                                .setFormat(ReceiveRequest.ContentFormat.LIIKLUS_EVENT)
+                                .build()
+                ))
+                .log("consumer", Level.WARNING, SignalType.ON_ERROR)
+                .blockFirst(Duration.ofSeconds(60));
+
+        assertThat(record.getLiiklusEventRecord().getEvent()).isEqualTo(event);
     }
 }

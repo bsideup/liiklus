@@ -3,11 +3,9 @@ package com.github.bsideup.liiklus;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.util.ByteBufferBackedInputStream;
 import com.github.bsideup.liiklus.protocol.*;
+import com.github.bsideup.liiklus.records.LiiklusCloudEvent;
 import com.github.bsideup.liiklus.test.AbstractIntegrationTest;
 import com.google.protobuf.ByteString;
-import io.cloudevents.CloudEvent;
-import io.cloudevents.json.Json;
-import io.cloudevents.v1.CloudEventBuilder;
 import org.junit.Before;
 import org.junit.Test;
 import reactor.core.publisher.SignalType;
@@ -16,6 +14,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -35,28 +34,28 @@ public class CloudEventsTest extends AbstractIntegrationTest {
             if (rawValue instanceof ByteBuffer) {
                 var byteBuffer = (ByteBuffer) rawValue;
 
-                CloudEvent<?, byte[]> cloudEvent;
                 try {
                     var map = MAPPER.readValue(new ByteBufferBackedInputStream(byteBuffer.duplicate()), Map.class);
 
                     var eventType = (String) map.remove("eventType");
-                    cloudEvent = CloudEventBuilder.<byte[]>builder()
-                            .withId((String) map.remove("eventId"))
-                            .withType("com.example.legacy." + eventType.replace("/", ".").toLowerCase())
-                            .withSource(URI.create("/tests/upcaster"))
-                            .withDataContentType("application/json")
-                            .withData(MAPPER.writeValueAsBytes(map))
-                            .build();
+
+                    return CompletableFuture.completedFuture(
+                            envelope.withValue(
+                                    new LiiklusCloudEvent(
+                                            (String) map.remove("eventId"),
+                                            "com.example.legacy." + eventType.replace("/", ".").toLowerCase(),
+                                            "/tests/upcaster",
+                                            "application/json",
+                                            null,
+                                            ByteBuffer.wrap(MAPPER.writeValueAsBytes(map)).asReadOnlyBuffer(),
+                                            Collections.emptyMap()
+                                    ),
+                                    LiiklusCloudEvent::asJson
+                            )
+                    );
                 } catch (IOException e) {
                     return CompletableFuture.failedFuture(e);
                 }
-
-                return CompletableFuture.completedFuture(
-                        envelope.withValue(
-                                cloudEvent,
-                                it -> ByteBuffer.wrap(Json.binaryEncode(it)).asReadOnlyBuffer()
-                        )
-                );
             }
             return CompletableFuture.completedFuture(envelope);
         });

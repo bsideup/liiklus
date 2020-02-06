@@ -5,18 +5,16 @@ import com.github.bsideup.liiklus.config.RecordPreProcessorChain;
 import com.github.bsideup.liiklus.positions.GroupId;
 import com.github.bsideup.liiklus.positions.PositionsStorage;
 import com.github.bsideup.liiklus.protocol.*;
-import com.github.bsideup.liiklus.records.FiniteRecordsStorage;
-import com.github.bsideup.liiklus.records.RecordPostProcessor;
-import com.github.bsideup.liiklus.records.RecordPreProcessor;
-import com.github.bsideup.liiklus.records.RecordsStorage;
+import com.github.bsideup.liiklus.records.*;
 import com.github.bsideup.liiklus.records.RecordsStorage.Envelope;
 import com.github.bsideup.liiklus.records.RecordsStorage.Record;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
 import com.google.protobuf.Timestamp;
 import io.cloudevents.CloudEvent;
-import io.cloudevents.json.Json;
-import io.cloudevents.v1.CloudEventBuilder;
+import io.cloudevents.extensions.ExtensionFormat;
+import io.cloudevents.v1.Accessor;
+import io.cloudevents.v1.CloudEventImpl;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
@@ -27,9 +25,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.SignalType;
 
-import java.net.URI;
 import java.nio.ByteBuffer;
-import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
@@ -100,25 +96,26 @@ public class LiiklusService {
                 );
             case LIIKLUSEVENT:
                 var cloudEvent = request.getLiiklusEvent();
-                var cloudEventBuilder = CloudEventBuilder.builder()
-                        .withId(cloudEvent.getId())
-                        .withType(cloudEvent.getType())
-                        .withSource(URI.create(cloudEvent.getSource()))
-                        .withDataContentType(cloudEvent.getDataContentType())
-                        .withData(cloudEvent.getData().toByteArray());
 
+                String time = null;
                 if (!StringUtils.isEmpty(cloudEvent.getTime())) {
-                    cloudEventBuilder = cloudEventBuilder.withTime(
-                            ZonedDateTime.parse(cloudEvent.getTime())
-                    );
+                    time = cloudEvent.getTime();
                 }
 
                 return new Envelope(
                         request.getTopic(),
                         request.getKey().asReadOnlyByteBuffer(),
-                        it -> (ByteBuffer) it,
-                        cloudEventBuilder.build(),
-                        it -> ByteBuffer.wrap(Json.binaryEncode(it)).asReadOnlyBuffer()
+                        it -> it,
+                        new LiiklusCloudEvent(
+                                cloudEvent.getId(),
+                                cloudEvent.getType(),
+                                cloudEvent.getSource(),
+                                cloudEvent.getDataContentType(),
+                                time,
+                                cloudEvent.getData().asReadOnlyByteBuffer(),
+                                cloudEvent.getExtensionsMap()
+                        ),
+                        LiiklusCloudEvent::asJson
                 );
             default:
                 throw new IllegalStateException("Unknown event case: " + eventCase);
@@ -290,19 +287,57 @@ public class LiiklusService {
         }
     }
 
-    private static LiiklusEvent.Builder toLiiklusEventBuilder(CloudEvent<?, byte[]> cloudEvent) {
+    private static LiiklusEvent.Builder toLiiklusEventBuilder(CloudEvent<?, ?> cloudEvent) {
+        if (cloudEvent instanceof LiiklusCloudEvent) {
+            var liiklusCloudEvent = (LiiklusCloudEvent) cloudEvent;
+
+            var result = LiiklusEvent.newBuilder()
+                    .setId(liiklusCloudEvent.getId())
+                    .setType(liiklusCloudEvent.getType())
+                    .setSource(liiklusCloudEvent.getRawSource());
+
+            if (liiklusCloudEvent.getRawTime() != null) {
+                result.setTime(liiklusCloudEvent.getRawTime());
+            }
+
+            result.putAllExtensions(liiklusCloudEvent.getRawExtensions());
+
+            var mediaType = liiklusCloudEvent.getMediaTypeOrNull();
+            if (mediaType != null) {
+                result.setDataContentType(mediaType);
+            }
+
+            var data = liiklusCloudEvent.getDataOrNull();
+            if (data != null) {
+                result.setData(ByteString.copyFrom(data));
+            }
+            return result;
+        }
+
         var attributes = cloudEvent.getAttributes();
         var result = LiiklusEvent.newBuilder()
                 .setId(attributes.getId())
                 .setType(attributes.getType())
                 .setSource(attributes.getSource().toString());
 
-        // TODO time
+        if (cloudEvent instanceof CloudEventImpl) {
+            var cloudEventImpl = (CloudEventImpl<?>) cloudEvent;
+            cloudEventImpl.getAttributes().getTime().ifPresent(it -> {
+                result.setTime(it.toString());
+            });
+
+            result.putAllExtensions(ExtensionFormat.marshal(Accessor.extensionsOf(cloudEvent)));
+        }
 
         attributes.getMediaType().ifPresent(result::setDataContentType);
-
         cloudEvent.getData().ifPresent(it -> {
-            result.setData(ByteString.copyFrom(it));
+            if (it instanceof byte[]) {
+                result.setData(ByteString.copyFrom((byte[]) it));
+            } else if (it instanceof ByteBuffer) {
+                result.setData(ByteString.copyFrom((ByteBuffer) it));
+            } else {
+                throw new IllegalStateException("Unsupported data format: " + it.getClass());
+            }
         });
 
         return result;

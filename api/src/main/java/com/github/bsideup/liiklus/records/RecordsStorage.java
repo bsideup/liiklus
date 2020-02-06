@@ -1,20 +1,11 @@
 package com.github.bsideup.liiklus.records;
 
-import io.cloudevents.CloudEvent;
-import io.cloudevents.format.Wire;
-import io.cloudevents.json.Json;
-import io.cloudevents.v1.AttributesImpl;
-import io.cloudevents.v1.CloudEventBuilder;
-import io.cloudevents.v1.CloudEventImpl;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.Value;
-import lombok.With;
+import lombok.*;
+import lombok.experimental.FieldDefaults;
 import org.reactivestreams.Publisher;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
@@ -35,33 +26,6 @@ public interface RecordsStorage {
         );
     }
 
-    default Wire<ByteBuffer, String, String> toWire(Envelope envelope) throws IllegalArgumentException {
-        Object rawValue = envelope.getRawValue();
-
-        if (!(rawValue instanceof CloudEvent)) {
-            // TODO Add Envelope#event and make CloudEvent a fist-class citizen
-            throw new IllegalArgumentException("Must be a CloudEvent!");
-        }
-
-        CloudEvent<?, ?> event = (CloudEvent<?, ?>) rawValue;
-
-        if (event instanceof CloudEventImpl) {
-            CloudEventImpl<?> cloudEvent = (CloudEventImpl) event;
-            Map<String, String> attributes = AttributesImpl.marshal(cloudEvent.getAttributes());
-            // TODO extensions
-            Map<String, String> extensions = Collections.emptyMap();
-
-            return new Wire<>(
-                    cloudEvent.getData()
-                            .map(data -> ByteBuffer.wrap((byte[]) data).asReadOnlyBuffer())
-                            .orElse(null),
-                    HeaderMapper.map(attributes, extensions)
-            );
-        } else {
-            throw new IllegalArgumentException("Unknown CloudEvents type: " + event.getClass());
-        }
-    }
-
     default Envelope toEnvelope(
             String topic,
             ByteBuffer keyBuffer,
@@ -80,28 +44,14 @@ public interface RecordsStorage {
 
         switch (specVersion) {
             case "1.0":
-                headers = AttributeMapper.map(headers);
-                AttributesImpl attributes = AttributesImpl.unmarshal(headers);
-
-                // TODO
-                Map<String, String> extensions = Collections.emptyMap();
-
-                byte[] data = new byte[valueBuffer.remaining()];
-                valueBuffer.duplicate().get(data);
-
                 return new Envelope(
                         topic,
 
                         key,
-                        it -> (ByteBuffer) it,
+                        it -> it,
 
-                        CloudEventBuilder.<byte[]>builder().build(
-                                data,
-                                attributes,
-                                // TODO
-                                Collections.emptyList()
-                        ),
-                        it -> ByteBuffer.wrap(Json.binaryEncode(it)).asReadOnlyBuffer()
+                        LiiklusCloudEvent.of(valueBuffer, headers),
+                        LiiklusCloudEvent::asJson
                 );
             default:
                 throw new IllegalStateException("Unsupported CloudEvents version: " + specVersion);
@@ -118,10 +68,13 @@ public interface RecordsStorage {
         long offset;
     }
 
-    @Value
-    @RequiredArgsConstructor
-    class Envelope {
+    @Getter
+    @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
+    @ToString
+    @EqualsAndHashCode
+    final class Envelope {
 
+        @With
         String topic;
 
         Object rawKey;
@@ -146,21 +99,19 @@ public interface RecordsStorage {
             this.keyEncoder = this.valueEncoder = it -> (ByteBuffer) it;
         }
 
-        public Envelope withTopic(String topic) {
-            return new Envelope(
-                    topic,
-                    rawKey,
-                    keyEncoder,
-                    rawValue,
-                    valueEncoder
-            );
+        public <K, V> Envelope(String topic, K rawKey, Function<K, ByteBuffer> keyEncoder, V rawValue, Function<V, ByteBuffer> valueEncoder) {
+            this.topic = topic;
+            this.rawKey = rawKey;
+            this.keyEncoder = (Function) keyEncoder;
+            this.rawValue = rawValue;
+            this.valueEncoder = (Function) valueEncoder;
         }
 
         public Envelope withKey(ByteBuffer key) {
             return new Envelope(
                     topic,
                     key,
-                    it -> (ByteBuffer) it,
+                    it -> it,
                     rawValue,
                     valueEncoder
             );
@@ -172,7 +123,7 @@ public interface RecordsStorage {
                     rawKey,
                     keyEncoder,
                     value,
-                    it -> (ByteBuffer) it
+                    it -> it
             );
         }
 
@@ -180,7 +131,7 @@ public interface RecordsStorage {
             return new Envelope(
                     topic,
                     rawKey,
-                    (Function<Object, ByteBuffer>) keyEncoder,
+                    keyEncoder,
                     rawValue,
                     valueEncoder
             );
@@ -192,7 +143,7 @@ public interface RecordsStorage {
                     rawKey,
                     keyEncoder,
                     rawValue,
-                    (Function<Object, ByteBuffer>) valueEncoder
+                    valueEncoder
             );
         }
     }

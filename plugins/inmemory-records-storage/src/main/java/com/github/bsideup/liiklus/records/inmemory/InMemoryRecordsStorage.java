@@ -1,7 +1,7 @@
 package com.github.bsideup.liiklus.records.inmemory;
 
 import com.github.bsideup.liiklus.records.FiniteRecordsStorage;
-import io.cloudevents.format.Wire;
+import com.github.bsideup.liiklus.records.LiiklusCloudEvent;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
@@ -60,18 +60,20 @@ public class InMemoryRecordsStorage implements FiniteRecordsStorage {
 
         var offset = storedPartition.getNextOffset().getAndIncrement();
 
-        Wire<ByteBuffer, String, String> wire;
-        try {
-            wire = toWire(envelope);
-        } catch (Exception e) {
-            return CompletableFuture.failedFuture(e);
+        Object rawValue = envelope.getRawValue();
+
+        if (!(rawValue instanceof LiiklusCloudEvent)) {
+            // TODO Add Envelope#event and make CloudEvent a fist-class citizen
+            return CompletableFuture.failedFuture(new IllegalArgumentException("Must be a LiiklusCloudEvent!"));
         }
+
+        var cloudEvent = (LiiklusCloudEvent) rawValue;
 
         storedPartition.getProcessor().onNext(new StoredTopic.Partition.Record(
                 offset,
                 envelope.getKey(),
-                wire.getPayload().orElse(null),
-                wire.getHeaders()
+                cloudEvent.getDataOrNull(),
+                cloudEvent.getHeaders()
         ));
 
         return CompletableFuture.completedFuture(new OffsetInfo(

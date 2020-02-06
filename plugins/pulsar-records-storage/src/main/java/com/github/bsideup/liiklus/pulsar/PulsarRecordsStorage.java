@@ -1,6 +1,7 @@
 package com.github.bsideup.liiklus.pulsar;
 
 import com.github.bsideup.liiklus.records.FiniteRecordsStorage;
+import com.github.bsideup.liiklus.records.LiiklusCloudEvent;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.apache.pulsar.client.api.*;
@@ -70,16 +71,18 @@ public class PulsarRecordsStorage implements FiniteRecordsStorage {
                     ).cache();
                 })
                 .flatMap(producer -> {
-                    var wire = toWire(envelope);
+                    Object rawValue = envelope.getRawValue();
+
+                    if (!(rawValue instanceof LiiklusCloudEvent)) {
+                        // TODO Add Envelope#event and make CloudEvent a fist-class citizen
+                        throw new IllegalArgumentException("Must be a CloudEvent!");
+                    }
+
+                    var cloudEvent = (LiiklusCloudEvent) rawValue;
 
                     var typedMessageBuilder = producer.newMessage()
-                            .properties(wire.getHeaders());
-
-                    wire.getPayload().ifPresent(it -> {
-                        var valueBytes = new byte[it.remaining()];
-                        it.duplicate().get(valueBytes);
-                        typedMessageBuilder.value(valueBytes);
-                    });
+                            .properties(cloudEvent.getHeaders())
+                            .value(cloudEvent.getDataBase64());
 
                     var key = envelope.getKey();
                     if (key != null) {

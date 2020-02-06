@@ -22,6 +22,8 @@ import reactor.core.publisher.Mono;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.time.Duration;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 public abstract class AbstractIntegrationTest {
@@ -31,6 +33,9 @@ public abstract class AbstractIntegrationTest {
             .setType("com.example.event")
             .setSource("/tests")
             .setDataContentType("application/json")
+            .putExtensions("comexampleextension1", "foo")
+            .putExtensions("comexampleextension2", "bar")
+            .setTime(ZonedDateTime.now().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
             .buildPartial();
 
     public static final int NUM_PARTITIONS = 32;

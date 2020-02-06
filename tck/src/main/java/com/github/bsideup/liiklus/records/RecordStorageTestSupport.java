@@ -1,13 +1,10 @@
 package com.github.bsideup.liiklus.records;
 
-import io.cloudevents.json.Json;
-import io.cloudevents.v1.CloudEventBuilder;
 import lombok.SneakyThrows;
 import org.awaitility.core.ConditionFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.net.URI;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.ZonedDateTime;
@@ -39,15 +36,16 @@ public interface RecordStorageTestSupport {
                 ByteBuffer.wrap(key).asReadOnlyBuffer(),
                 ByteBuffer.class::cast,
 
-                CloudEventBuilder.builder()
-                        .withId(UUID.randomUUID().toString())
-                        .withType("com.example.event")
-                        .withSource(URI.create("/tck/RecordStorageTestSupport"))
-                        .withDataContentType("application/json")
-                        .withTime(ZonedDateTime.now())
-                        .withData(value)
-                        .build(),
-                it -> ByteBuffer.wrap(Json.binaryEncode(it)).asReadOnlyBuffer()
+                new LiiklusCloudEvent(
+                        UUID.randomUUID().toString(),
+                        "com.example.event",
+                        "/tck/RecordStorageTestSupport",
+                        "application/json",
+                        ZonedDateTime.now().toString(),
+                        ByteBuffer.wrap(value).asReadOnlyBuffer(),
+                        Collections.emptyMap()
+                ),
+                LiiklusCloudEvent::asJson
         );
     }
 

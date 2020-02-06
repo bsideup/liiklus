@@ -50,7 +50,7 @@ message LiiklusEvent {
 
     bytes data = 101;
 
-    // TODO extensions
+    map<string, string> extensions = 200;
 }
 
 message PublishRequest {
