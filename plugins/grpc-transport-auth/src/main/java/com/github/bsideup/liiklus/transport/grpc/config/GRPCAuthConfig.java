@@ -8,7 +8,9 @@ import com.github.bsideup.liiklus.transport.grpc.GRPCLiiklusTransportConfigurer;
 import com.github.bsideup.liiklus.transport.grpc.StaticRSAKeyProvider;
 import com.github.bsideup.liiklus.util.PropertiesUtil;
 import com.google.auto.service.AutoService;
+import io.grpc.netty.NettyServerBuilder;
 import lombok.Data;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.validator.group.GroupSequenceProvider;
 import org.hibernate.validator.spi.group.DefaultGroupSequenceProvider;
@@ -37,11 +39,12 @@ public class GRPCAuthConfig implements ApplicationContextInitializer<GenericAppl
 
         log.info("GRPC Authorization ENABLED with algorithm {}", authProperties.getAlg());
 
+        // Init it early to check that everything is fine in config
         JWTVerifier verifier = createVerifier(authProperties.getAlg(), authProperties);
 
         applicationContext.registerBean(
-                GRPCLiiklusTransportConfigurer.class,
-                () -> builder -> builder.intercept(new JwtServerInterceptor<>(verifier::verify))
+                JWTAuthGRPCTransportConfigurer.class,
+                () -> new JWTAuthGRPCTransportConfigurer(verifier)
         );
     }
 
@@ -59,6 +62,16 @@ public class GRPCAuthConfig implements ApplicationContextInitializer<GenericAppl
                         .build();
             default:
                 throw new IllegalStateException("Unsupported algorithm");
+        }
+    }
+
+    @Value
+    private static class JWTAuthGRPCTransportConfigurer implements GRPCLiiklusTransportConfigurer {
+        private JWTVerifier verifier;
+
+        @Override
+        public void apply(NettyServerBuilder builder) {
+            builder.intercept(new JwtServerInterceptor<>(verifier::verify));
         }
     }
 

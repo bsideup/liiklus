@@ -29,6 +29,11 @@ dependencies {
     testCompile 'org.springframework.boot:spring-boot-starter-test'
     testCompile 'org.assertj:assertj-core'
     testCompile 'org.awaitility:awaitility'
+
+    // to test JWT grpc auth
+    testCompile 'com.auth0:java-jwt'
+    testCompile 'com.avast.grpc.jwt:grpc-java-jwt'
+
     testCompile project(":client")
 }
 
