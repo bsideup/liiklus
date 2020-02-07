@@ -22,7 +22,7 @@ public abstract class AbstractIntegrationTest {
     static {
         LiiklusContainer liiklus = new LiiklusContainer("0.7.0")
                 .withEnv("storage_records_type", "MEMORY")
-                .withClasspathResourceMapping("/example-plugin.jar", "/app/plugins/example-plugin.jar", BindMode.READ_ONLY)
+                .withClasspathResourceMapping("/example-plugin-0.0.1-SNAPSHOT.jar", "/app/plugins/example-plugin.jar", BindMode.READ_ONLY)
                 .withLogConsumer(new ToStringConsumer() {
                     @Override
                     public void accept(OutputFrame outputFrame) {
