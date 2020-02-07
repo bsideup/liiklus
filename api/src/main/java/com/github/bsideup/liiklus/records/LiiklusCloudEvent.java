@@ -1,5 +1,6 @@
 package com.github.bsideup.liiklus.records;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.cloudevents.CloudEvent;
 import io.cloudevents.extensions.ExtensionFormat;
 import io.cloudevents.extensions.InMemoryFormat;
@@ -178,6 +179,7 @@ public class LiiklusCloudEvent implements CloudEvent<LiiklusAttributes, ByteBuff
     }
 
     @Override
+    @JsonIgnore
     public LiiklusAttributes getAttributes() {
         // Save 1 allocation
         return this;
