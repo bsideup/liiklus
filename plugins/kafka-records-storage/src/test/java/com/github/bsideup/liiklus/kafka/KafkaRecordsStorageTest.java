@@ -32,8 +32,6 @@ public class KafkaRecordsStorageTest implements RecordStorageTests {
             .blockFirst(Duration.ofSeconds(10));
 
     private static final KafkaContainer kafka = new KafkaContainer()
-            .withReuse(true)
-            .withNetwork(null)
             .withEnv("KAFKA_NUM_PARTITIONS", NUM_OF_PARTITIONS + "");
 
     static final ApplicationContext applicationContext;
