@@ -3,7 +3,7 @@ jar {
         attributes(
                 'Plugin-Id': "${project.name}",
                 'Plugin-Version': "${project.version}",
-                'Plugin-Dependencies': 'grpc-transport',
+                'Plugin-Dependencies': project(":grpc-transport").name,
         )
     }
 
