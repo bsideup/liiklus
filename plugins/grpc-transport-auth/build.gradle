@@ -12,6 +12,16 @@ jar {
     }
 }
 
+tasks.test.dependsOn(
+        jar,
+        rootProject.project(":inmemory-positions-storage").getTasksByName("jar", false)
+)
+
+tasks.test.dependsOn(
+        jar,
+        rootProject.project(":inmemory-records-storage").getTasksByName("jar", false)
+)
+
 dependencies {
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
