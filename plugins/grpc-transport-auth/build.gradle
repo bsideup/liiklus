@@ -31,6 +31,8 @@ dependencies {
     testCompile project(":app")
     testCompile project(":testing")
     testCompile project(":grpc-transport")
+    testCompile project(":tck")
+    testCompile project(":client")
     testCompile 'org.springframework.boot:spring-boot-starter-test'
 
 }

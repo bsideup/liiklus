@@ -1,9 +1,11 @@
-package com.github.bsideup.liiklus;
+package com.github.bsideup.liiklus.transport.grpc;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.RSAKeyProvider;
 import com.avast.grpc.jwt.client.JwtCallCredentials;
+import com.github.bsideup.liiklus.ApplicationRunner;
+import com.github.bsideup.liiklus.GRPCLiiklusClient;
 import com.github.bsideup.liiklus.protocol.PublishRequest;
 import com.google.protobuf.ByteString;
 import io.grpc.CallOptions;
@@ -18,8 +20,6 @@ import lombok.SneakyThrows;
 import org.junit.Test;
 import org.pf4j.PluginManager;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.ConfigurableApplicationContext;
-import reactor.core.publisher.Hooks;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -33,17 +33,6 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class GRPCAuthTest {
-
-    static {
-        System.setProperty("plugins.dir", "../plugins");
-        System.setProperty("plugins.pathMatcher", "*/build/libs/*.jar");
-
-        Hooks.onOperatorDebug();
-    }
-
-    static ConfigurableApplicationContext startLiiklus(List<String> args) {
-        return Application.start(args.stream().map(it -> "--" + it).toArray(String[]::new));
-    }
 
     @SneakyThrows
     static int getGRPCPort(ApplicationContext ctx) {
@@ -60,21 +49,18 @@ public class GRPCAuthTest {
 
     @Test
     public void shouldPublishOnlyWithAuthHmac512() {
-        var args = List.of(
-                "storage.positions.type=MEMORY",
-                "storage.records.type=MEMORY",
-                "rsocket.enabled=false",
-                "grpc.port=0",
-                "grpc.auth.alg=HMAC512",
-                "grpc.auth.secret=secret",
-                "server.port=0"
-        );
         var event = PublishRequest.newBuilder()
                 .setTopic("authorized")
                 .setValue(ByteString.copyFromUtf8("bar"))
                 .build();
 
-        try (var app = startLiiklus(args)) {
+        try (var app = new ApplicationRunner("MEMORY", "MEMORY")
+                .withProperty("grpc.enabled", true)
+                .withProperty("grpc.port", 0)
+                .withProperty("grpc.auth.alg", "HMAC512")
+                .withProperty("grpc.auth.secret", "secret")
+                .run()
+        ) {
             int port = getGRPCPort(app);
 
             var unauthClient = new GRPCLiiklusClient(
@@ -119,27 +105,24 @@ public class GRPCAuthTest {
 
     @Test
     public void shouldPublishWithAuthRsa512() {
-        var args = List.of(
-                "storage.positions.type=MEMORY",
-                "storage.records.type=MEMORY",
-                "rsocket.enabled=false",
-                "grpc.port=0",
-                "grpc.auth.alg=RSA512",
-                "grpc.auth.keys.main=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6b/6nQLIQQ8fHT4PcSyb" +
-                        "hOLUE/237dgicbjsE7/Z/uPffuc36NTMJ122ppz6dWYnCrQ6CeTgAde4hlLE7Kvv" +
-                        "aFiUbe5XKwSL8KV292XqrwRZhMI58TTTygcrBodYGzHy0Yytv703rz+9Qt5HO5BF" +
-                        "02/+sM+Z0wlH6aXl3K3/2HfSOfitqnArBGaAs+PRNX2jlVKD1c9Cb7vo5L0X7q+6" +
-                        "55uBErEoN7IHbj1u33qI/xEvPSycIiT2RXMGZkvDZH6mTsALel4aP4Qpp1NcE+kD" +
-                        "itoBYAPTGgR4gBQveXZmD10yUVgJl2icINY3FvT9oJB6wgCY9+iTvufPppT1RPFH" +
-                        "dQIDAQAB",
-                "server.port=0"
-        );
         var event = PublishRequest.newBuilder()
                 .setTopic("authorized")
                 .setValue(ByteString.copyFromUtf8("bar"))
                 .build();
 
-        try (var app = startLiiklus(args)) {
+        try (var app = new ApplicationRunner("MEMORY", "MEMORY")
+                .withProperty("grpc.enabled", true)
+                .withProperty("grpc.port", 0)
+                .withProperty("grpc.auth.alg", "RSA512")
+                .withProperty("grpc.auth.keys.main", "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6b/6nQLIQQ8fHT4PcSyb" +
+                        "hOLUE/237dgicbjsE7/Z/uPffuc36NTMJ122ppz6dWYnCrQ6CeTgAde4hlLE7Kvv" +
+                        "aFiUbe5XKwSL8KV292XqrwRZhMI58TTTygcrBodYGzHy0Yytv703rz+9Qt5HO5BF" +
+                        "02/+sM+Z0wlH6aXl3K3/2HfSOfitqnArBGaAs+PRNX2jlVKD1c9Cb7vo5L0X7q+6" +
+                        "55uBErEoN7IHbj1u33qI/xEvPSycIiT2RXMGZkvDZH6mTsALel4aP4Qpp1NcE+kD" +
+                        "itoBYAPTGgR4gBQveXZmD10yUVgJl2icINY3FvT9oJB6wgCY9+iTvufPppT1RPFH" +
+                        "dQIDAQAB")
+                .run()
+        ) {
             int port = getGRPCPort(app);
 
             var authenticatedClient = new GRPCLiiklusClient(
