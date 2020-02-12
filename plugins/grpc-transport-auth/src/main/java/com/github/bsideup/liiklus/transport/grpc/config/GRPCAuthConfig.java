@@ -66,7 +66,7 @@ public class GRPCAuthConfig implements ApplicationContextInitializer<GenericAppl
     }
 
     @Value
-    private static class JWTAuthGRPCTransportConfigurer implements GRPCLiiklusTransportConfigurer {
+    static class JWTAuthGRPCTransportConfigurer implements GRPCLiiklusTransportConfigurer {
         private JWTVerifier verifier;
 
         @Override

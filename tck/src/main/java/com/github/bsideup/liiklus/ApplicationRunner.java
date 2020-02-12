@@ -42,7 +42,7 @@ public class ApplicationRunner {
 
         var tempFile = Files.createTempFile("app", ".jar");
         tempFile.toFile().deleteOnExit();
-        try (var appJarStream = getClass().getClassLoader().getResourceAsStream("app-0.0.1-SNAPSHOT-boot.jar")) {
+        try (var appJarStream = getClass().getClassLoader().getResourceAsStream("app-boot.jar")) {
             Files.copy(appJarStream, tempFile, StandardCopyOption.REPLACE_EXISTING);
         }
 

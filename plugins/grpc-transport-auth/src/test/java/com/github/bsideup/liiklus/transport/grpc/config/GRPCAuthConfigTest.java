@@ -1,6 +1,6 @@
 package com.github.bsideup.liiklus.transport.grpc.config;
 
-import com.github.bsideup.liiklus.transport.grpc.GRPCLiiklusTransportConfigurer;
+import com.github.bsideup.liiklus.transport.grpc.config.GRPCAuthConfig.JWTAuthGRPCTransportConfigurer;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.BeansException;
 import org.springframework.boot.context.properties.bind.validation.BindValidationException;
@@ -35,7 +35,7 @@ class GRPCAuthConfigTest {
                 "grpc.auth.alg: NONE"
         );
         applicationContextRunner.run(context -> {
-            assertThat(context).doesNotHaveBean(GRPCLiiklusTransportConfigurer.class);
+            assertThat(context).doesNotHaveBean(JWTAuthGRPCTransportConfigurer.class);
         });
     }
 
@@ -48,7 +48,7 @@ class GRPCAuthConfigTest {
         );
         applicationContextRunner.run(context -> {
             assertThat(context)
-                    .hasSingleBean(GRPCLiiklusTransportConfigurer.class);
+                    .hasSingleBean(JWTAuthGRPCTransportConfigurer.class);
         });
     }
 
@@ -61,7 +61,7 @@ class GRPCAuthConfigTest {
         );
         applicationContextRunner.run(context -> {
             assertThat(context)
-                    .hasSingleBean(GRPCLiiklusTransportConfigurer.class);
+                    .hasSingleBean(JWTAuthGRPCTransportConfigurer.class);
         });
     }
 

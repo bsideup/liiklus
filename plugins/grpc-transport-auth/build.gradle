@@ -3,7 +3,9 @@ jar {
         attributes(
                 'Plugin-Id': "${project.name}",
                 'Plugin-Version': "${project.version}",
-                'Plugin-Dependencies': project(":grpc-transport").name,
+                'Plugin-Dependencies': [
+                        project(":grpc-transport").name
+                ].join(","),
         )
     }
 
@@ -12,14 +14,11 @@ jar {
     }
 }
 
+tasks.test.dependsOn(jar)
 tasks.test.dependsOn(
-        jar,
-        rootProject.project(":inmemory-positions-storage").getTasksByName("jar", false)
-)
-
-tasks.test.dependsOn(
-        jar,
-        rootProject.project(":inmemory-records-storage").getTasksByName("jar", false)
+        [":inmemory-records-storage", ":inmemory-positions-storage", ":grpc-transport"].collect {
+            project(it).getTasksByName("jar", true)
+        }
 )
 
 dependencies {
@@ -36,13 +35,8 @@ dependencies {
 
     testCompileOnly 'org.projectlombok:lombok'
     testAnnotationProcessor 'org.projectlombok:lombok'
-    testCompile 'org.junit.jupiter:junit-jupiter-engine'
-    testCompile 'org.junit.jupiter:junit-jupiter-params'
-    testCompile project(":app")
-    testCompile project(":testing")
-    testCompile project(":grpc-transport")
     testCompile project(":tck")
     testCompile project(":client")
     testCompile 'org.springframework.boot:spring-boot-starter-test'
-
+    testRuntime project(":grpc-transport")
 }
