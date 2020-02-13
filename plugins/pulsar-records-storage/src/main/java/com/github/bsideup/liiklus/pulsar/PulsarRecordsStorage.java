@@ -5,8 +5,6 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.apache.pulsar.client.api.*;
 import org.apache.pulsar.client.api.PulsarClientException.AlreadyClosedException;
-import org.apache.pulsar.client.api.SubscriptionInitialPosition;
-import org.apache.pulsar.client.api.SubscriptionType;
 import org.apache.pulsar.client.impl.ConsumerImplAccessor;
 import org.apache.pulsar.client.impl.MessageIdImpl;
 import org.apache.pulsar.common.naming.TopicName;
@@ -30,7 +28,7 @@ import java.util.stream.Stream;
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 public class PulsarRecordsStorage implements FiniteRecordsStorage {
 
-    private static final String LIIKLUS_END_OFFSETS_READER_SUBSCRIPTION_NAME = "liiklus-end-offsets-reader";
+    private static final String SUBSCRIPTION_NAME = "liiklus-end-offsets-reader";
 
     public static MessageId fromOffset(long offset) {
         return new MessageIdImpl(offset >>> 28, offset & 0x0F_FF_FF_FFL, -1);
@@ -105,7 +103,7 @@ public class PulsarRecordsStorage implements FiniteRecordsStorage {
                     var partitionIndex = TopicName.getPartitionIndex(partitionTopic);
 
                     var consumerFuture = pulsarClient.newConsumer()
-                            .subscriptionName(LIIKLUS_END_OFFSETS_READER_SUBSCRIPTION_NAME)
+                            .subscriptionName(SUBSCRIPTION_NAME)
                             .subscriptionType(SubscriptionType.Failover)
                             .topic(partitionTopic)
                             .subscribeAsync();
