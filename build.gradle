@@ -110,7 +110,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
             // Override kafka-clients' version, otherwise it comes from Spring Boot
             dependency 'org.apache.kafka:kafka-clients:2.3.1'
 
-            dependency 'com.salesforce.servicelibs:reactor-grpc-stub:0.10.0'
+            dependency 'com.salesforce.servicelibs:reactor-grpc-stub:1.0.0'
             dependency 'com.avast.grpc.jwt:grpc-java-jwt:0.2.0'
             dependency 'com.auth0:java-jwt:3.9.0'
 

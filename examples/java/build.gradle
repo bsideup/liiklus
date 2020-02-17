@@ -57,7 +57,7 @@ dependencies {
 
     compile 'io.grpc:grpc-netty:1.24.1'
     compile 'io.grpc:grpc-protobuf:1.24.1'
-    compile 'com.salesforce.servicelibs:reactor-grpc-stub:0.10.0'
+    compile 'com.salesforce.servicelibs:reactor-grpc-stub:1.0.0'
 
     runtime 'ch.qos.logback:logback-classic:1.2.3'
 }
