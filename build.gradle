@@ -87,6 +87,9 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
         dependencies {
             dependency 'org.projectlombok:lombok:1.18.12'
 
+            // see https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty for the compatibility version
+            dependency 'io.netty:netty-tcnative-boringssl-static:2.0.25.Final'
+
             dependency 'org.pf4j:pf4j:3.1.0'
 
             dependencySet(group: 'io.rsocket', version: '0.11.16') {
