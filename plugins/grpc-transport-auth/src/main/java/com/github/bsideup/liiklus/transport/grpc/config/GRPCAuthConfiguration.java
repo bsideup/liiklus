@@ -52,13 +52,13 @@ public class GRPCAuthConfiguration implements ApplicationContextInitializer<Gene
 
         @Override
         public void apply(NettyServerBuilder builder) {
-            JWTVerifier verifier = createVerifier(properties.getAlg(), properties);
+            JWTVerifier verifier = createVerifier();
 
             builder.intercept(new JwtServerInterceptor<>(verifier::verify));
         }
 
-        static JWTVerifier createVerifier(GRPCAuthProperties.Alg alg, GRPCAuthProperties properties) {
-            switch (alg) {
+        private JWTVerifier createVerifier() {
+            switch (properties.getAlg()) {
                 case HMAC512:
                     return JWT
                             .require(Algorithm.HMAC512(properties.getSecret()))
