@@ -25,7 +25,7 @@ import java.util.Map;
 
 @Slf4j
 @AutoService(ApplicationContextInitializer.class)
-public class GRPCAuthConfig implements ApplicationContextInitializer<GenericApplicationContext> {
+public class GRPCAuthConfiguration implements ApplicationContextInitializer<GenericApplicationContext> {
 
     @Override
     public void initialize(GenericApplicationContext applicationContext) {
@@ -39,39 +39,39 @@ public class GRPCAuthConfig implements ApplicationContextInitializer<GenericAppl
 
         log.info("GRPC Authorization ENABLED with algorithm {}", authProperties.getAlg());
 
-        // Init it early to check that everything is fine in config
-        JWTVerifier verifier = createVerifier(authProperties.getAlg(), authProperties);
-
         applicationContext.registerBean(
                 JWTAuthGRPCTransportConfigurer.class,
-                () -> new JWTAuthGRPCTransportConfigurer(verifier)
+                () -> new JWTAuthGRPCTransportConfigurer(authProperties)
         );
-    }
-
-    private JWTVerifier createVerifier(GRPCAuthProperties.Alg alg, GRPCAuthProperties properties) {
-        switch (alg) {
-            case HMAC512:
-                return JWT
-                        .require(Algorithm.HMAC512(properties.getSecret()))
-                        .acceptLeeway(2)
-                        .build();
-            case RSA512:
-                return JWT
-                        .require(Algorithm.RSA512(new StaticRSAKeyProvider(properties.getKeys())))
-                        .acceptLeeway(2)
-                        .build();
-            default:
-                throw new IllegalStateException("Unsupported algorithm");
-        }
     }
 
     @Value
     static class JWTAuthGRPCTransportConfigurer implements GRPCLiiklusTransportConfigurer {
-        private JWTVerifier verifier;
+
+        private GRPCAuthProperties properties;
 
         @Override
         public void apply(NettyServerBuilder builder) {
+            JWTVerifier verifier = createVerifier();
+
             builder.intercept(new JwtServerInterceptor<>(verifier::verify));
+        }
+
+        private JWTVerifier createVerifier() {
+            switch (properties.getAlg()) {
+                case HMAC512:
+                    return JWT
+                            .require(Algorithm.HMAC512(properties.getSecret()))
+                            .acceptLeeway(2)
+                            .build();
+                case RSA512:
+                    return JWT
+                            .require(Algorithm.RSA512(new StaticRSAKeyProvider(properties.getKeys())))
+                            .acceptLeeway(2)
+                            .build();
+                default:
+                    throw new IllegalStateException("Unsupported algorithm");
+            }
         }
     }
 

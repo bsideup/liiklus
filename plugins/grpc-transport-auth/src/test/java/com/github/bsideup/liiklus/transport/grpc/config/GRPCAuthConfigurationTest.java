@@ -1,6 +1,6 @@
 package com.github.bsideup.liiklus.transport.grpc.config;
 
-import com.github.bsideup.liiklus.transport.grpc.config.GRPCAuthConfig.JWTAuthGRPCTransportConfigurer;
+import com.github.bsideup.liiklus.transport.grpc.config.GRPCAuthConfiguration.JWTAuthGRPCTransportConfigurer;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.BeansException;
 import org.springframework.boot.context.properties.bind.validation.BindValidationException;
@@ -10,7 +10,7 @@ import org.springframework.context.support.StaticApplicationContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class GRPCAuthConfigTest {
+class GRPCAuthConfigurationTest {
     private static final String FULL_2048 = "-----BEGIN PUBLIC KEY-----\n" +
             "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6b/6nQLIQQ8fHT4PcSyb\n" +
             "hOLUE/237dgicbjsE7/Z/uPffuc36NTMJ122ppz6dWYnCrQ6CeTgAde4hlLE7Kvv\n" +
@@ -26,7 +26,7 @@ class GRPCAuthConfigTest {
         public void refresh() throws BeansException, IllegalStateException {
         }
     })
-            .withInitializer((ApplicationContextInitializer) new GRPCAuthConfig());
+            .withInitializer((ApplicationContextInitializer) new GRPCAuthConfiguration());
 
     @Test
     void shouldRequireAlg() {
