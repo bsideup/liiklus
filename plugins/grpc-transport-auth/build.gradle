@@ -1,0 +1,42 @@
+jar {
+    manifest {
+        attributes(
+                'Plugin-Id': "${project.name}",
+                'Plugin-Version': "${project.version}",
+                'Plugin-Dependencies': [
+                        project(":grpc-transport").name
+                ].join(","),
+        )
+    }
+
+    into('lib') {
+        from(configurations.compile - configurations.compileOnly)
+    }
+}
+
+tasks.test.dependsOn(jar)
+tasks.test.dependsOn(
+        [":inmemory-records-storage", ":inmemory-positions-storage", ":grpc-transport"].collect {
+            project(it).getTasksByName("jar", true)
+        }
+)
+
+dependencies {
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    compileOnly 'com.google.auto.service:auto-service'
+    annotationProcessor 'com.google.auto.service:auto-service'
+
+    compileOnly project(":app")
+    compileOnly project(":grpc-transport")
+
+    compile 'com.auth0:java-jwt'
+    compile 'com.avast.grpc.jwt:grpc-java-jwt'
+
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+    testCompile project(":tck")
+    testCompile project(":client")
+    testCompile 'org.springframework.boot:spring-boot-starter-test'
+    testRuntime project(":grpc-transport")
+}

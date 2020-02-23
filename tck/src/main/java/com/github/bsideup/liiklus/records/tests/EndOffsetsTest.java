@@ -38,8 +38,8 @@ public interface EndOffsetsTest extends RecordStorageTestSupport {
         var lastReceivedOffsets = new HashMap<Integer, Long>();
         for (int partition = 0; partition < getNumberOfPartitions(); partition++) {
             for (int i = 0; i < partition + 1; i++) {
-                var offset = publish(keyByPartition(partition).getBytes(), new byte[1]).getOffset();
-                lastReceivedOffsets.put(partition, offset);
+                var offsetInfo = publish(keyByPartition(partition).getBytes(), new byte[1]);
+                lastReceivedOffsets.put(offsetInfo.getPartition(), offsetInfo.getOffset());
             }
         }
 

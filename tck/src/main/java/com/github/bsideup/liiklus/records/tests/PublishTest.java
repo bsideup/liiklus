@@ -22,7 +22,6 @@ public interface PublishTest extends RecordStorageTestSupport {
         assertThat(offsetInfo)
                 .satisfies(info -> {
                     assertThat(info.getTopic()).as("topic").isEqualTo(getTopic());
-                    assertThat(info.getPartition()).as("partition").isNotNegative();
                     assertThat(info.getOffset()).as("offset").isNotNegative();
                 });
 

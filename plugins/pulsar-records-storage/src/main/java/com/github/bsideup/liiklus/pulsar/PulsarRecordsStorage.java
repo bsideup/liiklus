@@ -16,21 +16,20 @@ import reactor.core.publisher.Mono;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 @RequiredArgsConstructor
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 public class PulsarRecordsStorage implements FiniteRecordsStorage {
+
+    private static final String SUBSCRIPTION_NAME = "liiklus-end-offsets-reader";
 
     public static MessageId fromOffset(long offset) {
         return new MessageIdImpl(offset >>> 28, offset & 0x0F_FF_FF_FFL, -1);
@@ -114,7 +113,7 @@ public class PulsarRecordsStorage implements FiniteRecordsStorage {
                     var partitionIndex = TopicName.getPartitionIndex(partitionTopic);
 
                     var consumerFuture = pulsarClient.newConsumer()
-                            .subscriptionName(UUID.randomUUID().toString())
+                            .subscriptionName(SUBSCRIPTION_NAME)
                             .subscriptionType(SubscriptionType.Failover)
                             .topic(partitionTopic)
                             .subscribeAsync();
@@ -159,10 +158,9 @@ public class PulsarRecordsStorage implements FiniteRecordsStorage {
         ) {
             return Mono
                     .defer(() -> Mono.fromCompletionStage(pulsarClient.getPartitionsForTopic(topic)))
-                    .map(List::size)
                     .mergeWith(Flux.never()) // Never complete
-                    .map(numberOfPartitions -> {
-                        return IntStream.range(0, numberOfPartitions).mapToObj(partition -> new PulsarPartitionSource(
+                    .map(partitions -> {
+                        return partitions.stream().map(TopicName::getPartitionIndex).map(partition -> new PulsarPartitionSource(
                                 topic,
                                 partition,
                                 groupName,

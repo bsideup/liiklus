@@ -78,12 +78,14 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
             mavenBom 'org.junit:junit-bom:5.5.2'
             mavenBom org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES
             mavenBom 'org.testcontainers:testcontainers-bom:1.12.3'
-            mavenBom 'io.grpc:grpc-bom:1.24.1'
+
+            // pinned to 1.23.1, see https://github.com/grpc/grpc-java/issues/6707
+            mavenBom 'io.grpc:grpc-bom:1.23.1'
             mavenBom 'com.google.protobuf:protobuf-bom:3.10.0'
         }
 
         dependencies {
-            dependency 'org.projectlombok:lombok:1.18.10'
+            dependency 'org.projectlombok:lombok:1.18.12'
 
             dependency 'org.pf4j:pf4j:3.1.0'
 
@@ -109,6 +111,8 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
             dependency 'org.apache.kafka:kafka-clients:2.3.1'
 
             dependency 'com.salesforce.servicelibs:reactor-grpc-stub:0.10.0'
+            dependency 'com.avast.grpc.jwt:grpc-java-jwt:0.2.0'
+            dependency 'com.auth0:java-jwt:3.9.0'
 
             dependency 'org.awaitility:awaitility:4.0.1'
         }
