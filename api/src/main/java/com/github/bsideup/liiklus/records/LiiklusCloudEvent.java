@@ -26,7 +26,8 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 @FieldDefaults(makeFinal = true)
 @With
-public class LiiklusCloudEvent implements CloudEvent<LiiklusAttributes, ByteBuffer>, LiiklusAttributes {
+@Builder(access = AccessLevel.MODULE)
+public final class LiiklusCloudEvent implements CloudEvent<LiiklusAttributes, ByteBuffer>, LiiklusAttributes {
 
     static final String HEADER_PREFIX = "ce_";
 
@@ -46,9 +47,11 @@ public class LiiklusCloudEvent implements CloudEvent<LiiklusAttributes, ByteBuff
 
             key = key.toLowerCase(Locale.US);
 
-            if (key.startsWith(HEADER_PREFIX)) {
-                key = key.substring(HEADER_PREFIX.length());
+            if (!key.startsWith(HEADER_PREFIX)) {
+                return;
             }
+
+            key = key.substring(HEADER_PREFIX.length());
 
             if (ContextAttributes.id.name().equals(key)) {
                 id[0] = value;
@@ -101,6 +104,7 @@ public class LiiklusCloudEvent implements CloudEvent<LiiklusAttributes, ByteBuff
 
     ByteBuffer data;
 
+    @Singular
     Map<String, String> rawExtensions;
 
     @Getter(lazy = true)
@@ -116,7 +120,8 @@ public class LiiklusCloudEvent implements CloudEvent<LiiklusAttributes, ByteBuff
 
     public Map<String, String> getHeaders() {
         Map<String, String> result = new HashMap<>();
-        result.putAll(rawExtensions);
+
+        rawExtensions.forEach((key, value) -> result.put(HEADER_PREFIX + key, value));
 
         result.put(HEADER_PREFIX + ContextAttributes.specversion.name(), specversion);
         result.put(HEADER_PREFIX + ContextAttributes.id.name(), id);
