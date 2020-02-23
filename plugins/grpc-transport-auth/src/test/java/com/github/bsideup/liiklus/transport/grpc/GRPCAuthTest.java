@@ -6,8 +6,8 @@ import com.auth0.jwt.interfaces.RSAKeyProvider;
 import com.avast.grpc.jwt.client.JwtCallCredentials;
 import com.github.bsideup.liiklus.ApplicationRunner;
 import com.github.bsideup.liiklus.GRPCLiiklusClient;
+import com.github.bsideup.liiklus.protocol.LiiklusEvent;
 import com.github.bsideup.liiklus.protocol.PublishRequest;
-import com.google.protobuf.ByteString;
 import io.grpc.CallOptions;
 import io.grpc.Channel;
 import io.grpc.ClientCall;
@@ -27,12 +27,24 @@ import java.security.KeyFactory;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Base64;
-import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class GRPCAuthTest {
+
+    private static final LiiklusEvent LIIKLUS_EVENT_EXAMPLE = LiiklusEvent.newBuilder()
+            .setId(UUID.randomUUID().toString())
+            .setType("com.example.event")
+            .setSource("/tests")
+            .setDataContentType("application/json")
+            .putExtensions("comexampleextension1", "foo")
+            .putExtensions("comexampleextension2", "bar")
+            .setTime(ZonedDateTime.now().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
+            .buildPartial();
 
     @SneakyThrows
     static int getGRPCPort(ApplicationContext ctx) {
@@ -51,7 +63,7 @@ public class GRPCAuthTest {
     public void shouldPublishOnlyWithAuthHmac512() {
         var event = PublishRequest.newBuilder()
                 .setTopic("authorized")
-                .setValue(ByteString.copyFromUtf8("bar"))
+                .setLiiklusEvent(LIIKLUS_EVENT_EXAMPLE)
                 .build();
 
         try (var app = new ApplicationRunner("MEMORY", "MEMORY")
@@ -107,7 +119,7 @@ public class GRPCAuthTest {
     public void shouldPublishWithAuthRsa512() {
         var event = PublishRequest.newBuilder()
                 .setTopic("authorized")
-                .setValue(ByteString.copyFromUtf8("bar"))
+                .setLiiklusEvent(LIIKLUS_EVENT_EXAMPLE)
                 .build();
 
         try (var app = new ApplicationRunner("MEMORY", "MEMORY")
