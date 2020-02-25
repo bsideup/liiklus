@@ -87,7 +87,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
         dependencies {
             dependency 'org.projectlombok:lombok:1.18.12'
 
-            dependency 'org.pf4j:pf4j:3.1.0'
+            dependency 'org.pf4j:pf4j:3.2.0'
 
             dependencySet(group: 'io.rsocket', version: '0.11.16') {
                 entry 'rsocket-transport-netty'
