@@ -20,3 +20,19 @@ jobs:
         java-version: 11
     - name: Build with Gradle
       run: ./gradlew ${{ matrix.tasks }}
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: docker login
+        run: echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: build image
+      run: docker build . -t bsideup/liiklus
+    - name: publish image
+      run: .github/workflows/push-to-dockerhub.sh
