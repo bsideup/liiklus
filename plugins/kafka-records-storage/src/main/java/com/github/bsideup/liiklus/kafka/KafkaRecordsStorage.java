@@ -1,18 +1,21 @@
 package com.github.bsideup.liiklus.kafka;
 
 import com.github.bsideup.liiklus.records.FiniteRecordsStorage;
+import com.github.bsideup.liiklus.records.LiiklusCloudEvent;
 import lombok.SneakyThrows;
 import lombok.Value;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.serialization.ByteBufferDeserializer;
 import org.apache.kafka.common.serialization.ByteBufferSerializer;
 import org.reactivestreams.Publisher;
@@ -28,6 +31,7 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -94,11 +98,50 @@ public class KafkaRecordsStorage implements FiniteRecordsStorage {
         }).subscribeOn(Schedulers.elastic()).toFuture();
     }
 
+    private Envelope toEnvelope(String topic, ConsumerRecord<ByteBuffer, ByteBuffer> record) {
+        var headers = new HashMap<String, String>();
+        for (Header header : record.headers()) {
+            headers.put(header.key(), new String(header.value()));
+        }
+
+        return toEnvelope(
+                topic,
+                record.key(),
+                record.value(),
+                headers
+        );
+    }
+
+    private ProducerRecord<ByteBuffer, ByteBuffer> toProducerRecord(Envelope envelope) {
+        Object rawValue = envelope.getRawValue();
+
+        if (!(rawValue instanceof LiiklusCloudEvent)) {
+            // TODO Add Envelope#event and make CloudEvent a fist-class citizen
+            throw new IllegalArgumentException("Must be a CloudEvent!");
+        }
+
+        var cloudEvent = (LiiklusCloudEvent) rawValue;
+
+        var producerRecord = new ProducerRecord<>(
+                envelope.getTopic(),
+                envelope.getKey(),
+                cloudEvent.getDataOrNull()
+        );
+
+        cloudEvent.forEachHeader((key, value) -> {
+            producerRecord.headers().add(key, value.getBytes());
+        });
+        return producerRecord;
+    }
+
     @Override
     public CompletionStage<OffsetInfo> publish(Envelope envelope) {
-        String topic = envelope.getTopic();
-
-        var producerRecord = new ProducerRecord<ByteBuffer, ByteBuffer>(topic, envelope.getKey(), envelope.getValue());
+        ProducerRecord<ByteBuffer, ByteBuffer> producerRecord;
+        try {
+            producerRecord = toProducerRecord(envelope);
+        } catch (Exception e) {
+            return CompletableFuture.failedFuture(e);
+        }
 
         return Mono.<OffsetInfo>create(sink -> {
             var future = producer.send(producerRecord, (metadata, exception) -> {
@@ -106,7 +149,7 @@ public class KafkaRecordsStorage implements FiniteRecordsStorage {
                     sink.error(exception);
                 } else {
                     sink.success(new OffsetInfo(
-                            topic,
+                            envelope.getTopic(),
                             metadata.partition(),
                             metadata.offset()
                     ));
@@ -240,11 +283,7 @@ public class KafkaRecordsStorage implements FiniteRecordsStorage {
                                                 })
                                                 .doOnRequest(request -> pausedPartitions.put(topicPartition, requests.addAndGet(request) <= 0))
                                                 .map(record -> new Record(
-                                                        new Envelope(
-                                                                topic,
-                                                                record.key(),
-                                                                record.value()
-                                                        ),
+                                                        toEnvelope(topic, record),
                                                         Instant.ofEpochMilli(record.timestamp()),
                                                         record.partition(),
                                                         record.offset()

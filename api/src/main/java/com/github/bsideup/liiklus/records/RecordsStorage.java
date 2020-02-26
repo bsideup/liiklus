@@ -1,9 +1,7 @@
 package com.github.bsideup.liiklus.records;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.Value;
-import lombok.With;
+import lombok.*;
+import lombok.experimental.FieldDefaults;
 import org.reactivestreams.Publisher;
 
 import java.nio.ByteBuffer;
@@ -28,6 +26,38 @@ public interface RecordsStorage {
         );
     }
 
+    default Envelope toEnvelope(
+            String topic,
+            ByteBuffer keyBuffer,
+            ByteBuffer valueBuffer,
+            Map<String, String> headers
+    ) {
+        ByteBuffer key = keyBuffer != null ? keyBuffer.asReadOnlyBuffer() : null;
+        String specVersion = headers.get("ce_specversion");
+        if (specVersion == null) {
+            return new Envelope(
+                    topic,
+                    key,
+                    valueBuffer.asReadOnlyBuffer()
+            );
+        }
+
+        switch (specVersion) {
+            case "1.0":
+                return new Envelope(
+                        topic,
+
+                        key,
+                        it -> it,
+
+                        LiiklusCloudEvent.of(valueBuffer, headers),
+                        LiiklusCloudEvent::asJson
+                );
+            default:
+                throw new IllegalStateException("Unsupported CloudEvents version: " + specVersion);
+        }
+    }
+
     @Value
     class OffsetInfo {
 
@@ -38,10 +68,13 @@ public interface RecordsStorage {
         long offset;
     }
 
-    @Value
-    @RequiredArgsConstructor
-    class Envelope {
+    @Getter
+    @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
+    @ToString
+    @EqualsAndHashCode
+    final class Envelope {
 
+        @With
         String topic;
 
         Object rawKey;
@@ -56,6 +89,7 @@ public interface RecordsStorage {
         Function<Object, ByteBuffer> valueEncoder;
 
         @Getter(lazy = true)
+        @Deprecated
         ByteBuffer value = valueEncoder.apply(rawValue);
 
         public Envelope(String topic, ByteBuffer key, ByteBuffer value) {
@@ -65,21 +99,19 @@ public interface RecordsStorage {
             this.keyEncoder = this.valueEncoder = it -> (ByteBuffer) it;
         }
 
-        public Envelope withTopic(String topic) {
-            return new Envelope(
-                    topic,
-                    rawKey,
-                    keyEncoder,
-                    rawValue,
-                    valueEncoder
-            );
+        public <K, V> Envelope(String topic, K rawKey, Function<K, ByteBuffer> keyEncoder, V rawValue, Function<V, ByteBuffer> valueEncoder) {
+            this.topic = topic;
+            this.rawKey = rawKey;
+            this.keyEncoder = (Function) keyEncoder;
+            this.rawValue = rawValue;
+            this.valueEncoder = (Function) valueEncoder;
         }
 
         public Envelope withKey(ByteBuffer key) {
             return new Envelope(
                     topic,
                     key,
-                    it -> (ByteBuffer) it,
+                    it -> it,
                     rawValue,
                     valueEncoder
             );
@@ -91,7 +123,7 @@ public interface RecordsStorage {
                     rawKey,
                     keyEncoder,
                     value,
-                    it -> (ByteBuffer) it
+                    it -> it
             );
         }
 
@@ -99,7 +131,7 @@ public interface RecordsStorage {
             return new Envelope(
                     topic,
                     rawKey,
-                    (Function<Object, ByteBuffer>) keyEncoder,
+                    keyEncoder,
                     rawValue,
                     valueEncoder
             );
@@ -111,7 +143,7 @@ public interface RecordsStorage {
                     rawKey,
                     keyEncoder,
                     rawValue,
-                    (Function<Object, ByteBuffer>) valueEncoder
+                    valueEncoder
             );
         }
     }

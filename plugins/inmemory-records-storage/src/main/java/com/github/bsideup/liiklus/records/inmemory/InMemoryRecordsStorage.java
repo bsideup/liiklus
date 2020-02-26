@@ -1,6 +1,7 @@
 package com.github.bsideup.liiklus.records.inmemory;
 
 import com.github.bsideup.liiklus.records.FiniteRecordsStorage;
+import com.github.bsideup.liiklus.records.LiiklusCloudEvent;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
@@ -13,10 +14,7 @@ import reactor.core.publisher.ReplayProcessor;
 
 import java.nio.ByteBuffer;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
@@ -57,14 +55,25 @@ public class InMemoryRecordsStorage implements FiniteRecordsStorage {
                 : ThreadLocalRandom.current().nextInt(0, numberOfPartitions);
         var storedPartition = storedTopic.getPartitions().computeIfAbsent(
                 partition,
-                __ -> new StoredTopic.StoredPartition()
+                __ -> new StoredTopic.Partition()
         );
 
         var offset = storedPartition.getNextOffset().getAndIncrement();
-        storedPartition.getProcessor().onNext(new StoredTopic.StoredPartition.StoredRecord(
+
+        Object rawValue = envelope.getRawValue();
+
+        if (!(rawValue instanceof LiiklusCloudEvent)) {
+            // TODO Add Envelope#event and make CloudEvent a fist-class citizen
+            return CompletableFuture.failedFuture(new IllegalArgumentException("Must be a LiiklusCloudEvent!"));
+        }
+
+        var cloudEvent = (LiiklusCloudEvent) rawValue;
+
+        storedPartition.getProcessor().onNext(new StoredTopic.Partition.Record(
                 offset,
                 envelope.getKey(),
-                envelope.getValue()
+                cloudEvent.getDataOrNull(),
+                cloudEvent.getHeaders()
         ));
 
         return CompletableFuture.completedFuture(new OffsetInfo(
@@ -119,7 +128,7 @@ public class InMemoryRecordsStorage implements FiniteRecordsStorage {
                         public Publisher<Record> getPublisher() {
                             var storedPartition = storedTopic.getPartitions().computeIfAbsent(
                                     partition,
-                                    __ -> new StoredTopic.StoredPartition()
+                                    __ -> new StoredTopic.Partition()
                             );
                             return Mono.defer(() -> Mono.fromCompletionStage(offsetsProvider.get()))
                                     .defaultIfEmpty(Collections.emptyMap())
@@ -141,11 +150,7 @@ public class InMemoryRecordsStorage implements FiniteRecordsStorage {
                                     })
                                     .filter(it -> storedTopic.isAssigned(groupName, subscription, partition))
                                     .map(it -> new Record(
-                                            new Envelope(
-                                                    topic,
-                                                    it.getKey() != null ? it.getKey().asReadOnlyBuffer() : null,
-                                                    it.getValue().asReadOnlyBuffer()
-                                            ),
+                                            toEnvelope(topic, it.getKey(), it.getValue(), it.getHeaders()),
                                             it.getTimestamp(),
                                             partition,
                                             it.getOffset()
@@ -162,7 +167,7 @@ public class InMemoryRecordsStorage implements FiniteRecordsStorage {
 
         int numberOfPartitions;
 
-        ConcurrentMap<Integer, StoredPartition> partitions = new ConcurrentHashMap<>();
+        ConcurrentMap<Integer, Partition> partitions = new ConcurrentHashMap<>();
 
         ConcurrentMap<String, ConcurrentMap<Subscription, Set<Integer>>> groupAssignments = new ConcurrentHashMap<>();
 
@@ -201,14 +206,14 @@ public class InMemoryRecordsStorage implements FiniteRecordsStorage {
         }
 
         @Value
-        static class StoredPartition {
+        static class Partition {
 
             AtomicLong nextOffset = new AtomicLong(0);
 
-            FluxProcessor<StoredRecord, StoredRecord> processor = ReplayProcessor.create(Integer.MAX_VALUE);
+            FluxProcessor<Record, Record> processor = ReplayProcessor.create(Integer.MAX_VALUE);
 
             @Value
-            static class StoredRecord {
+            static class Record {
 
                 Instant timestamp = Instant.now();
 
@@ -217,6 +222,8 @@ public class InMemoryRecordsStorage implements FiniteRecordsStorage {
                 ByteBuffer key;
 
                 ByteBuffer value;
+
+                Map<String, String> headers;
             }
         }
     }

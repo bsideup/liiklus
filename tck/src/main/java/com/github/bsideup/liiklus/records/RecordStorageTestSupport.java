@@ -7,6 +7,7 @@ import reactor.core.publisher.Mono;
 
 import java.nio.ByteBuffer;
 import java.time.Duration;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -27,11 +28,24 @@ public interface RecordStorageTestSupport {
         return createEnvelope(key, UUID.randomUUID().toString().getBytes());
     }
 
+    @Deprecated
     default RecordsStorage.Envelope createEnvelope(byte[] key, byte[] value) {
         return new RecordsStorage.Envelope(
                 getTopic(),
-                ByteBuffer.wrap(key),
-                ByteBuffer.wrap(value)
+
+                ByteBuffer.wrap(key).asReadOnlyBuffer(),
+                ByteBuffer.class::cast,
+
+                new LiiklusCloudEvent(
+                        UUID.randomUUID().toString(),
+                        "com.example.event",
+                        "/tck/RecordStorageTestSupport",
+                        "application/json",
+                        ZonedDateTime.now().toString(),
+                        ByteBuffer.wrap(value).asReadOnlyBuffer(),
+                        Collections.emptyMap()
+                ),
+                LiiklusCloudEvent::asJson
         );
     }
 

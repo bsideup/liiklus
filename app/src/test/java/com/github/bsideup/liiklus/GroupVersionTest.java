@@ -11,7 +11,6 @@ import reactor.core.publisher.Flux;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -36,7 +35,7 @@ public class GroupVersionTest extends AbstractIntegrationTest {
                         PublishRequest.newBuilder()
                                 .setTopic(topic)
                                 .setKey(ByteString.copyFromUtf8(PARTITION_KEYS.get(PARTITION)))
-                                .setValue(ByteString.copyFromUtf8(UUID.randomUUID().toString()))
+                                .setLiiklusEvent(LIIKLUS_EVENT_EXAMPLE)
                                 .build()
                 ))
                 .blockLast(Duration.ofSeconds(10));

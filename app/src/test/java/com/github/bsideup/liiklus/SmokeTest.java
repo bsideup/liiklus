@@ -1,9 +1,7 @@
 package com.github.bsideup.liiklus;
 
-import com.github.bsideup.liiklus.protocol.PublishRequest;
-import com.github.bsideup.liiklus.protocol.ReceiveReply;
-import com.github.bsideup.liiklus.protocol.ReceiveRequest;
-import com.github.bsideup.liiklus.protocol.SubscribeRequest;
+import com.github.bsideup.liiklus.protocol.*;
+import com.github.bsideup.liiklus.records.LiiklusCloudEvent;
 import com.github.bsideup.liiklus.records.RecordsStorage;
 import com.github.bsideup.liiklus.test.AbstractIntegrationTest;
 import com.google.protobuf.ByteString;
@@ -14,8 +12,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.SignalType;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -63,7 +61,10 @@ public class SmokeTest extends AbstractIntegrationTest {
                         PublishRequest.newBuilder()
                                 .setTopic(subscribeAction.getTopic())
                                 .setKey(ByteString.copyFromUtf8(key))
-                                .setValue(ByteString.copyFromUtf8(it))
+                                .setLiiklusEvent(
+                                        LiiklusEvent.newBuilder(LIIKLUS_EVENT_EXAMPLE)
+                                                .setData(ByteString.copyFromUtf8(it))
+                                )
                                 .build()
                 ))
                 .thenMany(
@@ -71,6 +72,7 @@ public class SmokeTest extends AbstractIntegrationTest {
                                 .flatMap(it -> stub.receive(
                                         ReceiveRequest.newBuilder()
                                                 .setAssignment(it.getAssignment())
+                                                .setFormat(ReceiveRequest.ContentFormat.LIIKLUS_EVENT)
                                                 .build()
                                 ))
                 )
@@ -81,13 +83,14 @@ public class SmokeTest extends AbstractIntegrationTest {
 
         assertThat(records)
                 .hasSize(10)
-                .are(new Condition<ReceiveReply>("key is '" + key + "'") {
+                .extracting(ReceiveReply::getLiiklusEventRecord)
+                .are(new Condition<>("key is '" + key + "'") {
                     @Override
-                    public boolean matches(ReceiveReply value) {
-                        return key.equals(value.getRecord().getKey().toStringUtf8());
+                    public boolean matches(ReceiveReply.LiiklusEventRecord value) {
+                        return key.equals(value.getKey().toStringUtf8());
                     }
                 })
-                .extracting(it -> it.getRecord().getValue().toStringUtf8())
+                .extracting(it -> it.getEvent().getData().toStringUtf8())
                 .containsSubsequence(values.toArray(new String[values.size()]));
     }
 
@@ -104,7 +107,18 @@ public class SmokeTest extends AbstractIntegrationTest {
         recordsStorage.publish(new RecordsStorage.Envelope(
                 subscribeAction.getTopic(),
                 null, // intentionally
-                ByteBuffer.wrap(value.getBytes(StandardCharsets.UTF_8))
+                ByteBuffer.class::cast,
+
+                new LiiklusCloudEvent(
+                        UUID.randomUUID().toString(),
+                        "com.example.event",
+                        "/tests",
+                        "text/plain",
+                        null,
+                        ByteBuffer.wrap(value.getBytes()).asReadOnlyBuffer(),
+                        Collections.emptyMap()
+                ),
+                LiiklusCloudEvent::asJson
         )).toCompletableFuture().join();
 
         var record = stub
@@ -112,15 +126,49 @@ public class SmokeTest extends AbstractIntegrationTest {
                 .flatMap(it -> stub.receive(
                         ReceiveRequest.newBuilder()
                                 .setAssignment(it.getAssignment())
+                                .setFormat(ReceiveRequest.ContentFormat.LIIKLUS_EVENT)
                                 .build()
                 ))
-                .map(ReceiveReply::getRecord)
                 .blockFirst(Duration.ofSeconds(10));
 
         assertThat(record)
                 .isNotNull()
                 .satisfies(it -> {
-                    assertThat(it.getValue().toStringUtf8()).as("value").isEqualTo(value);
+                    var event = it.getLiiklusEventRecord().getEvent();
+                    assertThat(event.getData().toStringUtf8()).as("value").isEqualTo(value);
                 });
+    }
+
+    @Test
+    public void testRoundTrip() {
+        var subscribeAction = SubscribeRequest.newBuilder()
+                .setTopic(testName.getMethodName())
+                .setGroup(testName.getMethodName())
+                .setAutoOffsetReset(SubscribeRequest.AutoOffsetReset.EARLIEST)
+                .build();
+
+        var key = "foo";
+        var event = LiiklusEvent.newBuilder(LIIKLUS_EVENT_EXAMPLE)
+                .setData(ByteString.copyFromUtf8(UUID.randomUUID().toString()))
+                .build();
+
+        var publishRequest = PublishRequest.newBuilder()
+                .setTopic(subscribeAction.getTopic())
+                .setKey(ByteString.copyFromUtf8(key))
+                .setLiiklusEvent(event)
+                .build();
+        stub.publish(publishRequest).block(Duration.ofSeconds(10));
+
+        var record = stub.subscribe(subscribeAction)
+                .flatMap(it -> stub.receive(
+                        ReceiveRequest.newBuilder()
+                                .setAssignment(it.getAssignment())
+                                .setFormat(ReceiveRequest.ContentFormat.LIIKLUS_EVENT)
+                                .build()
+                ))
+                .log("consumer", Level.WARNING, SignalType.ON_ERROR)
+                .blockFirst(Duration.ofSeconds(60));
+
+        assertThat(record.getLiiklusEventRecord().getEvent()).isEqualTo(event);
     }
 }

@@ -32,7 +32,7 @@ public class ConsumerGroupsTest extends AbstractIntegrationTest {
                                 PublishRequest.newBuilder()
                                         .setTopic(subscribeRequest.getTopic())
                                         .setKey(ByteString.copyFromUtf8(key))
-                                        .setValue(ByteString.copyFromUtf8("bar"))
+                                        .setLiiklusEvent(LIIKLUS_EVENT_EXAMPLE)
                                         .build()
                         )
                 )

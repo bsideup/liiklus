@@ -1,6 +1,7 @@
 package com.github.bsideup.liiklus.pulsar;
 
 import com.github.bsideup.liiklus.records.FiniteRecordsStorage;
+import com.github.bsideup.liiklus.records.LiiklusCloudEvent;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.apache.pulsar.client.api.*;
@@ -57,7 +58,7 @@ public class PulsarRecordsStorage implements FiniteRecordsStorage {
 
     @Override
     public CompletionStage<OffsetInfo> publish(Envelope envelope) {
-        val topic = envelope.getTopic();
+        var topic = envelope.getTopic();
         return producers
                 .computeIfAbsent(topic, __ -> {
                     return Mono.fromCompletionStage(
@@ -69,10 +70,19 @@ public class PulsarRecordsStorage implements FiniteRecordsStorage {
                     ).cache();
                 })
                 .flatMap(producer -> {
-                    val valueBytes = new byte[envelope.getValue().remaining()];
-                    envelope.getValue().duplicate().get(valueBytes);
+                    Object rawValue = envelope.getRawValue();
+
+                    if (!(rawValue instanceof LiiklusCloudEvent)) {
+                        // TODO Add Envelope#event and make CloudEvent a fist-class citizen
+                        throw new IllegalArgumentException("Must be a CloudEvent!");
+                    }
+
+                    var cloudEvent = (LiiklusCloudEvent) rawValue;
+
                     var typedMessageBuilder = producer.newMessage()
-                            .value(valueBytes);
+                            .properties(cloudEvent.getHeaders())
+                            .value(cloudEvent.getDataBase64());
+
                     var key = envelope.getKey();
                     if (key != null) {
                         typedMessageBuilder.key(StandardCharsets.UTF_8.decode(key.duplicate()).toString());
@@ -122,6 +132,15 @@ public class PulsarRecordsStorage implements FiniteRecordsStorage {
                 })
                 .collectMap(Map.Entry::getKey, Map.Entry::getValue)
                 .toFuture();
+    }
+
+    private Envelope toEnvelope(String topic, String key, Message<byte[]> message) {
+        return toEnvelope(
+                topic,
+                key != null ? ByteBuffer.wrap(key.getBytes()) : null,
+                ByteBuffer.wrap(message.getData()),
+                message.getProperties()
+        );
     }
 
     @Value
@@ -191,7 +210,7 @@ public class PulsarRecordsStorage implements FiniteRecordsStorage {
         public Publisher<Record> getPublisher() {
             return Flux.usingWhen(
                     Mono.fromCompletionStage(() -> {
-                        val consumerBuilder = pulsarClient.newConsumer()
+                        var consumerBuilder = pulsarClient.newConsumer()
                                 .acknowledgmentGroupTime(0, TimeUnit.SECONDS) // we don't ack here at all
                                 .subscriptionName(groupName)
                                 .subscriptionType(SubscriptionType.Failover)
@@ -220,11 +239,7 @@ public class PulsarRecordsStorage implements FiniteRecordsStorage {
                                 .map(message -> {
                                     var key = message.getKey();
                                     return new Record(
-                                            new Envelope(
-                                                    topic,
-                                                    key != null ? ByteBuffer.wrap(key.getBytes()) : null,
-                                                    ByteBuffer.wrap(message.getValue())
-                                            ),
+                                            toEnvelope(topic, key, message),
                                             extractTime(message),
                                             partition,
                                             toOffset(message.getMessageId())
