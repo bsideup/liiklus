@@ -112,7 +112,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
 
             dependency 'com.salesforce.servicelibs:reactor-grpc-stub:0.10.0'
             dependency 'com.avast.grpc.jwt:grpc-java-jwt:0.2.0'
-            dependency 'com.auth0:java-jwt:3.9.0'
+            dependency 'com.auth0:java-jwt:3.10.1'
 
             dependency 'org.awaitility:awaitility:4.0.1'
         }
