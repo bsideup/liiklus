@@ -17,5 +17,18 @@ update_configs:
     update_schedule: "daily"
   # Plugins Dependencies
   - package_manager: "java:gradle"
-    directory: "/plugins/**/"
-    update_schedule: "daily"
+    directory: "/plugins/dynamodb-positions-storage/"
+    update_schedule: "weekly"
+
+  - package_manager: "java:gradle"
+    directory: "/plugins/grpc-transport-auth/"
+    update_schedule: "weekly"
+
+  - package_manager: "java:gradle"
+    directory: "/plugins/metrics/"
+    update_schedule: "weekly"
+
+  - package_manager: "java:gradle"
+    directory: "/plugins/pulsar-records-storage/"
+    update_schedule: "weekly"
+

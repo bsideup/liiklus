@@ -30,8 +30,8 @@ dependencies {
     compileOnly project(":app")
     compileOnly project(":grpc-transport")
 
-    compile 'com.auth0:java-jwt'
-    compile 'com.avast.grpc.jwt:grpc-java-jwt'
+    compile 'com.auth0:java-jwt:3.9.0'
+    compile 'com.avast.grpc.jwt:grpc-java-jwt:0.2.0'
 
     testCompileOnly 'org.projectlombok:lombok'
     testAnnotationProcessor 'org.projectlombok:lombok'

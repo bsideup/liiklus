@@ -99,8 +99,6 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
                 entry 'rsocket-rpc-protobuf'
             }
 
-            dependency 'io.prometheus:simpleclient_common:0.8.0'
-
             dependency 'org.springframework.fu:spring-fu-autoconfigure-adapter:0.2.1'
 
             dependency 'com.google.protobuf:protoc:3.10.1'
@@ -111,8 +109,6 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
             dependency 'org.apache.kafka:kafka-clients:2.3.1'
 
             dependency 'com.salesforce.servicelibs:reactor-grpc-stub:0.10.0'
-            dependency 'com.avast.grpc.jwt:grpc-java-jwt:0.2.0'
-            dependency 'com.auth0:java-jwt:3.9.0'
 
             dependency 'org.awaitility:awaitility:4.0.1'
         }
