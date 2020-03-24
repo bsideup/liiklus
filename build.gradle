@@ -99,11 +99,6 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
                 entry 'rsocket-rpc-protobuf'
             }
 
-            dependencySet(group: 'org.apache.pulsar', version: '2.4.0') {
-                entry 'pulsar-client-original'
-                entry 'pulsar-client-admin-original'
-            }
-
             dependency 'io.prometheus:simpleclient_common:0.8.0'
 
             dependency 'org.springframework.fu:spring-fu-autoconfigure-adapter:0.2.1'
