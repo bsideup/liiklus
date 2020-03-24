@@ -1,0 +1,21 @@
+version: 1
+update_configs:
+  # Gradle Dependencies
+  - package_manager: "java:gradle"
+    directory: "/"
+    update_schedule: "daily"
+    automerged_updates:
+      - match:
+          dependency_name: "org.testcontainers:testcontainers-bom"
+      - match:
+          dependency_name: "org.awaitility:awaitility"
+      - match:
+          dependency_name: "org.junit:junit-bom"
+  # Docker Dependencies
+  - package_manager: "docker"
+    directory: "/"
+    update_schedule: "daily"
+  # Plugins Dependencies
+  - package_manager: "java:gradle"
+    directory: "/plugins/**/"
+    update_schedule: "daily"
