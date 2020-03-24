@@ -31,4 +31,8 @@ update_configs:
   - package_manager: "java:gradle"
     directory: "/plugins/pulsar-records-storage/"
     update_schedule: "weekly"
+    default_labels:
+      - "dependencies"
+      - "java"
+      - "plugin/pulsar"
 
