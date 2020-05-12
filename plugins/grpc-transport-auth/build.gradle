@@ -4,7 +4,7 @@ jar {
                 'Plugin-Id': "${project.name}",
                 'Plugin-Version': "${project.version}",
                 'Plugin-Dependencies': [
-                        project(":grpc-transport").name
+                        project(":plugins:grpc-transport").name
                 ].join(","),
         )
     }
@@ -16,7 +16,7 @@ jar {
 
 tasks.test.dependsOn(jar)
 tasks.test.dependsOn(
-        [":inmemory-records-storage", ":inmemory-positions-storage", ":grpc-transport"].collect {
+        [":plugins:inmemory-records-storage", ":plugins:inmemory-positions-storage", ":plugins:grpc-transport"].collect {
             project(it).getTasksByName("jar", true)
         }
 )
@@ -28,7 +28,7 @@ dependencies {
     annotationProcessor 'com.google.auto.service:auto-service'
 
     compileOnly project(":app")
-    compileOnly project(":grpc-transport")
+    compileOnly project(":plugins:grpc-transport")
 
     compile 'com.auth0:java-jwt:3.9.0'
     compile 'com.avast.grpc.jwt:grpc-java-jwt:0.2.0'
@@ -38,5 +38,5 @@ dependencies {
     testCompile project(":tck")
     testCompile project(":client")
     testCompile 'org.springframework.boot:spring-boot-starter-test'
-    testRuntime project(":grpc-transport")
+    testRuntime project(":plugins:grpc-transport")
 }
