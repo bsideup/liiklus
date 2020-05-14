@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public class GRPCTLSTest {
 
     @Test
-    public void shouldPublishOnlyWithAuthHmac512() throws SSLException, FileNotFoundException {
+    public void shouldConnectWithTLS() throws SSLException, FileNotFoundException {
         var event = PublishRequest.newBuilder()
                 .setTopic("authorized")
                 .setValue(ByteString.copyFromUtf8("bar"))
@@ -40,7 +40,7 @@ public class GRPCTLSTest {
                             .forAddress("localhost", port)
                             .directExecutor()
                             .sslContext(GrpcSslContexts.forClient()
-                                    .trustManager(ResourceUtils.getFile("/Users/lanwen/code/github.com/bsideup/liiklus/pki/issued/server.crt"))
+                                    .trustManager(ResourceUtils.getFile("file:/Users/lanwen/code/github.com/bsideup/liiklus/pki/issued/server.crt"))
                                     .build()
                             )
                             .build()
