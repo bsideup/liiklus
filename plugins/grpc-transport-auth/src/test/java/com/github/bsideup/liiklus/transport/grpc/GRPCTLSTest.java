@@ -4,35 +4,19 @@ import com.github.bsideup.liiklus.ApplicationRunner;
 import com.github.bsideup.liiklus.GRPCLiiklusClient;
 import com.github.bsideup.liiklus.protocol.PublishRequest;
 import com.google.protobuf.ByteString;
-import io.grpc.Server;
 import io.grpc.StatusRuntimeException;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
-import lombok.SneakyThrows;
 import org.junit.Test;
-import org.pf4j.PluginManager;
-import org.springframework.context.ApplicationContext;
 import org.springframework.util.ResourceUtils;
 
 import javax.net.ssl.SSLException;
 import java.io.FileNotFoundException;
 
+import static com.github.bsideup.liiklus.transport.grpc.GRPCAuthTest.getGRPCPort;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class GRPCTLSTest {
-
-    @SneakyThrows
-    static int getGRPCPort(ApplicationContext ctx) {
-        var pluginManager = ctx.getBean(PluginManager.class);
-
-        var classLoader = pluginManager.getPluginClassLoader("grpc-transport");
-        var serverClazz = classLoader.loadClass(Server.class.getName());
-        var getPortMethod = serverClazz.getDeclaredMethod("getPort");
-        var server = ctx.getBean(serverClazz);
-
-        return (int) getPortMethod.invoke(server);
-    }
-
 
     @Test
     public void shouldPublishOnlyWithAuthHmac512() throws SSLException, FileNotFoundException {
