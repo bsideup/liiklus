@@ -2,6 +2,7 @@ package com.github.bsideup.liiklus.transport.grpc;
 
 import com.github.bsideup.liiklus.ApplicationRunner;
 import com.github.bsideup.liiklus.GRPCLiiklusClient;
+import com.github.bsideup.liiklus.protocol.LiiklusEvent;
 import com.github.bsideup.liiklus.protocol.PublishRequest;
 import com.google.protobuf.ByteString;
 import io.grpc.StatusRuntimeException;
@@ -22,7 +23,7 @@ public class GRPCTLSTest {
     public void shouldConnectWithTLS() throws SSLException, FileNotFoundException {
         var event = PublishRequest.newBuilder()
                 .setTopic("authorized")
-                .setValue(ByteString.copyFromUtf8("bar"))
+                .setLiiklusEvent(LiiklusEvent.newBuilder().setData(ByteString.copyFromUtf8("bar")).build())
                 .build();
 
         try (var app = new ApplicationRunner("MEMORY", "MEMORY")
