@@ -86,8 +86,10 @@ public interface ConsumerGroupTest extends RecordStorageTestSupport {
             var lastOffsets = new HashMap<Integer, Long>();
 
             var firstDisposable = subscribeAndAssign.apply(firstSubscription);
+            var publishMessagesOnFail = onFailedCondition(() -> lastOffsets.putAll(publishToEveryPartition()));
+
             await
-                    .conditionEvaluationListener(onFailedCondition(() -> lastOffsets.putAll(publishToEveryPartition())))
+                    .conditionEvaluationListener(publishMessagesOnFail)
                     .untilAsserted(() -> {
                         assertThat(receivedOffsets)
                                 .hasSize(1)
@@ -98,7 +100,7 @@ public interface ConsumerGroupTest extends RecordStorageTestSupport {
 
             var secondDisposable = subscribeAndAssign.apply(secondSubscription);
             await
-                    .conditionEvaluationListener(onFailedCondition(() -> lastOffsets.putAll(publishToEveryPartition())))
+                    .conditionEvaluationListener(publishMessagesOnFail)
                     .untilAsserted(() -> {
                         assertThat(receivedOffsets)
                                 .hasSize(2)
@@ -109,7 +111,7 @@ public interface ConsumerGroupTest extends RecordStorageTestSupport {
 
             secondDisposable.dispose();
             await
-                    .conditionEvaluationListener(onFailedCondition(() -> lastOffsets.putAll(publishToEveryPartition())))
+                    .conditionEvaluationListener(publishMessagesOnFail)
                     .untilAsserted(() -> {
                         assertThat(receivedOffsets)
                                 .hasSize(1)
@@ -121,7 +123,7 @@ public interface ConsumerGroupTest extends RecordStorageTestSupport {
             subscribeAndAssign.apply(secondSubscription);
             firstDisposable.dispose();
             await
-                    .conditionEvaluationListener(onFailedCondition(() -> lastOffsets.putAll(publishToEveryPartition())))
+                    .conditionEvaluationListener(publishMessagesOnFail)
                     .untilAsserted(() -> {
                         assertThat(receivedOffsets)
                                 .hasSize(1)
