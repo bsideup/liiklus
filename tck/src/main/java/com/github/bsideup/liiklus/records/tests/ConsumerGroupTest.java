@@ -1,5 +1,6 @@
 package com.github.bsideup.liiklus.records.tests;
 
+import com.github.bsideup.liiklus.records.LiiklusCloudEvent;
 import com.github.bsideup.liiklus.records.RecordStorageTestSupport;
 import com.github.bsideup.liiklus.records.RecordsStorage;
 import com.github.bsideup.liiklus.records.RecordsStorage.OffsetInfo;
@@ -64,9 +65,11 @@ public interface ConsumerGroupTest extends RecordStorageTestSupport {
 
         var groupName = UUID.randomUUID().toString();
 
-        var receivedOffsets = new HashMap<Subscription, Map<Integer, Long>>();
+        var receivedOffsets = new ConcurrentHashMap<Subscription, Map<Integer, Long>>();
 
         var disposeAll = ReplayProcessor.<Boolean>create(1);
+
+        var records = new ConcurrentHashMap<Subscription, Set<String>>();
 
         Function<Subscription, Disposable> subscribeAndAssign = subscription -> {
             return Flux.from(subscription.getPublisher(() -> CompletableFuture.completedFuture(Collections.emptyMap())))
@@ -77,6 +80,9 @@ public interface ConsumerGroupTest extends RecordStorageTestSupport {
                         receivedOffsets
                                 .computeIfAbsent(subscription, __ -> new HashMap<>())
                                 .put(record.getPartition(), record.getOffset());
+
+                        records.computeIfAbsent(subscription, __ -> new HashSet<>())
+                                .add(((LiiklusCloudEvent) record.getEnvelope().getRawValue()).getId());
                     });
         };
 
@@ -128,6 +134,12 @@ public interface ConsumerGroupTest extends RecordStorageTestSupport {
                                 .doesNotContainKey(firstSubscription)
                                 .containsEntry(secondSubscription, lastOffsets);
                     });
+
+            assertThat(records.get(firstSubscription)).describedAs("records of first subscription")
+                    .doesNotContainAnyElementsOf(records.get(secondSubscription));
+            assertThat(records.get(secondSubscription)).describedAs("records of second subscription")
+                    .doesNotContainAnyElementsOf(records.get(firstSubscription));
+
         } finally {
             disposeAll.onNext(true);
         }
