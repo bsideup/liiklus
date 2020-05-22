@@ -13,7 +13,7 @@ jar {
 
 tasks.test.dependsOn(
         jar,
-        rootProject.project(":inmemory-positions-storage").getTasksByName("jar", false)
+        rootProject.project(":plugins:inmemory-positions-storage").getTasksByName("jar", false)
 )
 
 dependencies {
