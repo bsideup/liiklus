@@ -24,7 +24,7 @@ dependencies {
 
     compileOnly project(":app")
 
-    compile 'org.apache.pulsar:pulsar-client-original:2.4.0'
+    compile 'org.apache.pulsar:pulsar-client-original:2.5.2'
 
     testCompileOnly 'org.projectlombok:lombok'
     testAnnotationProcessor 'org.projectlombok:lombok'
