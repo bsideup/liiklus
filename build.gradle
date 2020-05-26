@@ -101,7 +101,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
 
             dependency 'org.springframework.fu:spring-fu-autoconfigure-adapter:0.2.1'
 
-            dependency 'com.google.protobuf:protoc:3.10.1'
+            dependency 'com.google.protobuf:protoc:3.12.1'
 
             dependency 'com.google.auto.service:auto-service:1.0-rc6'
 
