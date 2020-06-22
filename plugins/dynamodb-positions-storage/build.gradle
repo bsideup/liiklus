@@ -24,7 +24,7 @@ dependencies {
 
     compileOnly project(":app")
 
-    compile 'software.amazon.awssdk:dynamodb:2.3.0'
+    compile 'software.amazon.awssdk:dynamodb:2.13.41'
 
     testCompileOnly 'org.projectlombok:lombok'
     testAnnotationProcessor 'org.projectlombok:lombok'
