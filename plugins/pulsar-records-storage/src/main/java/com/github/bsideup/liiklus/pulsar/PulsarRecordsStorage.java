@@ -251,7 +251,8 @@ public class PulsarRecordsStorage implements FiniteRecordsStorage {
                                         })
                                 );
                     },
-                    consumer -> Mono.fromCompletionStage(consumer.closeAsync())
+                    consumer -> Mono.fromCompletionStage(consumer::unsubscribeAsync)
+                            .then(Mono.fromCompletionStage(consumer::closeAsync))
             );
         }
     }
