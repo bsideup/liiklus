@@ -50,25 +50,34 @@ public class KafkaRecordsStorage implements FiniteRecordsStorage {
 
     private final KafkaProducer<ByteBuffer, ByteBuffer> producer;
 
-    public KafkaRecordsStorage(String bootstrapServers) {
-        this.bootstrapServers = bootstrapServers;
+    private final Map<String, Object> defaultProperties;
 
-        Map<String, Object> props = new HashMap<>();
+    public KafkaRecordsStorage(String bootstrapServers, Map<String, Object> properties) {
+        this.bootstrapServers = bootstrapServers;
+        this.defaultProperties = properties;
+
+        Map<String, Object> props = new HashMap<>(defaultProperties);
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ProducerConfig.CLIENT_ID_CONFIG, "liiklus-" + UUID.randomUUID().toString());
         props.put(ProducerConfig.ACKS_CONFIG, "all");
 
-        this.producer = new KafkaProducer<>(
-                props,
-                new ByteBufferSerializer(),
-                new ByteBufferSerializer()
-        );
+        var contextClassLoader = Thread.currentThread().getContextClassLoader();
+        try {
+            Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
+            this.producer = new KafkaProducer<>(
+                    props,
+                    new ByteBufferSerializer(),
+                    new ByteBufferSerializer()
+            );
+        } finally {
+            Thread.currentThread().setContextClassLoader(contextClassLoader);
+        }
     }
 
     @Override
     public CompletionStage<Map<Integer, Long>> getEndOffsets(String topic) {
         return Mono.fromCallable(() -> {
-            var properties = new HashMap<String, Object>();
+            var properties = new HashMap<>(defaultProperties);
             properties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
             properties.put(ConsumerConfig.GROUP_ID_CONFIG, UUID.randomUUID().toString());
             properties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
@@ -180,7 +189,7 @@ public class KafkaRecordsStorage implements FiniteRecordsStorage {
         ) {
             return Flux.create(sink -> {
                 try {
-                    var properties = new HashMap<String, Object>();
+                    var properties = new HashMap<>(defaultProperties);
                     properties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
                     properties.put(ConsumerConfig.GROUP_ID_CONFIG, groupName);
                     properties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
