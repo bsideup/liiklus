@@ -7,7 +7,7 @@ import com.github.bsideup.liiklus.RSocketLiiklusClient;
 import com.github.bsideup.liiklus.protocol.LiiklusEvent;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Server;
-import io.rsocket.RSocketFactory;
+import io.rsocket.core.RSocketConnector;
 import io.rsocket.transport.netty.client.TcpClientTransport;
 import io.rsocket.transport.netty.server.CloseableChannel;
 import org.junit.Before;
@@ -112,12 +112,10 @@ public abstract class AbstractIntegrationTest {
                 var addressMethod = closeableChannelClass.getDeclaredMethod("address");
                 var closeableChannel = applicationContext.getBean(closeableChannelClass);
 
+                var transport = TcpClientTransport.create((InetSocketAddress) addressMethod.invoke(closeableChannel));
+
                 stub = new RSocketLiiklusClient(
-                        RSocketFactory.connect()
-                                .transport(
-                                        TcpClientTransport.create((InetSocketAddress) addressMethod.invoke(closeableChannel))
-                                )
-                                .start().block()
+                        RSocketConnector.connectWith(transport).block()
                 );
             } catch (Exception e) {
                 throw new RuntimeException(e);

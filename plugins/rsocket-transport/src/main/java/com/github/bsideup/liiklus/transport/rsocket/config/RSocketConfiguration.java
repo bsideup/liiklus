@@ -3,9 +3,10 @@ package com.github.bsideup.liiklus.transport.rsocket.config;
 import com.github.bsideup.liiklus.protocol.LiiklusService;
 import com.github.bsideup.liiklus.protocol.LiiklusServiceServer;
 import com.github.bsideup.liiklus.transport.rsocket.RSocketLiiklusService;
+import com.github.bsideup.liiklus.transport.rsocket.RSocketServerConfigurer;
 import com.github.bsideup.liiklus.util.PropertiesUtil;
 import com.google.auto.service.AutoService;
-import io.rsocket.RSocketFactory;
+import io.rsocket.core.RSocketServer;
 import io.rsocket.rpc.rsocket.RequestHandlingRSocket;
 import io.rsocket.transport.netty.server.CloseableChannel;
 import io.rsocket.transport.netty.server.TcpServerTransport;
@@ -46,13 +47,20 @@ public class RSocketConfiguration implements ApplicationContextInitializer<Gener
         applicationContext.registerBean(
                 CloseableChannel.class,
                 () -> {
-                    var liiklusService = applicationContext.getBean(LiiklusService.class);
+                    var transport = TcpServerTransport.create(serverProperties.getHost(), serverProperties.getPort());
 
-                    return RSocketFactory.receive()
-                            .acceptor((setup, sendingSocket) -> Mono.just(new RequestHandlingRSocket(new LiiklusServiceServer(liiklusService, Optional.empty(), Optional.empty()))))
-                            .transport(TcpServerTransport.create(serverProperties.getHost(), serverProperties.getPort()))
-                            .start()
-                            .block();
+                    var liiklusService = applicationContext.getBean(LiiklusService.class);
+                    var server = new LiiklusServiceServer(liiklusService, Optional.empty(), Optional.empty());
+                    var requestHandlingRSocket = new RequestHandlingRSocket(server);
+
+                    var rSocketServer = RSocketServer.create()
+                            .acceptor((setup, sendingSocket) -> Mono.just(requestHandlingRSocket));
+
+                    for (var configurer : applicationContext.getBeansOfType(RSocketServerConfigurer.class).values()) {
+                        configurer.apply(rSocketServer);
+                    }
+
+                    return rSocketServer.bindNow(transport);
                 },
                 it -> {
                     it.setDestroyMethodName("dispose");

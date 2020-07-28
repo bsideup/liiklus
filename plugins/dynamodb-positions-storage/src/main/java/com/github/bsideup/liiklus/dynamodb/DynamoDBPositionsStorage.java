@@ -8,6 +8,7 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.SignalType;
+import reactor.util.retry.Retry;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeAction;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -83,7 +84,7 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
                     }
                 })
                 .log(this.getClass().getName(), Level.WARNING, SignalType.ON_ERROR)
-                .retryWhen(it -> it.delayElements(Duration.ofSeconds(1)))
+                .retryWhen(Retry.fixedDelay(Long.MAX_VALUE, Duration.ofSeconds(1)))
                 .toFuture();
     }
 
@@ -132,7 +133,8 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
         return Mono.fromCompletionStage(() -> dynamoDB.updateItem(update))
                 .then()
                 .onErrorMap(CompletionException.class, CompletionException::getCause)
-                .retryWhen(it -> it.delayUntil(e -> {
+                .retryWhen(Retry.from(it -> it.delayUntil(signal -> {
+                    var e = signal.failure();
                     if (!(e instanceof ConditionalCheckFailedException)) {
                         return Mono.error(e);
                     }
@@ -155,9 +157,9 @@ public class DynamoDBPositionsStorage implements PositionsStorage {
                             .map(__ -> true)
                             .onErrorMap(CompletionException.class, CompletionException::getCause)
                             .onErrorResume(ConditionalCheckFailedException.class, __ -> Mono.just(true));
-                }))
+                })))
                 .log(this.getClass().getName(), Level.WARNING, SignalType.ON_ERROR)
-                .retryWhen(it -> it.delayElements(Duration.ofSeconds(1)))
+                .retryWhen(Retry.fixedDelay(Long.MAX_VALUE, Duration.ofSeconds(1)))
                 .toFuture();
     }
 
