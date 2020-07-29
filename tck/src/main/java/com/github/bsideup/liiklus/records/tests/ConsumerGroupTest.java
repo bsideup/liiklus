@@ -15,14 +15,7 @@ import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
 import java.time.Duration;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
@@ -216,7 +209,10 @@ public interface ConsumerGroupTest extends RecordStorageTestSupport {
             Supplier<CompletionStage<Map<Integer, Long>>> offsetsProvider
     ) {
         return Flux.from(getTarget().subscribe(getTopic(), groupName, Optional.of(offsetReset)).getPublisher(offsetsProvider))
-                .flatMapIterable(it -> it::iterator)
+                .flatMapIterable(it -> {
+                    var iterator = it.iterator();
+                    return () -> iterator;
+                })
                 .filter(it -> partition == it.getPartition());
     }
 }

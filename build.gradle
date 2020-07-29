@@ -3,7 +3,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath("org.springframework.boot:spring-boot-gradle-plugin:2.2.1.RELEASE")
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:2.2.9.RELEASE")
     }
 }
 
@@ -82,6 +82,8 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
             // pinned to 1.23.1, see https://github.com/grpc/grpc-java/issues/6707
             mavenBom 'io.grpc:grpc-bom:1.23.1'
             mavenBom 'com.google.protobuf:protobuf-bom:3.10.0'
+
+            mavenBom 'io.rsocket:rsocket-bom:1.0.1'
         }
 
         dependencies {
@@ -89,17 +91,10 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
 
             dependency 'org.pf4j:pf4j:3.1.0'
 
-            dependencySet(group: 'io.rsocket', version: '0.11.16') {
-                entry 'rsocket-transport-netty'
-                entry 'rsocket-core'
-            }
-
-            dependencySet(group: 'io.rsocket.rpc', version: '0.2.12') {
+            dependencySet(group: 'io.rsocket.rpc', version: '0.2.19') {
                 entry 'rsocket-rpc-core'
                 entry 'rsocket-rpc-protobuf'
             }
-
-            dependency 'io.prometheus:simpleclient_common:0.8.0'
 
             dependency 'org.springframework.fu:spring-fu-autoconfigure-adapter:0.2.1'
 
@@ -111,8 +106,6 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
             dependency 'org.apache.kafka:kafka-clients:2.3.1'
 
             dependency 'com.salesforce.servicelibs:reactor-grpc-stub:0.10.0'
-            dependency 'com.avast.grpc.jwt:grpc-java-jwt:0.2.0'
-            dependency 'com.auth0:java-jwt:3.9.0'
 
             dependency 'org.awaitility:awaitility:4.0.1'
         }
