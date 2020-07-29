@@ -41,7 +41,7 @@ abstract class AbstractPulsarRecordsStorageTest implements RecordStorageTests {
 
     @Override
     @Test
-    @DisabledUntil(value = "2020-06-01", comment = "#180 - Pulsar should fix the way seek works, not disconnecting consumers (apache/pulsar/pull/5022)")
+    @DisabledUntil(value = "2020-09-01", comment = "#180 - Pulsar should fix the way seek works, not disconnecting consumers (apache/pulsar/pull/5022)")
     public void shouldAlwaysUseEarliestOffsetOnEmptyOffsetsInTheInitialProvider() {
         RecordStorageTests.super.shouldAlwaysUseEarliestOffsetOnEmptyOffsetsInTheInitialProvider();
     }

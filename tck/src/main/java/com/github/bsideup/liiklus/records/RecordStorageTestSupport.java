@@ -87,7 +87,10 @@ public interface RecordStorageTestSupport {
             Supplier<CompletionStage<Map<Integer, Long>>> offsetsProvider
     ) {
         return Flux.from(getTarget().subscribe(getTopic(), UUID.randomUUID().toString(), offsetReset).getPublisher(offsetsProvider))
-                .flatMapIterable(it -> it::iterator)
+                .flatMapIterable(it -> {
+                    var iterator = it.iterator();
+                    return () -> iterator;
+                })
                 .filter(it -> partition == it.getPartition());
     }
 }
