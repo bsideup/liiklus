@@ -77,15 +77,16 @@ public abstract class AbstractIntegrationTest {
                 "server.port=0"
         ).stream().map(it -> "--" + it).toArray(String[]::new);
 
-        var springApplication = Application.createSpringApplication(args);
-        springApplication.addInitializers(applicationContext -> {
-            ((GenericApplicationContext) applicationContext).registerBean(
-                    "processorPluginMock",
-                    ProcessorPluginMock.class,
-                    () -> processorPluginMock
-            );
-        });
-        applicationContext = springApplication.run(args);
+        applicationContext = Application.start(
+                args,
+                applicationContext -> {
+                    applicationContext.registerBean(
+                            "processorPluginMock",
+                            ProcessorPluginMock.class,
+                            () -> processorPluginMock
+                    );
+                }
+        );
         var pluginManager = applicationContext.getBean(PluginManager.class);
 
         boolean useGrpc = false;
