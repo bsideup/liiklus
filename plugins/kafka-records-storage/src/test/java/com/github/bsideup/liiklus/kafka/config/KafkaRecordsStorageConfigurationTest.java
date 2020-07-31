@@ -1,6 +1,7 @@
 package com.github.bsideup.liiklus.kafka.config;
 
 import com.github.bsideup.liiklus.kafka.KafkaRecordsStorage;
+import com.github.bsideup.liiklus.kafka.config.KafkaRecordsStorageConfiguration.KafkaProperties;
 import com.github.bsideup.liiklus.positions.PositionsStorage;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.BeansException;
@@ -66,6 +67,22 @@ class KafkaRecordsStorageConfigurationTest {
         );
         applicationContextRunner.run(context -> {
             assertThat(context).hasSingleBean(KafkaRecordsStorage.class);
+        });
+    }
+
+    @Test
+    void shouldWorkWithProperties() {
+        applicationContextRunner = applicationContextRunner.withPropertyValues(
+                "spring.profiles.active: gateway",
+                "storage.records.type: KAFKA",
+                "kafka.bootstrapServers: host:9092",
+                "kafka.properties: {\"foo\": 123}"
+        );
+        applicationContextRunner.run(context -> {
+            assertThat(context).getBean(KafkaProperties.class).satisfies(properties -> {
+                assertThat(properties.getProperties())
+                        .containsEntry("foo", "123");
+            });
         });
     }
 
