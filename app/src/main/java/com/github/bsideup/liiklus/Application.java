@@ -10,7 +10,6 @@ import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.GenericApplicationContext;
-import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.fu.jafu.Jafu;
 import org.springframework.fu.jafu.webflux.WebFluxServerDsl;
 import org.springframework.web.reactive.function.server.RouterFunction;
@@ -46,8 +45,7 @@ public class Application {
             ApplicationContextInitializer<GenericApplicationContext>... additionalInitializers
     ) {
         return Jafu.reactiveWebApplication(app -> {
-            var environment = (ConfigurableEnvironment) app.env();
-            environment.setDefaultProfiles("exporter", "gateway");
+            var environment = app.env();
 
             var pluginsDir = environment.getProperty("plugins.dir", String.class, "./plugins");
             var pathMatcher = environment.getProperty("plugins.pathMatcher", String.class, "*.jar");
@@ -70,8 +68,7 @@ public class Application {
                 beans.bean(PluginManager.class, () -> pluginManager);
             });
 
-            var extensionClasses = pluginManager.getExtensionClasses(ApplicationContextInitializer.class);
-            for (Class<? extends ApplicationContextInitializer> initializerClass : extensionClasses) {
+            for (var initializerClass : pluginManager.getExtensionClasses(ApplicationContextInitializer.class)) {
                 try {
                     app.enable(initializerClass.getDeclaredConstructor().newInstance());
                 } catch (Exception e) {
@@ -79,7 +76,7 @@ public class Application {
                 }
             }
 
-            for (ApplicationContextInitializer<GenericApplicationContext> initializer : additionalInitializers) {
+            for (var initializer : additionalInitializers) {
                 app.enable(initializer);
             }
 

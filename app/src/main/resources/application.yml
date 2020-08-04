@@ -1,3 +1,7 @@
+spring:
+  profiles:
+    active: exporter,gateway
+
 # Liiklus config defaults
 grpc:
   port: 6565
