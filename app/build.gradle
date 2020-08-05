@@ -20,7 +20,7 @@ dependencies {
     compile project(":protocol")
 
     compile 'org.springframework.boot:spring-boot-starter-webflux'
-    compile 'org.springframework.fu:spring-fu-autoconfigure-adapter'
+    compile 'org.springframework.fu:spring-fu-jafu'
 
     compile 'org.pf4j:pf4j'
 

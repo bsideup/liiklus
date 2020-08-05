@@ -24,7 +24,9 @@ public class ProfilesTest extends AbstractIntegrationTest {
             "storage.positions.type=MEMORY"
     );
 
-    Set<String> commonArgs = Sets.newHashSet();
+    Set<String> commonArgs = Sets.newHashSet(Set.of(
+            "server.port=0"
+    ));
 
     ConfigurableApplicationContext lastApplicationContext;
 
