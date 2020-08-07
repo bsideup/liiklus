@@ -8,7 +8,7 @@ buildscript {
 }
 
 plugins {
-    id "com.google.protobuf" version "0.8.10" apply false
+    id "com.google.protobuf" version "0.8.12" apply false
 }
 
 allprojects {
