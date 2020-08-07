@@ -89,7 +89,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
         dependencies {
             dependency 'org.projectlombok:lombok:1.18.12'
 
-            dependency 'org.pf4j:pf4j:3.1.0'
+            dependency 'org.pf4j:pf4j:3.3.1'
 
             dependencySet(group: 'io.rsocket.rpc', version: '0.2.19') {
                 entry 'rsocket-rpc-core'
