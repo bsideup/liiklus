@@ -5,6 +5,7 @@ import com.github.bsideup.liiklus.records.RecordsStorage;
 import com.github.bsideup.liiklus.records.RecordsStorage.OffsetInfo;
 import com.github.bsideup.liiklus.records.RecordsStorage.PartitionSource;
 import com.github.bsideup.liiklus.records.RecordsStorage.Subscription;
+import org.awaitility.core.ConditionEvaluationListener;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import reactor.core.Disposable;
@@ -14,14 +15,7 @@ import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
 import java.time.Duration;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,6 +27,14 @@ import java.util.stream.IntStream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public interface ConsumerGroupTest extends RecordStorageTestSupport {
+
+    static ConditionEvaluationListener onFailedCondition(Runnable runnable) {
+        return condition -> {
+            if (!condition.isSatisfied()) {
+                runnable.run();
+            }
+        };
+    }
 
     int getNumberOfPartitions();
 
@@ -49,13 +51,13 @@ public interface ConsumerGroupTest extends RecordStorageTestSupport {
     }
 
     @Test
-    default void testMultipleGroups() throws Exception {
+    default void shouldDistributePartitionsAcrossConsumersWithinSameGroup() throws Exception {
         var numberOfPartitions = getNumberOfPartitions();
         Assumptions.assumeTrue(numberOfPartitions > 1, "target supports more than 1 partition");
 
         var groupName = UUID.randomUUID().toString();
 
-        var receivedOffsets = new HashMap<Subscription, Map<Integer, Long>>();
+        var receivedOffsets = new ConcurrentHashMap<Subscription, Map<Integer, Long>>();
 
         var disposeAll = ReplayProcessor.<Boolean>create(1);
 
@@ -77,52 +79,51 @@ public interface ConsumerGroupTest extends RecordStorageTestSupport {
             var lastOffsets = new HashMap<Integer, Long>();
 
             var firstDisposable = subscribeAndAssign.apply(firstSubscription);
-            await.untilAsserted(() -> {
-                try {
-                    assertThat(receivedOffsets).hasEntrySatisfying(firstSubscription, it -> assertThat(it).isEqualTo(lastOffsets));
-                    assertThat(receivedOffsets).doesNotContainKey(secondSubscription);
-                } catch (Throwable e) {
-                    lastOffsets.putAll(publishToEveryPartition());
-                    throw e;
-                }
-            });
+            var publishMessagesOnFail = onFailedCondition(() -> lastOffsets.putAll(publishToEveryPartition()));
+
+            await
+                    .conditionEvaluationListener(publishMessagesOnFail)
+                    .untilAsserted(() -> {
+                        assertThat(receivedOffsets)
+                                .hasSize(1)
+                                .containsEntry(firstSubscription, lastOffsets)
+                                .doesNotContainKey(secondSubscription);
+                    });
             receivedOffsets.clear();
 
             var secondDisposable = subscribeAndAssign.apply(secondSubscription);
-            await.untilAsserted(() -> {
-                try {
-                    assertThat(receivedOffsets).hasEntrySatisfying(firstSubscription, it -> assertThat(it).isNotEmpty());
-                    assertThat(receivedOffsets).hasEntrySatisfying(secondSubscription, it -> assertThat(it).isNotEmpty());
-                } catch (Throwable e) {
-                    lastOffsets.putAll(publishToEveryPartition());
-                    throw e;
-                }
-            });
+            await
+                    .conditionEvaluationListener(publishMessagesOnFail)
+                    .untilAsserted(() -> {
+                        assertThat(receivedOffsets)
+                                .hasSize(2)
+                                .containsKeys(firstSubscription, secondSubscription)
+                                .allSatisfy((key, value) -> assertThat(value).isNotEmpty());
+                    });
             receivedOffsets.clear();
 
             secondDisposable.dispose();
-            await.untilAsserted(() -> {
-                try {
-                    assertThat(receivedOffsets).hasEntrySatisfying(firstSubscription, it -> assertThat(it).isEqualTo(lastOffsets));
-                    assertThat(receivedOffsets).doesNotContainKey(secondSubscription);
-                } catch (Throwable e) {
-                    lastOffsets.putAll(publishToEveryPartition());
-                    throw e;
-                }
-            });
+            await
+                    .conditionEvaluationListener(publishMessagesOnFail)
+                    .untilAsserted(() -> {
+                        assertThat(receivedOffsets)
+                                .hasSize(1)
+                                .containsEntry(firstSubscription, lastOffsets)
+                                .doesNotContainKey(secondSubscription);
+                    });
             receivedOffsets.clear();
 
             subscribeAndAssign.apply(secondSubscription);
             firstDisposable.dispose();
-            await.untilAsserted(() -> {
-                try {
-                    assertThat(receivedOffsets).doesNotContainKey(firstSubscription);
-                    assertThat(receivedOffsets).hasEntrySatisfying(secondSubscription, it -> assertThat(it).isEqualTo(lastOffsets));
-                } catch (Throwable e) {
-                    lastOffsets.putAll(publishToEveryPartition());
-                    throw e;
-                }
-            });
+            await
+                    .conditionEvaluationListener(publishMessagesOnFail)
+                    .untilAsserted(() -> {
+                        assertThat(receivedOffsets)
+                                .hasSize(1)
+                                .doesNotContainKey(firstSubscription)
+                                .containsEntry(secondSubscription, lastOffsets);
+                    });
+
         } finally {
             disposeAll.onNext(true);
         }
@@ -158,16 +159,13 @@ public interface ConsumerGroupTest extends RecordStorageTestSupport {
             subscribeAndAssign.apply(firstSubscription);
             subscribeAndAssign.apply(secondSubscription);
 
-            await.untilAsserted(() -> {
-                try {
-                    assertThat(receivedOffsets)
-                            .containsKeys(firstSubscription, secondSubscription)
-                            .allSatisfy((key, value) -> assertThat(value).isNotEmpty());
-                } catch (Throwable e) {
-                    publishToEveryPartition();
-                    throw e;
-                }
-            });
+            await
+                    .conditionEvaluationListener(onFailedCondition(this::publishToEveryPartition))
+                    .untilAsserted(() -> {
+                        assertThat(receivedOffsets)
+                                .containsKeys(firstSubscription, secondSubscription)
+                                .allSatisfy((key, value) -> assertThat(value).isNotEmpty());
+                    });
 
             assertThat(receivedOffsets.get(firstSubscription))
                     .doesNotContainAnyElementsOf(receivedOffsets.get(secondSubscription));
@@ -211,7 +209,10 @@ public interface ConsumerGroupTest extends RecordStorageTestSupport {
             Supplier<CompletionStage<Map<Integer, Long>>> offsetsProvider
     ) {
         return Flux.from(getTarget().subscribe(getTopic(), groupName, Optional.of(offsetReset)).getPublisher(offsetsProvider))
-                .flatMapIterable(it -> it::iterator)
+                .flatMapIterable(it -> {
+                    var iterator = it.iterator();
+                    return () -> iterator;
+                })
                 .filter(it -> partition == it.getPartition());
     }
 }

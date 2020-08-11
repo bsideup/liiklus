@@ -3,10 +3,10 @@ package com.github.bsideup.liiklus;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.SpringApplication;
 import org.springframework.boot.loader.JarLauncher;
 import org.springframework.boot.loader.LaunchedURLClassLoader;
 import org.springframework.boot.loader.archive.JarFileArchive;
+import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 
 import java.io.File;
@@ -15,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
 @Slf4j
 public class ApplicationRunner {
@@ -72,18 +73,27 @@ public class ApplicationRunner {
         };
 
         var currentClassLoader = Thread.currentThread().getContextClassLoader();
+        var oldProperties = new Properties(System.getProperties());
         try {
             var appClassLoader = launcher.createClassLoader();
             Thread.currentThread().setContextClassLoader(appClassLoader);
 
+            System.getProperties().putAll(properties);
+
             var applicationClass = appClassLoader.loadClass("com.github.bsideup.liiklus.Application");
 
-            var createSpringApplicationMethod = applicationClass.getDeclaredMethod("createSpringApplication", String[].class);
-
-            var application = (SpringApplication) createSpringApplicationMethod.invoke(null, (Object) new String[0]);
-            application.setDefaultProperties(properties);
-            return application.run();
+            var createSpringApplicationMethod = applicationClass.getDeclaredMethod(
+                    "start",
+                    String[].class,
+                    ApplicationContextInitializer[].class
+            );
+            return (ConfigurableApplicationContext) createSpringApplicationMethod.invoke(
+                    null,
+                    new String[0],
+                    new ApplicationContextInitializer[0]
+            );
         } finally {
+            System.setProperties(oldProperties);
             Thread.currentThread().setContextClassLoader(currentClassLoader);
         }
     }

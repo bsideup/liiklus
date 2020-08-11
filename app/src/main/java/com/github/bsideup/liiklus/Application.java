@@ -4,24 +4,14 @@ import com.github.bsideup.liiklus.config.GatewayConfiguration;
 import com.github.bsideup.liiklus.plugins.LiiklusPluginManager;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.PluginManager;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.web.ResourceProperties;
 import org.springframework.boot.autoconfigure.web.ServerProperties;
-import org.springframework.boot.autoconfigure.web.reactive.ReactiveWebServerInitializer;
-import org.springframework.boot.autoconfigure.web.reactive.ResourceCodecInitializer;
-import org.springframework.boot.autoconfigure.web.reactive.StringCodecInitializer;
-import org.springframework.boot.autoconfigure.web.reactive.WebFluxProperties;
 import org.springframework.boot.context.properties.bind.Binder;
-import org.springframework.boot.web.embedded.netty.NettyReactiveWebServerFactory;
-import org.springframework.boot.web.reactive.context.ReactiveWebServerApplicationContext;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.GenericApplicationContext;
-import org.springframework.core.env.SimpleCommandLinePropertySource;
-import org.springframework.core.env.StandardEnvironment;
+import org.springframework.fu.jafu.Jafu;
+import org.springframework.fu.jafu.webflux.WebFluxServerDsl;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerResponse;
@@ -49,70 +39,56 @@ public class Application {
         start(args);
     }
 
-    public static ConfigurableApplicationContext start(String[] args) {
-        return createSpringApplication(args).run(args);
-    }
+    @SafeVarargs
+    public static ConfigurableApplicationContext start(
+            String[] args,
+            ApplicationContextInitializer<GenericApplicationContext>... additionalInitializers
+    ) {
+        return Jafu.reactiveWebApplication(app -> {
+            var environment = app.env();
 
-    public static SpringApplication createSpringApplication(String[] args) {
-        var environment = new StandardEnvironment();
-        environment.setDefaultProfiles("exporter", "gateway");
-        environment.getPropertySources().addFirst(new SimpleCommandLinePropertySource(args));
+            var pluginsDir = environment.getProperty("plugins.dir", String.class, "./plugins");
+            var pathMatcher = environment.getProperty("plugins.pathMatcher", String.class, "*.jar");
 
-        var pluginsDir = environment.getProperty("plugins.dir", String.class, "./plugins");
-        var pathMatcher = environment.getProperty("plugins.pathMatcher", String.class, "*.jar");
+            var pluginsRoot = Paths.get(pluginsDir).toAbsolutePath().normalize();
+            log.info("Loading plugins from '{}' with matcher: '{}'", pluginsRoot, pathMatcher);
 
-        var pluginsRoot = Paths.get(pluginsDir).toAbsolutePath().normalize();
-        log.info("Loading plugins from '{}' with matcher: '{}'", pluginsRoot, pathMatcher);
+            var pluginManager = new LiiklusPluginManager(pluginsRoot, pathMatcher);
 
-        var pluginManager = new LiiklusPluginManager(pluginsRoot, pathMatcher);
+            pluginManager.loadPlugins();
+            pluginManager.startPlugins();
 
-        pluginManager.loadPlugins();
-        pluginManager.startPlugins();
+            app.enable(new GatewayConfiguration());
+            app.beans(beans -> {
+                beans.bean("health", RouterFunction.class, () -> {
+                    return RouterFunctions.route()
+                            .GET("/health", __ -> ServerResponse.ok().bodyValue("OK"))
+                            .build();
+                });
+                beans.bean(PluginManager.class, () -> pluginManager);
+            });
 
-        var binder = Binder.get(environment);
-        var application = new SpringApplication(Application.class) {
-            @Override
-            protected void load(ApplicationContext context, Object[] sources) {
-                // We don't want the annotation bean definition reader
-            }
-        };
-        application.setWebApplicationType(WebApplicationType.REACTIVE);
-        application.setApplicationContextClass(ReactiveWebServerApplicationContext.class);
-        application.setEnvironment(environment);
-
-        application.addInitializers(
-                new StringCodecInitializer(false, true),
-                new ResourceCodecInitializer(false),
-                new ReactiveWebServerInitializer(
-                        binder.bind("server", ServerProperties.class).orElseGet(ServerProperties::new),
-                        binder.bind("spring.resources", ResourceProperties.class).orElseGet(ResourceProperties::new),
-                        binder.bind("spring.webflux", WebFluxProperties.class).orElseGet(WebFluxProperties::new),
-                        new NettyReactiveWebServerFactory()
-                ),
-                new GatewayConfiguration(),
-                (GenericApplicationContext applicationContext) -> {
-                    applicationContext.registerBean("health", RouterFunction.class, () -> {
-                        return RouterFunctions.route()
-                                .GET("/health", __ -> ServerResponse.ok().bodyValue("OK"))
-                                .build();
-                    });
-
-                    applicationContext.registerBean(PluginManager.class, () -> pluginManager);
+            for (var initializerClass : pluginManager.getExtensionClasses(ApplicationContextInitializer.class)) {
+                try {
+                    app.enable(initializerClass.getDeclaredConstructor().newInstance());
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
                 }
-        );
+            }
 
-        application.addInitializers(
-                pluginManager.getExtensionClasses(ApplicationContextInitializer.class).stream()
-                        .map(it -> {
-                            try {
-                                return it.getDeclaredConstructor().newInstance();
-                            } catch (Exception e) {
-                                throw new RuntimeException(e);
-                            }
-                        })
-                        .toArray(ApplicationContextInitializer[]::new)
-        );
+            for (var initializer : additionalInitializers) {
+                app.enable(initializer);
+            }
 
-        return application;
+            app.enable(WebFluxServerDsl.webFlux(dsl -> {
+                try {
+                    var serverPropertiesField = WebFluxServerDsl.class.getDeclaredField("serverProperties");
+                    serverPropertiesField.setAccessible(true);
+                    serverPropertiesField.set(dsl, Binder.get(app.env()).bindOrCreate("server", ServerProperties.class));
+                } catch (IllegalAccessException | NoSuchFieldException e) {
+                    throw new RuntimeException(e);
+                }
+            }));
+        }).run(args);
     }
 }

@@ -7,7 +7,7 @@ import com.github.bsideup.liiklus.RSocketLiiklusClient;
 import com.github.bsideup.liiklus.protocol.LiiklusEvent;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Server;
-import io.rsocket.RSocketFactory;
+import io.rsocket.core.RSocketConnector;
 import io.rsocket.transport.netty.client.TcpClientTransport;
 import io.rsocket.transport.netty.server.CloseableChannel;
 import org.junit.Before;
@@ -77,15 +77,16 @@ public abstract class AbstractIntegrationTest {
                 "server.port=0"
         ).stream().map(it -> "--" + it).toArray(String[]::new);
 
-        var springApplication = Application.createSpringApplication(args);
-        springApplication.addInitializers(applicationContext -> {
-            ((GenericApplicationContext) applicationContext).registerBean(
-                    "processorPluginMock",
-                    ProcessorPluginMock.class,
-                    () -> processorPluginMock
-            );
-        });
-        applicationContext = springApplication.run(args);
+        applicationContext = Application.start(
+                args,
+                applicationContext -> {
+                    applicationContext.registerBean(
+                            "processorPluginMock",
+                            ProcessorPluginMock.class,
+                            () -> processorPluginMock
+                    );
+                }
+        );
         var pluginManager = applicationContext.getBean(PluginManager.class);
 
         boolean useGrpc = false;
@@ -112,12 +113,10 @@ public abstract class AbstractIntegrationTest {
                 var addressMethod = closeableChannelClass.getDeclaredMethod("address");
                 var closeableChannel = applicationContext.getBean(closeableChannelClass);
 
+                var transport = TcpClientTransport.create((InetSocketAddress) addressMethod.invoke(closeableChannel));
+
                 stub = new RSocketLiiklusClient(
-                        RSocketFactory.connect()
-                                .transport(
-                                        TcpClientTransport.create((InetSocketAddress) addressMethod.invoke(closeableChannel))
-                                )
-                                .start().block()
+                        RSocketConnector.connectWith(transport).block()
                 );
             } catch (Exception e) {
                 throw new RuntimeException(e);

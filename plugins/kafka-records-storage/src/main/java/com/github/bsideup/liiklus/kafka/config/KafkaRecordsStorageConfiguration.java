@@ -12,6 +12,8 @@ import org.springframework.core.env.Profiles;
 import org.springframework.validation.annotation.Validated;
 
 import javax.validation.constraints.NotEmpty;
+import java.util.HashMap;
+import java.util.Map;
 
 @AutoService(ApplicationContextInitializer.class)
 public class KafkaRecordsStorageConfiguration implements ApplicationContextInitializer<GenericApplicationContext> {
@@ -31,7 +33,7 @@ public class KafkaRecordsStorageConfiguration implements ApplicationContextIniti
         var kafkaProperties = PropertiesUtil.bind(environment, new KafkaProperties());
 
         applicationContext.registerBean(KafkaRecordsStorage.class, () -> {
-            return new KafkaRecordsStorage(kafkaProperties.getBootstrapServers());
+            return new KafkaRecordsStorage(kafkaProperties.getBootstrapServers(), kafkaProperties.getProperties());
         });
     }
 
@@ -42,5 +44,7 @@ public class KafkaRecordsStorageConfiguration implements ApplicationContextIniti
 
         @NotEmpty
         String bootstrapServers;
+
+        Map<String, Object> properties = new HashMap<>();
     }
 }
