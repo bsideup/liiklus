@@ -10,11 +10,28 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
 import lombok.SneakyThrows;
+import lombok.Value;
+import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x509.BasicConstraints;
+import org.bouncycastle.asn1.x509.Extension;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
+import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.bouncycastle.util.io.pem.PemObject;
 import org.junit.Test;
 import org.junit.jupiter.api.function.ThrowingConsumer;
 import org.springframework.util.ResourceUtils;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.math.BigInteger;
+import java.security.KeyPairGenerator;
+import java.security.PrivateKey;
+import java.security.cert.X509Certificate;
+import java.util.Date;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import static com.github.bsideup.liiklus.transport.grpc.GRPCAuthTest.getGRPCPort;
@@ -25,15 +42,18 @@ public class GRPCTLSTest {
 
     @Test
     public void shouldConnectWithTLS() {
+        GeneratedCert rootCA = createCertificate("ca", null, true);
+        GeneratedCert server = createCertificate("localhost", rootCA, false);
+
         withApp(
                 app -> {
                     app
-                            .withProperty("grpc.tls.key", "file:src/test/resources/keys/tls/server0.key")
-                            .withProperty("grpc.tls.keyCertChain", "file:src/test/resources/keys/tls/server0.pem");
+                            .withProperty("grpc.tls.key", server.getPrivateKeyFile().toURI().toString())
+                            .withProperty("grpc.tls.keyCertChain", server.getCertificateFile().toURI().toString());
                 },
                 port -> {
                     var sslContext = GrpcSslContexts.forClient()
-                            .trustManager(ResourceUtils.getFile("file:src/test/resources/keys/tls/ca.pem"))
+                            .trustManager(ResourceUtils.getFile(rootCA.getCertificateFile().toURI()))
                             .build();
 
                     var channel = NettyChannelBuilder
@@ -48,11 +68,13 @@ public class GRPCTLSTest {
 
     @Test
     public void shouldFailOnPlaintext() {
+        GeneratedCert rootCA = createCertificate("ca", null, true);
+        GeneratedCert server = createCertificate("localhost", rootCA, false);
         withApp(
                 app -> {
                     app
-                            .withProperty("grpc.tls.key", "file:src/test/resources/keys/tls/server0.key")
-                            .withProperty("grpc.tls.keyCertChain", "file:src/test/resources/keys/tls/server0.pem");
+                            .withProperty("grpc.tls.key", server.getPrivateKeyFile().toURI().toString())
+                            .withProperty("grpc.tls.keyCertChain", server.getCertificateFile().toURI().toString());
                 },
                 port -> {
                     var channel = NettyChannelBuilder
@@ -70,11 +92,13 @@ public class GRPCTLSTest {
 
     @Test
     public void shouldFailOnWrongCA() {
+        GeneratedCert rootCA = createCertificate("ca", null, true);
+        GeneratedCert server = createCertificate("localhost", rootCA, false);
         withApp(
                 app -> {
                     app
-                            .withProperty("grpc.tls.key", "file:src/test/resources/keys/tls/server0.key")
-                            .withProperty("grpc.tls.keyCertChain", "file:src/test/resources/keys/tls/server0.pem");
+                            .withProperty("grpc.tls.key", server.getPrivateKeyFile().toURI().toString())
+                            .withProperty("grpc.tls.keyCertChain", server.getCertificateFile().toURI().toString());
                 },
                 port -> {
                     var sslContext = GrpcSslContexts.forClient()
@@ -95,20 +119,20 @@ public class GRPCTLSTest {
 
     @Test
     public void mTLS() {
+        GeneratedCert rootCA = createCertificate("ca", null, true);
+        GeneratedCert server = createCertificate("localhost", rootCA, false);
+        GeneratedCert client = createCertificate("localhost", rootCA, false);
         withApp(
                 app -> {
                     app
-                            .withProperty("grpc.tls.key", "file:src/test/resources/keys/tls/server0.key")
-                            .withProperty("grpc.tls.keyCertChain", "file:src/test/resources/keys/tls/server0.pem")
-                            .withProperty("grpc.tls.trustCert", "file:src/test/resources/keys/tls/ca.pem");
+                            .withProperty("grpc.tls.key", server.getPrivateKeyFile().toURI().toString())
+                            .withProperty("grpc.tls.keyCertChain", server.getCertificateFile().toURI().toString())
+                            .withProperty("grpc.tls.trustCert", rootCA.getCertificateFile().toURI().toString());
                 },
                 port -> {
                     var sslContext = GrpcSslContexts.forClient()
-                            .trustManager(ResourceUtils.getFile("file:src/test/resources/keys/tls/ca.pem"))
-                            .keyManager(
-                                    ResourceUtils.getFile("file:src/test/resources/keys/tls/client.pem"),
-                                    ResourceUtils.getFile("file:src/test/resources/keys/tls/client.key")
-                            )
+                            .trustManager(rootCA.getCertificateFile())
+                            .keyManager(client.getCertificateFile(), client.getPrivateKeyFile())
                             .build();
 
                     var channel = NettyChannelBuilder
@@ -123,16 +147,49 @@ public class GRPCTLSTest {
 
     @Test
     public void shouldFailOnMutualTLSWithMissingCertClient() {
+        GeneratedCert rootCA = createCertificate("ca", null, true);
+        GeneratedCert server = createCertificate("localhost", rootCA, false);
         withApp(
                 app -> {
                     app
-                            .withProperty("grpc.tls.key", "file:src/test/resources/keys/tls/server0.key")
-                            .withProperty("grpc.tls.keyCertChain", "file:src/test/resources/keys/tls/server0.pem")
-                            .withProperty("grpc.tls.trustCert", "file:src/test/resources/keys/tls/ca.pem");
+                            .withProperty("grpc.tls.key", server.getPrivateKeyFile().toURI().toString())
+                            .withProperty("grpc.tls.keyCertChain", server.getCertificateFile().toURI().toString())
+                            .withProperty("grpc.tls.trustCert", rootCA.getCertificateFile().toURI().toString());
                 },
                 port -> {
                     var sslContext = GrpcSslContexts.forClient()
-                            .trustManager(ResourceUtils.getFile("file:src/test/resources/keys/tls/ca.pem"))
+                            .trustManager(rootCA.getCertificateFile())
+                            .build();
+
+                    var channel = NettyChannelBuilder
+                            .forAddress("localhost", port)
+                            .sslContext(sslContext)
+                            .build();
+
+                    assertThatThrownBy(() -> publishWith(channel))
+                            .asInstanceOf(type(StatusRuntimeException.class))
+                            .satisfies(Throwable::printStackTrace)
+                            .returns(Status.Code.UNAVAILABLE, it -> it.getStatus().getCode());
+                }
+        );
+    }
+
+    @Test
+    public void shouldFailOnMutualTLSWithWrongCertClient() {
+        GeneratedCert rootCA = createCertificate("ca", null, true);
+        GeneratedCert server = createCertificate("localhost", rootCA, false);
+        GeneratedCert client = createCertificate("localhost", null, false);
+        withApp(
+                app -> {
+                    app
+                            .withProperty("grpc.tls.key", server.getPrivateKeyFile().toURI().toString())
+                            .withProperty("grpc.tls.keyCertChain", server.getCertificateFile().toURI().toString())
+                            .withProperty("grpc.tls.trustCert", rootCA.getCertificateFile().toURI().toString());
+                },
+                port -> {
+                    var sslContext = GrpcSslContexts.forClient()
+                            .trustManager(rootCA.getCertificateFile())
+                            .keyManager(client.getCertificateFile(), client.getPrivateKeyFile())
                             .build();
 
                     var channel = NettyChannelBuilder
@@ -173,5 +230,65 @@ public class GRPCTLSTest {
 
         var client = new GRPCLiiklusClient(channel);
         client.publish(event).block();
+    }
+
+    @Value
+    static class GeneratedCert {
+        PrivateKey privateKey;
+        File privateKeyFile;
+
+        X509Certificate certificate;
+        File certificateFile;
+    }
+
+    @SneakyThrows
+    private GeneratedCert createCertificate(String cnName, GeneratedCert issuer, boolean isCA) {
+        var certKeyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
+        var name = new X500Name("CN=" + cnName);
+
+        X500Name issuerName;
+        PrivateKey issuerKey;
+        if (issuer == null) {
+            issuerName = name;
+            issuerKey = certKeyPair.getPrivate();
+        } else {
+            issuerName = new X500Name(issuer.getCertificate().getSubjectDN().getName());
+            issuerKey = issuer.getPrivateKey();
+        }
+
+        var builder = new JcaX509v3CertificateBuilder(
+                issuerName,
+                BigInteger.valueOf(System.currentTimeMillis()),
+                new Date(),
+                new Date(System.currentTimeMillis() + TimeUnit.HOURS.toMillis(1)),
+                name,
+                certKeyPair.getPublic()
+        );
+
+        if (isCA) {
+            builder.addExtension(Extension.basicConstraints, true, new BasicConstraints(isCA));
+        }
+
+        var keyFile = File.createTempFile("key", ".key");
+        try (var writer = new JcaPEMWriter(new FileWriter(keyFile))) {
+            writer.writeObject(new PemObject("RSA PRIVATE KEY", certKeyPair.getPrivate().getEncoded()));
+        }
+        var certificate = new JcaX509CertificateConverter().getCertificate(
+                builder.build(
+                        new JcaContentSignerBuilder("SHA256WithRSA").build(issuerKey)
+                )
+        );
+
+        var certFile = File.createTempFile("cert", ".pem");
+        try (var writer = new JcaPEMWriter(new FileWriter(certFile))) {
+            writer.writeObject(certificate);
+        }
+
+        return new GeneratedCert(
+                certKeyPair.getPrivate(),
+                keyFile,
+                certificate,
+                certFile
+        );
     }
 }
