@@ -11,6 +11,8 @@ jar {
     }
 }
 
+tasks.test.dependsOn(jar)
+
 dependencies {
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
@@ -29,6 +31,7 @@ dependencies {
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
 
     testCompile project(":app")
+    testCompile project(":tck")
     testCompile 'org.springframework.boot:spring-boot-test'
     testCompile 'org.assertj:assertj-core'
 }

@@ -57,7 +57,7 @@ class SchemaPluginConfigurationTest {
         });
     }
 
-    private static URL getSchemaURL() {
+    static URL getSchemaURL() {
         return Thread.currentThread().getContextClassLoader().getResource("schemas/basic.yml");
     }
 }

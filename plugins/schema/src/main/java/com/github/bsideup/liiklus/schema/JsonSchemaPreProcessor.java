@@ -1,6 +1,7 @@
 package com.github.bsideup.liiklus.schema;
 
 import com.fasterxml.jackson.core.JsonPointer;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.util.ByteBufferBackedInputStream;
@@ -20,6 +21,7 @@ import org.springframework.http.MediaType;
 import java.io.ByteArrayInputStream;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.Set;
@@ -67,10 +69,10 @@ public class JsonSchemaPreProcessor implements RecordPreProcessor {
         try {
             var rawValue = envelope.getRawValue();
 
-            final ObjectNode event;
+            final JsonNode event;
             final String eventType;
             if (rawValue instanceof CloudEvent) {
-                var cloudEvent = (CloudEvent<?, byte[]>) rawValue;
+                var cloudEvent = (CloudEvent<?, ?>) rawValue;
 
                 var mediaType = cloudEvent.getAttributes().getMediaType()
                         .map(MediaType::parseMediaType)
@@ -88,7 +90,23 @@ public class JsonSchemaPreProcessor implements RecordPreProcessor {
                     );
                 }
 
-                event = (ObjectNode) JSON_MAPPER.readTree(cloudEvent.getData().orElse(null));
+                Object data = cloudEvent.getData().orElseThrow(() -> {
+                    return new IllegalArgumentException("data is missing");
+                });
+
+                if (data instanceof JsonNode) {
+                    event = (JsonNode) data;
+                } else if (data instanceof byte[]) {
+                    event = JSON_MAPPER.readTree(new ByteArrayInputStream((byte[]) data));
+                } else if (data instanceof ByteBuffer) {
+                    event = JSON_MAPPER.readTree(new ByteBufferBackedInputStream((ByteBuffer) data));
+                } else if (data instanceof String) {
+                    event = JSON_MAPPER.readTree((String) data);
+                } else {
+                    return CompletableFuture.failedFuture(
+                            new IllegalArgumentException("Unsupported data: " + data)
+                    );
+                }
 
                 eventType = cloudEvent.getAttributes().getType();
             } else {
@@ -124,7 +142,7 @@ public class JsonSchemaPreProcessor implements RecordPreProcessor {
         }
     }
 
-    private Set<ValidationMessage> validate(String eventType, ObjectNode event) {
+    private Set<ValidationMessage> validate(String eventType, JsonNode event) {
         JsonSchema eventSchema = schemas
                 .computeIfAbsent(eventType, key -> {
                     try {
