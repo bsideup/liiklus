@@ -33,10 +33,15 @@ dependencies {
     compile 'com.auth0:java-jwt:3.9.0'
     compile 'com.avast.grpc.jwt:grpc-java-jwt:0.2.0'
 
+    // see https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty for the compatibility version
+    runtimeOnly 'io.netty:netty-tcnative-boringssl-static:2.0.25.Final'
+    testRuntimeOnly 'io.netty:netty-tcnative-boringssl-static:2.0.25.Final'
+
     testCompileOnly 'org.projectlombok:lombok'
     testAnnotationProcessor 'org.projectlombok:lombok'
     testCompile project(":tck")
     testCompile project(":client")
     testCompile 'org.springframework.boot:spring-boot-starter-test'
+    testCompile 'org.bouncycastle:bcpkix-jdk15on:1.66'
     testRuntime project(":plugins:grpc-transport")
 }
