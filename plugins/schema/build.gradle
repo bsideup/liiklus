@@ -21,7 +21,7 @@ dependencies {
 
     compileOnly project(":app")
 
-    compile 'com.networknt:json-schema-validator:0.1.19'
+    compile 'com.networknt:json-schema-validator:1.0.43'
 
     compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
 
