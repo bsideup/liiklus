@@ -48,7 +48,7 @@ dependencyManagement {
             entry "testing"
         }
 
-        dependency 'org.projectlombok:lombok:1.18.12'
+        dependency 'org.projectlombok:lombok:1.18.14'
         dependency 'com.google.auto.service:auto-service:1.0-rc6'
     }
 }
