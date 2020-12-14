@@ -77,7 +77,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
         imports {
             mavenBom 'org.junit:junit-bom:5.5.2'
             mavenBom org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES
-            mavenBom 'org.testcontainers:testcontainers-bom:1.12.3'
+            mavenBom 'org.testcontainers:testcontainers-bom:1.15.1'
 
             // pinned to 1.23.1, see https://github.com/grpc/grpc-java/issues/6707
             mavenBom 'io.grpc:grpc-bom:1.23.1'
