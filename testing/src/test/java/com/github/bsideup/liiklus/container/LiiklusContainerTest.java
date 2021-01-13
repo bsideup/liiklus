@@ -6,6 +6,7 @@ import org.testcontainers.containers.KafkaContainer;
 public class LiiklusContainerTest {
 
     static final String LATEST_VERSION = "0.7.0";
+    @SuppressWarnings("deprecation")
     static KafkaContainer kafka = new KafkaContainer();
 
     static {
