@@ -6,7 +6,7 @@ plugins {
 
 protobuf {
     protoc {
-        artifact = 'com.google.protobuf:protoc:3.10.1'
+        artifact = 'com.google.protobuf:protoc:3.15.0'
     }
 
     generatedFilesBaseDir = "$projectDir/generated"
