@@ -1,0 +1,255 @@
+version: 2
+updates:
+- package-ecosystem: gradle
+  directory: "/"
+  schedule:
+    interval: daily
+    time: "07:00"
+    timezone: Europe/Berlin
+  open-pull-requests-limit: 99
+  ignore:
+  - dependency-name: com.amazonaws:aws-java-sdk-dynamodb
+    versions:
+    - 1.11.1000
+    - 1.11.1001
+    - 1.11.1002
+    - 1.11.1003
+    - 1.11.1004
+    - 1.11.1005
+    - 1.11.944
+    - 1.11.945
+    - 1.11.946
+    - 1.11.947
+    - 1.11.948
+    - 1.11.949
+    - 1.11.950
+    - 1.11.951
+    - 1.11.952
+    - 1.11.953
+    - 1.11.954
+    - 1.11.955
+    - 1.11.956
+    - 1.11.957
+    - 1.11.958
+    - 1.11.959
+    - 1.11.960
+    - 1.11.961
+    - 1.11.963
+    - 1.11.964
+    - 1.11.965
+    - 1.11.966
+    - 1.11.967
+    - 1.11.968
+    - 1.11.969
+    - 1.11.970
+    - 1.11.971
+    - 1.11.972
+    - 1.11.973
+    - 1.11.975
+    - 1.11.976
+    - 1.11.977
+    - 1.11.978
+    - 1.11.979
+    - 1.11.980
+    - 1.11.981
+    - 1.11.982
+    - 1.11.983
+    - 1.11.986
+    - 1.11.987
+    - 1.11.988
+    - 1.11.990
+    - 1.11.991
+    - 1.11.992
+    - 1.11.993
+    - 1.11.994
+    - 1.11.995
+    - 1.11.996
+    - 1.11.997
+    - 1.11.998
+    - 1.11.999
+  - dependency-name: software.amazon.awssdk:dynamodb
+    versions:
+    - 2.15.71
+    - 2.15.72
+    - 2.15.73
+    - 2.15.74
+    - 2.15.75
+    - 2.15.76
+    - 2.15.77
+    - 2.15.78
+    - 2.15.79
+    - 2.15.80
+    - 2.15.81
+    - 2.15.82
+    - 2.16.0
+    - 2.16.1
+    - 2.16.10
+    - 2.16.11
+    - 2.16.12
+    - 2.16.13
+    - 2.16.14
+    - 2.16.15
+    - 2.16.16
+    - 2.16.17
+    - 2.16.18
+    - 2.16.19
+    - 2.16.2
+    - 2.16.20
+    - 2.16.21
+    - 2.16.22
+    - 2.16.23
+    - 2.16.24
+    - 2.16.25
+    - 2.16.26
+    - 2.16.27
+    - 2.16.29
+    - 2.16.3
+    - 2.16.30
+    - 2.16.31
+    - 2.16.33
+    - 2.16.34
+    - 2.16.35
+    - 2.16.36
+    - 2.16.37
+    - 2.16.38
+    - 2.16.39
+    - 2.16.4
+    - 2.16.40
+    - 2.16.41
+    - 2.16.42
+    - 2.16.43
+    - 2.16.44
+    - 2.16.45
+    - 2.16.46
+    - 2.16.47
+    - 2.16.48
+    - 2.16.7
+    - 2.16.8
+    - 2.16.9
+  - dependency-name: com.google.protobuf:protobuf-java
+    versions:
+    - 3.14.0
+    - 3.15.1
+    - 3.15.2
+    - 3.15.3
+    - 3.15.4
+    - 3.15.5
+    - 3.15.6
+    - 3.15.7
+  - dependency-name: com.google.protobuf:protoc
+    versions:
+    - 3.14.0
+    - 3.15.0
+    - 3.15.1
+    - 3.15.2
+    - 3.15.5
+    - 3.15.6
+    - 3.15.7
+  - dependency-name: com.google.protobuf:protobuf-bom
+    versions:
+    - 3.14.0
+    - 3.15.1
+    - 3.15.2
+    - 3.15.3
+    - 3.15.4
+    - 3.15.5
+    - 3.15.6
+    - 3.15.7
+  - dependency-name: com.networknt:json-schema-validator
+    versions:
+    - 1.0.47
+    - 1.0.48
+    - 1.0.49
+    - 1.0.50
+    - 1.0.51
+  - dependency-name: io.netty:netty-tcnative-boringssl-static
+    versions:
+    - 2.0.36.Final
+    - 2.0.37.Final
+  - dependency-name: io.grpc:grpc-netty
+    versions:
+    - 1.35.0
+    - 1.36.0
+    - 1.36.1
+  - dependency-name: io.grpc:grpc-bom
+    versions:
+    - 1.35.0
+    - 1.36.0
+    - 1.36.1
+  - dependency-name: io.grpc:grpc-protobuf
+    versions:
+    - 1.35.0
+    - 1.36.0
+    - 1.36.1
+  - dependency-name: io.grpc:protoc-gen-grpc-java
+    versions:
+    - 1.35.0
+    - 1.36.0
+    - 1.36.1
+  - dependency-name: com.avast.grpc.jwt:grpc-java-jwt
+    versions:
+    - 0.4.3
+    - 0.4.5
+    - 0.4.6
+    - 0.4.7
+    - 0.4.8
+  - dependency-name: com.auth0:java-jwt
+    versions:
+    - 3.12.1
+    - 3.13.0
+    - 3.14.0
+  - dependency-name: org.springframework.boot:spring-boot-gradle-plugin
+    versions:
+    - 2.4.2
+    - 2.4.3
+  - dependency-name: com.google.protobuf
+    versions:
+    - 0.8.14
+    - 0.8.15
+  - dependency-name: org.projectlombok:lombok
+    versions:
+    - 1.18.16
+    - 1.18.18
+  - dependency-name: org.apache.kafka:kafka-clients
+    versions:
+    - 2.7.0
+  - dependency-name: org.testcontainers:testcontainers-bom
+    versions:
+    - 1.15.1
+  - dependency-name: org.testcontainers:kafka
+    versions:
+    - 1.15.1
+  - dependency-name: org.apache.pulsar:pulsar-client-admin-original
+    versions:
+    - 2.7.0
+  - dependency-name: org.apache.pulsar:pulsar-client-original
+    versions:
+    - 2.7.0
+  - dependency-name: org.junit:junit-bom
+    versions:
+    - 5.7.0
+  - dependency-name: org.apache.commons:commons-lang3
+    versions:
+    - "3.11"
+  - dependency-name: com.google.auto.service:auto-service
+    versions:
+    - 1.0-rc7
+  - dependency-name: io.cloudevents:cloudevents-api
+    versions:
+    - 1.3.0
+  - dependency-name: org.springframework.fu:spring-fu-jafu
+    versions:
+    - 0.4.3
+  rebase-strategy: disabled
+- package-ecosystem: docker
+  directory: "/"
+  schedule:
+    interval: daily
+    time: "07:00"
+    timezone: Europe/Berlin
+  open-pull-requests-limit: 99
+  ignore:
+  - dependency-name: openjdk
+    versions:
+    - "> 11.0.2.pre.jdk"
+  rebase-strategy: disabled
