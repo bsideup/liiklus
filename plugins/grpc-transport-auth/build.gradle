@@ -10,7 +10,7 @@ jar {
     }
 
     into('lib') {
-        from(configurations.compile - configurations.compileOnly)
+        from(configurations.runtimeClasspath - configurations.compileOnlyClasspath)
     }
 }
 
@@ -28,16 +28,16 @@ dependencies {
     compileOnly project(":app")
     compileOnly project(":plugins:grpc-transport")
 
-    compile 'com.auth0:java-jwt:3.9.0'
-    compile 'com.avast.grpc.jwt:grpc-java-jwt:0.2.0'
+    implementation 'com.auth0:java-jwt:3.9.0'
+    implementation 'com.avast.grpc.jwt:grpc-java-jwt:0.2.0'
 
     // see https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty for the compatibility version
     runtimeOnly 'io.netty:netty-tcnative-boringssl-static:2.0.25.Final'
     testRuntimeOnly 'io.netty:netty-tcnative-boringssl-static:2.0.25.Final'
 
-    testCompile project(":tck")
-    testCompile project(":client")
-    testCompile 'org.springframework.boot:spring-boot-starter-test'
-    testCompile 'org.bouncycastle:bcpkix-jdk15on:1.66'
-    testRuntime project(":plugins:grpc-transport")
+    testImplementation project(":tck")
+    testImplementation project(":client")
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.bouncycastle:bcpkix-jdk15on:1.66'
+    testImplementation project(":plugins:grpc-transport")
 }

@@ -1,18 +1,42 @@
-sourceSets.main.resources.srcDir tasks.findByPath(":app:bootJar").outputs.files.singleFile.parentFile
+plugins {
+    id 'java-library'
+}
 
 compileJava.dependsOn(tasks.findByPath(":app:bootJar"))
 
-dependencies {
-    compile project(":app")
-    compile 'org.springframework.boot:spring-boot-loader'
+java {
+    withSourcesJar()
+}
 
-    compile 'org.junit.jupiter:junit-jupiter-api'
-    compile 'org.assertj:assertj-core'
-    compile 'io.projectreactor:reactor-test'
-    compile 'org.awaitility:awaitility'
+dependencies {
+    api project(":app")
+    api 'org.springframework.boot:spring-boot-loader'
+
+    api 'org.junit.jupiter:junit-jupiter-api'
+    api 'org.assertj:assertj-core'
+    api 'io.projectreactor:reactor-test'
+    api 'org.awaitility:awaitility'
 }
 
 tasks.test.dependsOn(
         rootProject.project(":plugins:inmemory-positions-storage").getTasksByName("jar", false),
         rootProject.project(":plugins:inmemory-records-storage").getTasksByName("jar", false)
 )
+
+processResources {
+    dependsOn(
+            tasks.findByPath(":app:sourcesJar"),
+            tasks.findByPath(":app:bootJar"),
+            tasks.findByPath(":app:jar")
+    )
+}
+
+sourceSets {
+    main {
+        resources.srcDir tasks.findByPath(":app:bootJar").outputs.files.singleFile.parentFile
+    }
+}
+
+sourcesJar {
+    dependsOn processResources
+}

@@ -1,8 +1,8 @@
 plugins {
-    id "idea"
+    id 'idea'
+    id 'java-library'
+    id 'com.google.protobuf'
 }
-
-apply plugin: "com.google.protobuf"
 
 protobuf {
     protoc {
@@ -55,7 +55,7 @@ jar {
     }
 
     into('lib') {
-        from(configurations.compile - configurations.compileOnly)
+        from(configurations.runtimeClasspath - configurations.compileOnlyClasspath)
     }
 }
 
@@ -67,14 +67,14 @@ dependencies {
 
     protobuf project(":protocol")
 
-    compile 'com.salesforce.servicelibs:reactor-grpc-stub'
-    compile 'io.grpc:grpc-stub'
-    compile 'io.grpc:grpc-protobuf'
-    compile 'io.grpc:grpc-netty'
-    compile 'io.grpc:grpc-services'
+    api 'com.salesforce.servicelibs:reactor-grpc-stub'
+    api 'io.grpc:grpc-stub'
+    api 'io.grpc:grpc-protobuf'
+    api 'io.grpc:grpc-netty'
+    api 'io.grpc:grpc-services'
 
-    testCompile project(":app")
-    testCompile 'org.springframework.boot:spring-boot-test'
-    testCompile 'org.assertj:assertj-core'
-    testCompile 'org.mockito:mockito-core'
+    testImplementation project(":app")
+    testImplementation 'org.springframework.boot:spring-boot-test'
+    testImplementation 'org.assertj:assertj-core'
+    testImplementation 'org.mockito:mockito-core'
 }

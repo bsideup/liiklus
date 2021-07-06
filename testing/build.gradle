@@ -1,8 +1,12 @@
-dependencies {
-    compile 'org.testcontainers:testcontainers'
-    compile 'org.testcontainers:kafka'
+plugins {
+    id 'java-library'
+}
 
-    testCompile 'ch.qos.logback:logback-classic'
-    testCompile 'org.assertj:assertj-core'
-    testCompile 'org.awaitility:awaitility'
+dependencies {
+    api 'org.testcontainers:testcontainers'
+    api 'org.testcontainers:kafka'
+
+    testImplementation 'ch.qos.logback:logback-classic'
+    testImplementation 'org.assertj:assertj-core'
+    testImplementation 'org.awaitility:awaitility'
 }

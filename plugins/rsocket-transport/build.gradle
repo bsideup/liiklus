@@ -1,8 +1,8 @@
 plugins {
-    id "idea"
+    id 'idea'
+    id 'java-library'
+    id 'com.google.protobuf'
 }
-
-apply plugin: "com.google.protobuf"
 
 protobuf {
     protoc {
@@ -49,7 +49,7 @@ jar {
     }
 
     into('lib') {
-        from(configurations.compile - configurations.compileOnly)
+        from(configurations.runtimeClasspath - configurations.compileOnlyClasspath)
     }
 }
 
@@ -61,11 +61,11 @@ dependencies {
 
     compileOnly project(":app")
 
-    compile 'io.rsocket.rpc:rsocket-rpc-core'
-    compile 'io.rsocket:rsocket-transport-netty'
+    api 'io.rsocket.rpc:rsocket-rpc-core'
+    api 'io.rsocket:rsocket-transport-netty'
 
-    testCompile project(":app")
-    testCompile 'org.springframework.boot:spring-boot-test'
-    testCompile 'org.assertj:assertj-core'
-    testCompile 'org.mockito:mockito-core'
+    testImplementation project(":app")
+    testImplementation 'org.springframework.boot:spring-boot-test'
+    testImplementation 'org.assertj:assertj-core'
+    testImplementation 'org.mockito:mockito-core'
 }

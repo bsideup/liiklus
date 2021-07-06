@@ -1,3 +1,7 @@
+plugins {
+    id 'java-library'
+}
+
 jar {
     manifest {
         attributes(
@@ -7,7 +11,7 @@ jar {
     }
 
     into('lib') {
-        from(configurations.compile - configurations.compileOnly)
+        from(configurations.runtimeClasspath - configurations.compileOnlyClasspath)
     }
 }
 
@@ -22,9 +26,9 @@ dependencies {
 
     compileOnly project(":app")
 
-    compile 'org.apache.kafka:kafka-clients'
+    api 'org.apache.kafka:kafka-clients'
 
-    testCompile project(":tck")
-    testCompile 'org.testcontainers:kafka'
-    testCompile 'org.springframework.boot:spring-boot-test'
+    testImplementation project(":tck")
+    testImplementation 'org.testcontainers:kafka'
+    testImplementation 'org.springframework.boot:spring-boot-test'
 }

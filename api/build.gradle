@@ -1,8 +1,16 @@
+plugins {
+    id 'java-library'
+}
+
 sourceCompatibility = targetCompatibility = 8
 
-dependencies {
-    compile 'org.reactivestreams:reactive-streams'
-    compile 'io.cloudevents:cloudevents-api:1.2.0'
+java {
+    withSourcesJar()
+}
 
-    testCompile 'org.assertj:assertj-core'
+dependencies {
+    api 'org.reactivestreams:reactive-streams'
+    api 'io.cloudevents:cloudevents-api:1.2.0'
+
+    testImplementation 'org.assertj:assertj-core'
 }
