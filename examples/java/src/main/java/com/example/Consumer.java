@@ -94,7 +94,7 @@ public class Consumer {
     }
 
     private static String getLiiklusTarget() {
-        GenericContainer<?> liiklus = new GenericContainer<>("bsideup/liiklus:latest")
+        GenericContainer<?> liiklus = new GenericContainer<>("bsideup/liiklus:0.9.3")
                 .withExposedPorts(6565)
                 .withEnv("storage_records_type", "MEMORY")
                 .withEnv("storage_positions_type", "MEMORY"); // Fine for testing, NOT FINE I WARNED YOU for production :D

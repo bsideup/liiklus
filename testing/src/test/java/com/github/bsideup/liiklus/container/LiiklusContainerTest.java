@@ -7,7 +7,7 @@ import org.testcontainers.utility.DockerImageName;
 
 public class LiiklusContainerTest {
 
-    static final String LATEST_VERSION = "latest";
+    static final String LATEST_VERSION = "0.10.0-rc1";
     static KafkaContainer kafka = new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:5.4.3"))
             .withNetwork(Network.newNetwork());
 

@@ -1,6 +1,5 @@
 package com.github.bsideup.liiklus.plugins.example;
 
-import com.github.bsideup.liiklus.records.LiiklusCloudEvent;
 import com.github.bsideup.liiklus.records.RecordPostProcessor;
 import com.github.bsideup.liiklus.records.RecordsStorage.Record;
 import org.reactivestreams.Publisher;
@@ -16,12 +15,11 @@ public class ExampleRecordPostProcessor implements RecordPostProcessor {
                 .map(record -> {
                     String key = StandardCharsets.UTF_8.decode(record.getEnvelope().getKey().duplicate()).toString();
                     if ("maskMe".equals(key)) {
-                        LiiklusCloudEvent value = (LiiklusCloudEvent) record.getEnvelope().getRawValue();
-                        return record.withEnvelope(record.getEnvelope()
-                                .withValue(
-                                        value.withData(ByteBuffer.wrap("**masked**".getBytes())),
-                                        LiiklusCloudEvent::asJson
-                                )
+                        return new Record(
+                                record.getEnvelope().withValue(ByteBuffer.wrap("**masked**".getBytes())),
+                                record.getTimestamp(),
+                                record.getPartition(),
+                                record.getOffset()
                         );
                     } else {
                         return record;
