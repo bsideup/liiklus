@@ -6,11 +6,14 @@ import com.github.bsideup.liiklus.records.RecordsStorage;
 import com.github.bsideup.liiklus.test.AbstractIntegrationTest;
 import com.google.protobuf.ByteString;
 import org.assertj.core.api.Condition;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.SignalType;
 
+import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Collections;
@@ -22,10 +25,19 @@ import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class SmokeTest extends AbstractIntegrationTest {
+class SmokeTest extends AbstractIntegrationTest {
+
+    String topic;
+    String group;
+
+    @BeforeEach
+    void setUp(TestInfo info) {
+        topic = info.getTestMethod().map(Method::getName).orElse("unknown");
+        group = info.getTestMethod().map(Method::getName).orElse("unknown");
+    }
 
     @Test
-    public void testHealth() throws Exception {
+    void testHealth() throws Exception {
         WebTestClient.bindToApplicationContext(applicationContext)
                 .build()
                 .get()
@@ -36,7 +48,7 @@ public class SmokeTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void testPrometheusExporter() throws Exception {
+    void testPrometheusExporter() throws Exception {
         WebTestClient.bindToApplicationContext(applicationContext)
                 .build()
                 .get()
@@ -47,10 +59,10 @@ public class SmokeTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void testPublishSubscribe() throws Exception {
+    void testPublishSubscribe() throws Exception {
         SubscribeRequest subscribeAction = SubscribeRequest.newBuilder()
-                .setTopic(testName.getMethodName())
-                .setGroup(testName.getMethodName())
+                .setTopic(topic)
+                .setGroup(group)
                 .setAutoOffsetReset(SubscribeRequest.AutoOffsetReset.EARLIEST)
                 .build();
 
@@ -95,10 +107,10 @@ public class SmokeTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void testNullKey() throws Exception {
+    void testNullKey() throws Exception {
         var subscribeAction = SubscribeRequest.newBuilder()
-                .setTopic(testName.getMethodName())
-                .setGroup(testName.getMethodName())
+                .setTopic(topic)
+                .setGroup(group)
                 .setAutoOffsetReset(SubscribeRequest.AutoOffsetReset.EARLIEST)
                 .build();
 
@@ -140,10 +152,10 @@ public class SmokeTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void testRoundTrip() {
+    void testRoundTrip() {
         var subscribeAction = SubscribeRequest.newBuilder()
-                .setTopic(testName.getMethodName())
-                .setGroup(testName.getMethodName())
+                .setTopic(topic)
+                .setGroup(group)
                 .setAutoOffsetReset(SubscribeRequest.AutoOffsetReset.EARLIEST)
                 .build();
 

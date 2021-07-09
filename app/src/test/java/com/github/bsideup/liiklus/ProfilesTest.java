@@ -3,9 +3,8 @@ package com.github.bsideup.liiklus;
 import com.github.bsideup.liiklus.test.AbstractIntegrationTest;
 import com.google.common.collect.Sets;
 import org.assertj.core.api.AbstractThrowableAssert;
-import org.junit.After;
-import org.junit.Test;
-import org.springframework.beans.factory.NoSuchBeanDefinitionException;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.context.ConfigurableApplicationContext;
 
 import java.util.Collection;
@@ -14,7 +13,7 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 
-public class ProfilesTest extends AbstractIntegrationTest {
+class ProfilesTest extends AbstractIntegrationTest {
 
     static Set<String> RECORDS_PROPERTIES = Sets.newHashSet(
             "storage.records.type=MEMORY"
@@ -30,15 +29,15 @@ public class ProfilesTest extends AbstractIntegrationTest {
 
     ConfigurableApplicationContext lastApplicationContext;
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         if (lastApplicationContext != null) {
             lastApplicationContext.close();
         }
     }
 
     @Test
-    public void testRequired() throws Exception {
+    void testRequired() throws Exception {
         assertThatAppWithProps(commonArgs)
                 .hasMessageContaining("Required key");
 
@@ -53,7 +52,7 @@ public class ProfilesTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void testExporterProfile() throws Exception {
+    void testExporterProfile() throws Exception {
         commonArgs.add("spring.profiles.active=exporter");
 
         assertThatAppWithProps(commonArgs)
@@ -64,7 +63,7 @@ public class ProfilesTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void testGatewayProfile() throws Exception {
+    void testGatewayProfile() throws Exception {
         commonArgs.add("spring.profiles.active=gateway");
 
         assertThatAppWithProps(commonArgs)

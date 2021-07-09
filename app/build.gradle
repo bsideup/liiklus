@@ -1,9 +1,5 @@
 apply plugin: 'org.springframework.boot'
 
-test {
-    useJUnit()
-}
-
 jar {
     enabled = true
 }

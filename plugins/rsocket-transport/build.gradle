@@ -68,8 +68,6 @@ dependencies {
 
     testCompileOnly 'org.projectlombok:lombok'
     testAnnotationProcessor 'org.projectlombok:lombok'
-    testCompile 'org.junit.jupiter:junit-jupiter-api'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
 
     testCompile project(":app")
     testCompile 'org.springframework.boot:spring-boot-test'

@@ -23,8 +23,6 @@ dependencies {
 
     testCompileOnly 'org.projectlombok:lombok'
     testAnnotationProcessor 'org.projectlombok:lombok'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
-    testCompile 'org.junit.jupiter:junit-jupiter-api'
     testCompile project(":app")
     testCompile 'org.springframework.boot:spring-boot-test'
     testCompile 'org.assertj:assertj-core'

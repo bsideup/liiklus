@@ -3,25 +3,27 @@ package com.github.bsideup.liiklus;
 import com.github.bsideup.liiklus.protocol.*;
 import com.github.bsideup.liiklus.test.AbstractIntegrationTest;
 import com.google.protobuf.ByteString;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class PositionsTest extends AbstractIntegrationTest {
+class PositionsTest extends AbstractIntegrationTest {
 
     SubscribeRequest subscribeRequest;
 
-    @Before
-    public void setUpConsumerGroupsTest() throws Exception {
+    @BeforeEach
+    void setUpConsumerGroupsTest(TestInfo info) throws Exception {
         subscribeRequest = SubscribeRequest.newBuilder()
-                .setTopic(testName.getMethodName())
-                .setGroup(testName.getMethodName())
+                .setTopic(info.getTestMethod().map(Method::getName).orElse("unknown"))
+                .setGroup(info.getTestMethod().map(Method::getName).orElse("unknown"))
                 .setAutoOffsetReset(SubscribeRequest.AutoOffsetReset.EARLIEST)
                 .build();
 
@@ -43,7 +45,7 @@ public class PositionsTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void testGetOffsets() throws Exception {
+    void testGetOffsets() throws Exception {
         var key = UUID.randomUUID().toString();
         var partition = getPartitionByKey(key);
 
@@ -93,7 +95,7 @@ public class PositionsTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void testGetEmptyOffsets() throws Exception {
+    void testGetEmptyOffsets() throws Exception {
         var getOffsetsReply = stub
                 .getOffsets(
                         GetOffsetsRequest.newBuilder()

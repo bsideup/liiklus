@@ -10,12 +10,11 @@ import io.grpc.Server;
 import io.rsocket.core.RSocketConnector;
 import io.rsocket.transport.netty.client.TcpClientTransport;
 import io.rsocket.transport.netty.server.CloseableChannel;
-import org.junit.Before;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 import org.pf4j.PluginManager;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.support.GenericApplicationContext;
 import reactor.core.publisher.Hooks;
 import reactor.core.publisher.Mono;
 
@@ -126,11 +125,8 @@ public abstract class AbstractIntegrationTest {
         Hooks.onOperatorDebug();
     }
 
-    @Rule
-    public TestName testName = new TestName();
-
-    @Before
-    public void setUpAbstractIntegrationTest() throws Exception {
+    @BeforeEach
+    void setUpAbstractIntegrationTest() throws Exception {
         processorPluginMock.getPreProcessors().clear();
         processorPluginMock.getPostProcessors().clear();
     }

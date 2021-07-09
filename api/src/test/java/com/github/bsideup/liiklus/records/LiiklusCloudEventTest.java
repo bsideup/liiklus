@@ -1,9 +1,8 @@
 package com.github.bsideup.liiklus.records;
 
 import org.assertj.core.data.MapEntry;
-import org.junit.Test;
-import org.junit.experimental.runners.Enclosed;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 import java.util.UUID;
@@ -16,13 +15,12 @@ import static org.assertj.core.api.Assertions.entry;
 /**
  * See <a href="https://github.com/cloudevents/spec/blob/v1.0/kafka-protocol-binding.md">Kafka Protocol Binding</a>
  */
-@RunWith(Enclosed.class)
-public class LiiklusCloudEventTest {
+class LiiklusCloudEventTest {
 
-    public static class Attributes {
-
+    @Nested
+    class Attributes {
         @Test
-        public void serialization() {
+        void serialization() {
             LiiklusCloudEvent event = newBuilder()
                     .mediaType("text/plain")
                     .build();
@@ -37,7 +35,7 @@ public class LiiklusCloudEventTest {
         }
 
         @Test
-        public void deserialization() {
+        void deserialization() {
             String id = UUID.randomUUID().toString();
             Map<String, String> headers = Stream.of(
                     entry("ce_specversion", "1.0"),
@@ -57,10 +55,11 @@ public class LiiklusCloudEventTest {
         }
     }
 
-    public static class Extensions {
+    @Nested
+    class Extensions {
 
         @Test
-        public void serialization() {
+        void serialization() {
             LiiklusCloudEvent event = newBuilder()
                     .rawExtension("comexamplefoo", "foo")
                     .rawExtension("comexamplebar", "bar")
@@ -73,7 +72,7 @@ public class LiiklusCloudEventTest {
         }
 
         @Test
-        public void deserialization() {
+        void deserialization() {
             String id = UUID.randomUUID().toString();
             Map<String, String> headers = Stream.of(
                     entry("ce_specversion", "1.0"),

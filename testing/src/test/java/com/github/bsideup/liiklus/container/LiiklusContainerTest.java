@@ -1,29 +1,30 @@
 package com.github.bsideup.liiklus.container;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.KafkaContainer;
+import org.testcontainers.containers.Network;
+import org.testcontainers.utility.DockerImageName;
 
 public class LiiklusContainerTest {
 
-    static final String LATEST_VERSION = "0.7.0";
-    static KafkaContainer kafka = new KafkaContainer();
+    static final String LATEST_VERSION = "latest";
+    static KafkaContainer kafka = new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:5.4.3"))
+            .withNetwork(Network.newNetwork());
 
     static {
         kafka.start();
     }
 
     @Test
-    public void shouldStartWithKafkaRecordStorage() {
+    void shouldStartWithKafkaRecordStorage() {
         try (LiiklusContainer liiklusContainer = new LiiklusContainer(LATEST_VERSION)) {
-
             liiklusContainer.withKafka(kafka).start();
         }
     }
 
     @Test
-    public void shouldStartDefaultMemoryRecordStorage() {
+    void shouldStartDefaultMemoryRecordStorage() {
         try (LiiklusContainer liiklusContainer = new LiiklusContainer(LATEST_VERSION)) {
-
             liiklusContainer.start();
         }
     }

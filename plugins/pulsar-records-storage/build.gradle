@@ -28,7 +28,6 @@ dependencies {
 
     testCompileOnly 'org.projectlombok:lombok'
     testAnnotationProcessor 'org.projectlombok:lombok'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
     testCompile project(":tck")
     testCompile 'org.testcontainers:pulsar'
     testCompile 'org.apache.pulsar:pulsar-client-admin-original:2.4.0'

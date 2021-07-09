@@ -19,7 +19,7 @@ import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.bouncycastle.util.io.pem.PemObject;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.ThrowingConsumer;
 import org.springframework.util.ResourceUtils;
 
@@ -38,10 +38,10 @@ import static com.github.bsideup.liiklus.transport.grpc.GRPCAuthTest.getGRPCPort
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.InstanceOfAssertFactories.type;
 
-public class GRPCTLSTest {
+class GRPCTLSTest {
 
     @Test
-    public void shouldConnectWithTLS() {
+    void shouldConnectWithTLS() {
         GeneratedCert rootCA = createCertificate("ca", null, true);
         GeneratedCert server = createCertificate("localhost", rootCA, false);
 
@@ -67,7 +67,7 @@ public class GRPCTLSTest {
     }
 
     @Test
-    public void shouldFailOnPlaintext() {
+    void shouldFailOnPlaintext() {
         GeneratedCert rootCA = createCertificate("ca", null, true);
         GeneratedCert server = createCertificate("localhost", rootCA, false);
         withApp(
@@ -91,7 +91,7 @@ public class GRPCTLSTest {
     }
 
     @Test
-    public void shouldFailOnWrongCA() {
+    void shouldFailOnWrongCA() {
         GeneratedCert rootCA = createCertificate("ca", null, true);
         GeneratedCert server = createCertificate("localhost", rootCA, false);
         withApp(
@@ -118,7 +118,7 @@ public class GRPCTLSTest {
     }
 
     @Test
-    public void mTLS() {
+    void mTLS() {
         GeneratedCert rootCA = createCertificate("ca", null, true);
         GeneratedCert server = createCertificate("localhost", rootCA, false);
         GeneratedCert client = createCertificate("localhost", rootCA, false);
@@ -146,7 +146,7 @@ public class GRPCTLSTest {
     }
 
     @Test
-    public void shouldFailOnMutualTLSWithMissingCertClient() {
+    void shouldFailOnMutualTLSWithMissingCertClient() {
         GeneratedCert rootCA = createCertificate("ca", null, true);
         GeneratedCert server = createCertificate("localhost", rootCA, false);
         withApp(
@@ -175,7 +175,7 @@ public class GRPCTLSTest {
     }
 
     @Test
-    public void shouldFailOnMutualTLSWithWrongCertClient() {
+    void shouldFailOnMutualTLSWithWrongCertClient() {
         GeneratedCert rootCA = createCertificate("ca", null, true);
         GeneratedCert server = createCertificate("localhost", rootCA, false);
         GeneratedCert client = createCertificate("localhost", null, false);

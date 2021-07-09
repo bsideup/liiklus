@@ -17,7 +17,8 @@ public class LiiklusContainer extends GenericContainer<LiiklusContainer> {
     }
 
     public LiiklusContainer withKafka(KafkaContainer kafkaContainer) {
-        return withKafka(kafkaContainer.getNetwork(), kafkaContainer.getNetworkAliases().get(0) + ":9092");
+        return dependsOn(kafkaContainer)
+                .withKafka(kafkaContainer.getNetwork(), "PLAINTEXT://" + kafkaContainer.getNetworkAliases().get(0) + ":9093");
     }
 
     public LiiklusContainer withKafka(Network network, String bootstrapServers) {
