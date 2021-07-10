@@ -1,6 +1,7 @@
 plugins {
     id "java"
     id "io.spring.dependency-management"
+    id 'io.franzbecker.gradle-lombok'
 }
 
 sourceCompatibility = targetCompatibility = 8
@@ -44,14 +45,11 @@ dependencyManagement {
             entry "testing"
         }
 
-        dependency 'org.projectlombok:lombok:1.18.12'
-        dependency 'com.google.auto.service:auto-service:1.0-rc6'
+        dependency 'com.google.auto.service:auto-service:1.0'
     }
 }
 
 dependencies {
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
     compileOnly "com.google.auto.service:auto-service"
     annotationProcessor "com.google.auto.service:auto-service"
 

@@ -54,8 +54,6 @@ jar {
 }
 
 dependencies {
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
     compileOnly 'com.google.auto.service:auto-service'
     annotationProcessor 'com.google.auto.service:auto-service'
 
@@ -65,9 +63,6 @@ dependencies {
 
     compile 'io.rsocket.rpc:rsocket-rpc-core'
     compile 'io.rsocket:rsocket-transport-netty'
-
-    testCompileOnly 'org.projectlombok:lombok'
-    testAnnotationProcessor 'org.projectlombok:lombok'
 
     testCompile project(":app")
     testCompile 'org.springframework.boot:spring-boot-test'

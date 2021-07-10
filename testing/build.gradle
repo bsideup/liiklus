@@ -1,12 +1,7 @@
 dependencies {
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
-
     compile 'org.testcontainers:testcontainers'
     compile 'org.testcontainers:kafka'
 
-    testCompileOnly 'org.projectlombok:lombok'
-    testAnnotationProcessor 'org.projectlombok:lombok'
     testCompile 'ch.qos.logback:logback-classic'
     testCompile 'org.assertj:assertj-core'
     testCompile 'org.awaitility:awaitility'

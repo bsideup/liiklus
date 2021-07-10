@@ -22,8 +22,6 @@ tasks.test.dependsOn(
 )
 
 dependencies {
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
     compileOnly 'com.google.auto.service:auto-service'
     annotationProcessor 'com.google.auto.service:auto-service'
 
@@ -37,8 +35,6 @@ dependencies {
     runtimeOnly 'io.netty:netty-tcnative-boringssl-static:2.0.25.Final'
     testRuntimeOnly 'io.netty:netty-tcnative-boringssl-static:2.0.25.Final'
 
-    testCompileOnly 'org.projectlombok:lombok'
-    testAnnotationProcessor 'org.projectlombok:lombok'
     testCompile project(":tck")
     testCompile project(":client")
     testCompile 'org.springframework.boot:spring-boot-starter-test'

@@ -17,15 +17,11 @@ tasks.test.dependsOn(
 )
 
 dependencies {
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
     compileOnly 'com.google.auto.service:auto-service'
     annotationProcessor 'com.google.auto.service:auto-service'
 
     compileOnly project(":app")
 
-    testCompileOnly 'org.projectlombok:lombok'
-    testAnnotationProcessor 'org.projectlombok:lombok'
     testCompile project(":tck")
     testCompile 'org.springframework.boot:spring-boot-test'
 }

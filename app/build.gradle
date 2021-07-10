@@ -9,9 +9,6 @@ bootJar {
 }
 
 dependencies {
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
-
     compile project(":api")
     compile project(":protocol")
 
@@ -20,8 +17,6 @@ dependencies {
 
     compile 'org.pf4j:pf4j'
 
-    testCompileOnly 'org.projectlombok:lombok'
-    testAnnotationProcessor 'org.projectlombok:lombok'
     testCompile 'org.springframework.boot:spring-boot-starter-test'
     testCompile 'org.assertj:assertj-core'
     testCompile 'org.awaitility:awaitility'
