@@ -3,6 +3,7 @@ package com.github.bsideup.liiklus.records.inmemory;
 import com.github.bsideup.liiklus.ApplicationRunner;
 import com.github.bsideup.liiklus.records.RecordStorageTests;
 import com.github.bsideup.liiklus.records.RecordsStorage;
+import com.github.bsideup.liiklus.records.inmemory.config.InMemoryRecordsConfiguration;
 import lombok.Getter;
 import org.springframework.context.ApplicationContext;
 import reactor.core.publisher.Mono;
@@ -14,7 +15,7 @@ import java.util.UUID;
 
 class InMemoryRecordsStorageTest implements RecordStorageTests {
 
-    private static final int NUM_OF_PARTITIONS = 32;
+    private static final int NUM_OF_PARTITIONS = InMemoryRecordsConfiguration.NUMBER_OF_PARTITIONS;
 
     // Generate a set of keys where each key goes to unique partition
     public static Map<Integer, String> PARTITION_KEYS = Mono.fromCallable(() -> UUID.randomUUID().toString())

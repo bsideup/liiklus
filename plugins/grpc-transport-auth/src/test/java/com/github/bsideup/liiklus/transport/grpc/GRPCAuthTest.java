@@ -17,7 +17,7 @@ import io.grpc.MethodDescriptor;
 import io.grpc.Server;
 import io.grpc.StatusRuntimeException;
 import lombok.SneakyThrows;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.pf4j.PluginManager;
 import org.springframework.context.ApplicationContext;
 
@@ -34,7 +34,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class GRPCAuthTest {
+class GRPCAuthTest {
 
     private static final LiiklusEvent LIIKLUS_EVENT_EXAMPLE = LiiklusEvent.newBuilder()
             .setId(UUID.randomUUID().toString())
@@ -60,7 +60,7 @@ public class GRPCAuthTest {
 
 
     @Test
-    public void shouldPublishOnlyWithAuthHmac512() {
+    void shouldPublishOnlyWithAuthHmac512() {
         var event = PublishRequest.newBuilder()
                 .setTopic("authorized")
                 .setLiiklusEvent(LIIKLUS_EVENT_EXAMPLE)
@@ -116,7 +116,7 @@ public class GRPCAuthTest {
     }
 
     @Test
-    public void shouldPublishWithAuthRsa512() {
+    void shouldPublishWithAuthRsa512() {
         var event = PublishRequest.newBuilder()
                 .setTopic("authorized")
                 .setLiiklusEvent(LIIKLUS_EVENT_EXAMPLE)

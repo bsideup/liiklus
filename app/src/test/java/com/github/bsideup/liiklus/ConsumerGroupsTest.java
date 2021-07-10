@@ -4,24 +4,26 @@ import com.github.bsideup.liiklus.protocol.PublishRequest;
 import com.github.bsideup.liiklus.protocol.SubscribeRequest;
 import com.github.bsideup.liiklus.test.AbstractIntegrationTest;
 import com.google.protobuf.ByteString;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import reactor.core.publisher.Flux;
 
+import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
-public class ConsumerGroupsTest extends AbstractIntegrationTest {
+class ConsumerGroupsTest extends AbstractIntegrationTest {
 
     SubscribeRequest subscribeRequest;
 
-    @Before
-    public void setUpConsumerGroupsTest() throws Exception {
+    @BeforeEach
+    void setUpConsumerGroupsTest(TestInfo info) throws Exception {
         subscribeRequest = SubscribeRequest.newBuilder()
-                .setTopic(testName.getMethodName())
-                .setGroup(testName.getMethodName())
+                .setTopic(info.getTestMethod().map(Method::getName).orElse("unknown"))
+                .setGroup(info.getTestMethod().map(Method::getName).orElse("unknown"))
                 .setAutoOffsetReset(SubscribeRequest.AutoOffsetReset.EARLIEST)
                 .build();
 
@@ -40,7 +42,7 @@ public class ConsumerGroupsTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void testConsumerGroups() {
+    void testConsumerGroups() {
         Flux
                 .merge(
                         stub.subscribe(subscribeRequest),

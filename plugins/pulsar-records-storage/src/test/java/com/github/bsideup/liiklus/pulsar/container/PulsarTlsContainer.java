@@ -3,6 +3,7 @@ package com.github.bsideup.liiklus.pulsar.container;
 import org.testcontainers.containers.PulsarContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
 import java.nio.file.Path;
@@ -13,11 +14,7 @@ public class PulsarTlsContainer extends PulsarContainer {
     public static final int BROKER_TLS_PORT = 6651;
 
     public PulsarTlsContainer() {
-        this("2.4.0");
-    }
-
-    public PulsarTlsContainer(String pulsarVersion) {
-        super(pulsarVersion);
+        super(DockerImageName.parse("apachepulsar/pulsar:2.5.0"));
         withExposedPorts(BROKER_TLS_PORT, BROKER_HTTP_PORT);
         withEnv("PULSAR_PREFIX_brokerServicePortTls", BROKER_TLS_PORT + "");
         withEnv("PULSAR_PREFIX_tlsEnabled", "true");

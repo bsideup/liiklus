@@ -13,6 +13,8 @@ import org.testcontainers.containers.output.ToStringConsumer;
 import reactor.core.publisher.Flux;
 
 import java.time.Duration;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 public abstract class AbstractIntegrationTest {
@@ -20,7 +22,7 @@ public abstract class AbstractIntegrationTest {
     protected static final LiiklusClient client;
 
     static {
-        LiiklusContainer liiklus = new LiiklusContainer("0.7.0")
+        LiiklusContainer liiklus = new LiiklusContainer("0.9.3")
                 .withEnv("storage_records_type", "MEMORY")
                 .withClasspathResourceMapping("/example-plugin.jar", "/app/plugins/example-plugin.jar", BindMode.READ_ONLY)
                 .withLogConsumer(new ToStringConsumer() {

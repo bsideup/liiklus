@@ -7,6 +7,7 @@ import lombok.Getter;
 import org.apache.kafka.common.utils.Utils;
 import org.springframework.context.ApplicationContext;
 import org.testcontainers.containers.KafkaContainer;
+import org.testcontainers.utility.DockerImageName;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
@@ -31,7 +32,7 @@ public class KafkaRecordsStorageTest implements RecordStorageTests {
             .filter(it -> it.size() == NUM_OF_PARTITIONS)
             .blockFirst(Duration.ofSeconds(10));
 
-    private static final KafkaContainer kafka = new KafkaContainer()
+    private static final KafkaContainer kafka = new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:5.4.3"))
             .withEnv("KAFKA_NUM_PARTITIONS", NUM_OF_PARTITIONS + "");
 
     static final ApplicationContext applicationContext;

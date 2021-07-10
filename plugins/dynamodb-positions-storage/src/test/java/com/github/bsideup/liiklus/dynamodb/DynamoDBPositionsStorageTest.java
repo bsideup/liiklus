@@ -7,12 +7,13 @@ import lombok.Getter;
 import org.springframework.context.ApplicationContext;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.containers.localstack.LocalStackContainer.Service;
+import org.testcontainers.utility.DockerImageName;
 
 import java.util.UUID;
 
 class DynamoDBPositionsStorageTest implements PositionsStorageTests {
 
-    private static final LocalStackContainer localstack = new LocalStackContainer("0.8.6")
+    private static final LocalStackContainer localstack = new LocalStackContainer(DockerImageName.parse("localstack/localstack:0.11.2"))
             .withServices(Service.DYNAMODB);
 
     static final ApplicationContext applicationContext;

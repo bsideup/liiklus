@@ -13,8 +13,6 @@ dependencies {
     compile 'org.assertj:assertj-core'
     compile 'io.projectreactor:reactor-test'
     compile 'org.awaitility:awaitility'
-
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
 }
 
 tasks.test.dependsOn(

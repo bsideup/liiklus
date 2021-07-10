@@ -1,9 +1,5 @@
 sourceCompatibility = targetCompatibility = 8
 
-test {
-    useJUnit()
-}
-
 dependencies {
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
@@ -13,6 +9,5 @@ dependencies {
 
     testCompileOnly 'org.projectlombok:lombok'
     testAnnotationProcessor 'org.projectlombok:lombok'
-    testCompile 'junit:junit'
     testCompile 'org.assertj:assertj-core'
 }

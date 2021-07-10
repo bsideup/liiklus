@@ -5,10 +5,6 @@ plugins {
 
 sourceCompatibility = targetCompatibility = 8
 
-test {
-    useJUnit()
-}
-
 jar {
     baseName = "example-plugin"
     manifest {
@@ -38,7 +34,7 @@ dependencyManagement {
 
     imports {
         mavenBom org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES
-        mavenBom 'org.testcontainers:testcontainers-bom:1.12.3'
+        mavenBom 'org.testcontainers:testcontainers-bom:1.15.3'
     }
 
     dependencies {

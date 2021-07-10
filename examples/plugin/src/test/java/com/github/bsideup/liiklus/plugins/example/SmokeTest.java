@@ -2,17 +2,17 @@ package com.github.bsideup.liiklus.plugins.example;
 
 import com.github.bsideup.liiklus.protocol.ReceiveReply.Record;
 import com.github.bsideup.liiklus.plugins.example.support.AbstractIntegrationTest;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class SmokeTest extends AbstractIntegrationTest {
+class SmokeTest extends AbstractIntegrationTest {
 
     @Test
-    public void testPreProcessor() {
+    void testPreProcessor() {
         String key = UUID.randomUUID().toString();
 
         publishRecord(key, "Hello!");
@@ -25,7 +25,7 @@ public class SmokeTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void testPostProcessor() {
+    void testPostProcessor() {
         String key = "maskMe";
 
         publishRecord(key, "Hello!");

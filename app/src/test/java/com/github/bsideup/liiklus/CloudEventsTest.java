@@ -6,11 +6,13 @@ import com.github.bsideup.liiklus.protocol.*;
 import com.github.bsideup.liiklus.records.LiiklusCloudEvent;
 import com.github.bsideup.liiklus.test.AbstractIntegrationTest;
 import com.google.protobuf.ByteString;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import reactor.core.publisher.SignalType;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.Collections;
@@ -21,12 +23,12 @@ import java.util.logging.Level;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class CloudEventsTest extends AbstractIntegrationTest {
+class CloudEventsTest extends AbstractIntegrationTest {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    @Before
-    public void setUpCloudEventsTest() throws Exception {
+    @BeforeEach
+    void setUpCloudEventsTest() throws Exception {
         processorPluginMock.getPreProcessors().add(envelope -> {
             var rawValue = envelope.getRawValue();
 
@@ -61,10 +63,10 @@ public class CloudEventsTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void shouldSupportLegacyFormat() throws Exception {
+    void shouldSupportLegacyFormat(TestInfo info) throws Exception {
         var subscribeAction = SubscribeRequest.newBuilder()
-                .setTopic(testName.getMethodName())
-                .setGroup(testName.getMethodName())
+                .setTopic(info.getTestMethod().map(Method::getName).orElse("unknown"))
+                .setGroup(info.getTestMethod().map(Method::getName).orElse("unknown"))
                 .setAutoOffsetReset(SubscribeRequest.AutoOffsetReset.EARLIEST)
                 .build();
 

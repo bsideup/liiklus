@@ -4,10 +4,12 @@ import com.github.bsideup.liiklus.protocol.*;
 import com.github.bsideup.liiklus.protocol.ReceiveReply.Record;
 import com.github.bsideup.liiklus.test.AbstractIntegrationTest;
 import com.google.protobuf.ByteString;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import reactor.core.publisher.Flux;
 
+import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
@@ -15,20 +17,20 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-public class GroupVersionTest extends AbstractIntegrationTest {
+class GroupVersionTest extends AbstractIntegrationTest {
 
     private static final int PARTITION = 1;
 
-    public static final int NUM_OF_RECORDS_PER_PARTITION = 10;
+    static final int NUM_OF_RECORDS_PER_PARTITION = 10;
 
     private String topic;
 
     private String groupName;
 
-    @Before
-    public void setUpGroupVersionTest() throws Exception {
-        topic = testName.getMethodName();
-        groupName = testName.getMethodName();
+    @BeforeEach
+    void setUpGroupVersionTest(TestInfo info) throws Exception {
+        topic = info.getTestMethod().map(Method::getName).orElse("unknown");
+        groupName = info.getTestMethod().map(Method::getName).orElse("unknown");
 
         Flux.range(0, NUM_OF_RECORDS_PER_PARTITION)
                 .flatMap(__ -> stub.publish(
@@ -42,7 +44,7 @@ public class GroupVersionTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void testCompoundGroupId() throws Exception {
+    void testCompoundGroupId() throws Exception {
         var groupVersion = 1;
 
         var committedOffset = 3;
@@ -59,13 +61,13 @@ public class GroupVersionTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void testReplayWithNoAck() throws Exception {
+    void testReplayWithNoAck() throws Exception {
         assertThat(getAllRecords(0)).noneMatch(Record::getReplay);
         assertThat(getAllRecords(1)).noneMatch(Record::getReplay);
     }
 
     @Test
-    public void testReplayUsesAlwaysLatest() throws Exception {
+    void testReplayUsesAlwaysLatest() throws Exception {
         ackOffset(1, 3);
         ackOffset(2, 7);
         ackOffset(3, 5);
@@ -87,7 +89,7 @@ public class GroupVersionTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void testReplayWithPreviousVersion() throws Exception {
+    void testReplayWithPreviousVersion() throws Exception {
         ackOffset(2, 7);
 
         assertThat(getAllRecords(1))
@@ -107,7 +109,7 @@ public class GroupVersionTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void testLegacyVersions() throws Exception {
+    void testLegacyVersions() throws Exception {
         var groupVersion = 2;
         var groupId = groupName + "-v" + groupVersion;
 
