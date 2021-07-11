@@ -3,9 +3,6 @@ sourceSets.main.resources.srcDir tasks.findByPath(":app:bootJar").outputs.files.
 compileJava.dependsOn(tasks.findByPath(":app:bootJar"))
 
 dependencies {
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
-
     compile project(":app")
     compile 'org.springframework.boot:spring-boot-loader'
 

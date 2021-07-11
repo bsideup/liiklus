@@ -55,9 +55,6 @@ idea {
 sourceCompatibility = targetCompatibility = 8
 
 dependencies {
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
-
     protobuf project(":protocol")
     compile project(":protocol")
 

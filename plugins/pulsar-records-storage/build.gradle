@@ -17,8 +17,6 @@ tasks.test.dependsOn(
 )
 
 dependencies {
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
     compileOnly 'com.google.auto.service:auto-service'
     annotationProcessor 'com.google.auto.service:auto-service'
 
@@ -26,8 +24,6 @@ dependencies {
 
     compile 'org.apache.pulsar:pulsar-client-original:2.4.0'
 
-    testCompileOnly 'org.projectlombok:lombok'
-    testAnnotationProcessor 'org.projectlombok:lombok'
     testCompile project(":tck")
     testCompile 'org.testcontainers:pulsar'
     testCompile 'org.apache.pulsar:pulsar-client-admin-original:2.4.0'

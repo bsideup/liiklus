@@ -14,8 +14,6 @@ jar {
 tasks.test.dependsOn(jar)
 
 dependencies {
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
     compileOnly 'com.google.auto.service:auto-service'
     annotationProcessor 'com.google.auto.service:auto-service'
 
@@ -24,9 +22,6 @@ dependencies {
     compile 'com.networknt:json-schema-validator:0.1.19'
 
     compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
-
-    testCompileOnly 'org.projectlombok:lombok'
-    testAnnotationProcessor 'org.projectlombok:lombok'
 
     testCompile project(":app")
     testCompile project(":tck")

@@ -8,6 +8,7 @@ buildscript {
 }
 
 plugins {
+    id 'io.franzbecker.gradle-lombok' version '4.0.0' apply false
     id "com.google.protobuf" version "0.8.10" apply false
 }
 
@@ -33,6 +34,7 @@ allprojects {
 
 configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
     apply plugin: 'io.spring.dependency-management'
+    apply plugin: 'io.franzbecker.gradle-lombok'
     apply plugin: 'maven'
     apply plugin: 'java'
     apply from: "$rootDir/gradle/rerunTests.gradle"
@@ -44,6 +46,10 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
                 '-Xlint:deprecation',
                 '-Werror'
         ]
+    }
+
+    lombok {
+        version = '1.18.20'
     }
 
     test {
@@ -87,8 +93,6 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
         }
 
         dependencies {
-            dependency 'org.projectlombok:lombok:1.18.12'
-
             dependency 'org.pf4j:pf4j:3.1.0'
 
             dependencySet(group: 'io.rsocket.rpc', version: '0.2.19') {
@@ -100,7 +104,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
 
             dependency 'com.google.protobuf:protoc:3.10.1'
 
-            dependency 'com.google.auto.service:auto-service:1.0-rc6'
+            dependency 'com.google.auto.service:auto-service:1.0'
 
             // Override kafka-clients' version, otherwise it comes from Spring Boot
             dependency 'org.apache.kafka:kafka-clients:2.3.1'
