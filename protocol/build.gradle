@@ -1,8 +1,8 @@
 plugins {
-    id "idea"
+    id 'idea'
+    id 'java-library'
+    id 'com.google.protobuf'
 }
-
-apply plugin: "com.google.protobuf"
 
 sourceCompatibility = targetCompatibility = 8
 
@@ -25,5 +25,5 @@ idea {
 }
 
 dependencies {
-    compile 'com.google.protobuf:protobuf-java'
+    api 'com.google.protobuf:protobuf-java'
 }

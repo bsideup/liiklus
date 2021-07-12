@@ -1,4 +1,11 @@
-apply plugin: 'org.springframework.boot'
+plugins {
+    id 'java-library'
+    id 'org.springframework.boot'
+}
+
+java {
+    withSourcesJar()
+}
 
 jar {
     enabled = true
@@ -9,18 +16,18 @@ bootJar {
 }
 
 dependencies {
-    compile project(":api")
-    compile project(":protocol")
+    api project(":api")
+    api project(":protocol")
 
-    compile 'org.springframework.boot:spring-boot-starter-webflux'
-    compile 'org.springframework.fu:spring-fu-jafu'
+    api 'org.springframework.boot:spring-boot-starter-webflux'
+    api 'org.springframework.fu:spring-fu-jafu'
 
-    compile 'org.pf4j:pf4j'
+    api 'org.pf4j:pf4j'
 
-    testCompile 'org.springframework.boot:spring-boot-starter-test'
-    testCompile 'org.assertj:assertj-core'
-    testCompile 'org.awaitility:awaitility'
-    testCompile project(":client")
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.assertj:assertj-core'
+    testImplementation 'org.awaitility:awaitility'
+    testImplementation project(":client")
 }
 
 def plugins = rootProject.allprojects.findAll { it.projectDir.parentFile.name == "plugins" }

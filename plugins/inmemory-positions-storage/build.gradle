@@ -7,7 +7,7 @@ jar {
     }
 
     into('lib') {
-        from(configurations.compile - configurations.compileOnly)
+        from(configurations.runtimeClasspath - configurations.compileOnlyClasspath)
     }
 }
 
@@ -20,8 +20,8 @@ dependencies {
     compileOnly 'com.google.auto.service:auto-service'
     annotationProcessor 'com.google.auto.service:auto-service'
 
-    compileOnly project(":app")
+    compileOnly project(':app')
 
-    testCompile project(":tck")
-    testCompile 'org.springframework.boot:spring-boot-test'
+    testImplementation project(':tck')
+    testImplementation 'org.springframework.boot:spring-boot-test'
 }

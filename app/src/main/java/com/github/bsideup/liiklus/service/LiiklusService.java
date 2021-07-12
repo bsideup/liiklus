@@ -98,7 +98,7 @@ public class LiiklusService {
                 var cloudEvent = request.getLiiklusEvent();
 
                 String time = null;
-                if (!StringUtils.isEmpty(cloudEvent.getTime())) {
+                if (StringUtils.hasText(cloudEvent.getTime())) {
                     time = cloudEvent.getTime();
                 }
 

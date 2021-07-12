@@ -33,7 +33,7 @@ public class LiiklusPluginLoader implements PluginLoader {
         pluginClassLoader.addFile(pluginPath.toFile());
 
         // TODO consider fat jars
-        try (var jarFileSystem = FileSystems.newFileSystem(pluginPath, null)) {
+        try (var jarFileSystem = FileSystems.newFileSystem(pluginPath, (ClassLoader) null)) {
             var libPath = jarFileSystem.getPath("lib");
             if (Files.exists(libPath)) {
                 try (var pathStream = Files.walk(libPath, 1)) {
