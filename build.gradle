@@ -111,7 +111,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
 
             dependency 'com.salesforce.servicelibs:reactor-grpc-stub:0.10.0'
 
-            dependency 'org.awaitility:awaitility:4.0.1'
+            dependency 'org.awaitility:awaitility:4.1.0'
         }
     }
 
