@@ -75,6 +75,23 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
         }
     }
 
+    publishing {
+        publications {
+            maven(MavenPublication) {
+                from components.java
+
+                versionMapping {
+                    usage('java-api') {
+                        fromResolutionOf('runtimeClasspath')
+                    }
+                    usage('java-runtime') {
+                        fromResolutionResult()
+                    }
+                }
+            }
+        }
+    }
+
     task install {
         dependsOn tasks.publishToMavenLocal
         dependsOn tasks.findByName("assemble")
