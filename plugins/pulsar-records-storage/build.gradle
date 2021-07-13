@@ -22,7 +22,7 @@ dependencies {
 
     compileOnly project(":app")
 
-    compile 'org.apache.pulsar:pulsar-client-original:2.4.0'
+    compile 'org.apache.pulsar:pulsar-client-original:2.8.0'
 
     testCompile project(":tck")
     testCompile 'org.testcontainers:pulsar'
