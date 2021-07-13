@@ -2,7 +2,7 @@ sourceCompatibility = targetCompatibility = 8
 
 dependencies {
     compile 'org.reactivestreams:reactive-streams'
-    compile 'io.cloudevents:cloudevents-api:1.2.0'
+    compile 'io.cloudevents:cloudevents-api:2.2.0'
 
     testCompile 'org.assertj:assertj-core'
 }
