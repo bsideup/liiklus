@@ -47,7 +47,7 @@ repositories {
 }
 
 dependencies {
-    compile 'org.testcontainers:kafka:1.15.3'
+    compile 'org.testcontainers:kafka:1.16.0'
 
     compile 'org.apache.commons:commons-math3:3.6.1'
 
