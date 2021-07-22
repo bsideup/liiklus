@@ -38,6 +38,6 @@ dependencies {
     testCompile project(":tck")
     testCompile project(":client")
     testCompile 'org.springframework.boot:spring-boot-starter-test'
-    testCompile 'org.bouncycastle:bcpkix-jdk15on:1.66'
+    testCompile 'org.bouncycastle:bcpkix-jdk15on:1.69'
     testRuntime project(":plugins:grpc-transport")
 }
