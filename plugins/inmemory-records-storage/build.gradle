@@ -7,7 +7,7 @@ jar {
     }
 
     into('lib') {
-        from(configurations.compile - configurations.compileOnly)
+        from(configurations.runtimeClasspath - configurations.compileOnlyClasspath)
     }
 }
 
@@ -22,6 +22,6 @@ dependencies {
 
     compileOnly project(":app")
 
-    testCompile project(":tck")
-    testCompile 'org.springframework.boot:spring-boot-test'
+    testImplementation project(":tck")
+    testImplementation 'org.springframework.boot:spring-boot-test'
 }

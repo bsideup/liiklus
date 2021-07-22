@@ -1,13 +1,13 @@
 plugins {
-    id "java"
-    id "io.spring.dependency-management"
+    id 'java-library'
+    id 'io.spring.dependency-management'
     id 'io.franzbecker.gradle-lombok'
 }
 
 sourceCompatibility = targetCompatibility = 8
 
 jar {
-    baseName = "example-plugin"
+    archiveBaseName = "example-plugin"
     manifest {
         attributes(
                 'Plugin-Id': "example-plugin",
@@ -16,17 +16,29 @@ jar {
     }
 
     into('lib') {
-        from configurations.compile
+        from configurations.runtimeClasspath - configurations.compileOnlyClasspath
     }
 }
 
-sourceSets.test.resources.srcDir jar.outputs.files.singleFile.parentFile
-test {
-    dependsOn jar
+configurations {
+    compileOnlyClasspath {
+        extendsFrom compileOnly
+        canBeConsumed false
+        canBeResolved true
+    }
+}
+
+processTestResources.dependsOn(jar)
+test.dependsOn(jar)
+
+sourceSets {
+    test {
+        resources.srcDir jar.outputs.files.singleFile.parentFile
+    }
 }
 
 repositories {
-    jcenter()
+    mavenCentral()
     maven { url 'https://jitpack.io' }
 }
 
@@ -57,11 +69,11 @@ dependencies {
     compileOnly 'org.springframework.boot:spring-boot-starter'
     compileOnly 'io.projectreactor:reactor-core'
 
-    compile 'org.apache.commons:commons-lang3:3.9'
+    implementation 'org.apache.commons:commons-lang3:3.9'
 
-    testCompile 'org.testcontainers:kafka'
-    testCompile 'ch.qos.logback:logback-classic:'
-    testCompile "com.github.bsideup.liiklus:client"
-    testCompile "com.github.bsideup.liiklus:testing"
-    testCompile 'org.assertj:assertj-core'
+    testImplementation 'org.testcontainers:kafka'
+    testImplementation 'ch.qos.logback:logback-classic:'
+    testImplementation "com.github.bsideup.liiklus:client"
+    testImplementation "com.github.bsideup.liiklus:testing"
+    testImplementation 'org.assertj:assertj-core'
 }

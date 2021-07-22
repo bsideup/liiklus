@@ -1,3 +1,7 @@
+plugins {
+    id 'java-library'
+}
+
 jar {
     manifest {
         attributes(
@@ -7,7 +11,7 @@ jar {
     }
 
     into('lib') {
-        from(configurations.compile - configurations.compileOnly)
+        from(configurations.runtimeClasspath - configurations.compileOnlyClasspath)
     }
 }
 
@@ -17,9 +21,9 @@ dependencies {
 
     compileOnly project(":app")
 
-    compile 'io.prometheus:simpleclient_common:0.8.0'
+    api 'io.prometheus:simpleclient_common:0.8.0'
 
-    testCompile project(":app")
-    testCompile 'org.springframework.boot:spring-boot-test'
-    testCompile 'org.assertj:assertj-core'
+    testImplementation project(":app")
+    testImplementation 'org.springframework.boot:spring-boot-test'
+    testImplementation 'org.assertj:assertj-core'
 }

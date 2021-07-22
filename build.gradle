@@ -1,6 +1,7 @@
 buildscript {
     repositories {
         jcenter()
+        mavenCentral()
     }
     dependencies {
         classpath("org.springframework.boot:spring-boot-gradle-plugin:2.2.9.RELEASE")
@@ -9,12 +10,13 @@ buildscript {
 
 plugins {
     id 'io.franzbecker.gradle-lombok' version '4.0.0' apply false
-    id "com.google.protobuf" version "0.8.10" apply false
+    id "com.google.protobuf" version "0.8.16" apply false
 }
 
 allprojects {
     repositories {
         jcenter()
+        mavenCentral()
         maven { url "https://repo.spring.io/milestone" }
         maven { url 'https://jitpack.io' }
     }
@@ -35,7 +37,7 @@ allprojects {
 configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
     apply plugin: 'io.spring.dependency-management'
     apply plugin: 'io.franzbecker.gradle-lombok'
-    apply plugin: 'maven'
+    apply plugin: 'maven-publish'
     apply plugin: 'java'
     apply from: "$rootDir/gradle/rerunTests.gradle"
 
@@ -73,8 +75,26 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
         }
     }
 
-    project.afterEvaluate {
-        project.tasks.findByName("install")?.dependsOn(tasks.findByName("assemble"))
+    publishing {
+        publications {
+            maven(MavenPublication) {
+                from components.java
+
+                versionMapping {
+                    usage('java-api') {
+                        fromResolutionOf('runtimeClasspath')
+                    }
+                    usage('java-runtime') {
+                        fromResolutionResult()
+                    }
+                }
+            }
+        }
+    }
+
+    task install {
+        dependsOn tasks.publishToMavenLocal
+        dependsOn tasks.findByName("assemble")
     }
 
     dependencyManagement {
@@ -117,6 +137,15 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
 
     dependencies {
         testImplementation 'org.junit.jupiter:junit-jupiter'
+    }
+
+    configurations {
+        compileOnlyClasspath {
+            // https://discuss.gradle.org/t/what-is-a-configuration-which-cant-be-directly-resolved/30721
+            extendsFrom compileOnly
+            canBeConsumed false
+            canBeResolved true
+        }
     }
 
 }
