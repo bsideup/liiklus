@@ -26,6 +26,6 @@ dependencies {
 
     testCompile project(":tck")
     testCompile 'org.testcontainers:pulsar'
-    testCompile 'org.apache.pulsar:pulsar-client-admin-original:2.4.0'
+    testCompile 'org.apache.pulsar:pulsar-client-admin-original:2.8.0'
     testCompile 'org.springframework.boot:spring-boot-test'
 }
