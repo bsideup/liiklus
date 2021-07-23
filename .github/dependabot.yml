@@ -7,7 +7,7 @@ updates:
     time: "07:00"
     timezone: Europe/Berlin
   open-pull-requests-limit: 99
-  ignore:
+  ignore: []
   rebase-strategy: disabled
 - package-ecosystem: docker
   directory: "/"
