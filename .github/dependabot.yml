@@ -1,0 +1,22 @@
+version: 2
+updates:
+- package-ecosystem: gradle
+  directory: "/"
+  schedule:
+    interval: daily
+    time: "07:00"
+    timezone: Europe/Berlin
+  open-pull-requests-limit: 99
+  rebase-strategy: disabled
+- package-ecosystem: docker
+  directory: "/"
+  schedule:
+    interval: daily
+    time: "07:00"
+    timezone: Europe/Berlin
+  open-pull-requests-limit: 99
+  ignore:
+  - dependency-name: openjdk
+    versions:
+    - "> 11.0.2.pre.jdk"
+  rebase-strategy: disabled
