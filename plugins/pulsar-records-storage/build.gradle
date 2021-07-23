@@ -1,3 +1,7 @@
+plugins {
+    id 'java-library'
+}
+
 jar {
     manifest {
         attributes(
@@ -7,7 +11,7 @@ jar {
     }
 
     into('lib') {
-        from(configurations.compile - configurations.compileOnly)
+        from(configurations.runtimeClasspath - configurations.compileOnlyClasspath)
     }
 }
 
@@ -17,20 +21,15 @@ tasks.test.dependsOn(
 )
 
 dependencies {
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
     compileOnly 'com.google.auto.service:auto-service'
     annotationProcessor 'com.google.auto.service:auto-service'
 
     compileOnly project(":app")
 
-    compile 'org.apache.pulsar:pulsar-client-original:2.4.0'
+    api 'org.apache.pulsar:pulsar-client-original:2.4.0'
 
-    testCompileOnly 'org.projectlombok:lombok'
-    testAnnotationProcessor 'org.projectlombok:lombok'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
-    testCompile project(":tck")
-    testCompile 'org.testcontainers:pulsar'
-    testCompile 'org.apache.pulsar:pulsar-client-admin-original:2.4.0'
-    testCompile 'org.springframework.boot:spring-boot-test'
+    testImplementation project(":tck")
+    testImplementation 'org.testcontainers:pulsar'
+    testImplementation 'org.apache.pulsar:pulsar-client-admin-original:2.4.0'
+    testImplementation 'org.springframework.boot:spring-boot-test'
 }

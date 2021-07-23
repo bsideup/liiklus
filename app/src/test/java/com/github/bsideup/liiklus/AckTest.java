@@ -3,11 +3,13 @@ package com.github.bsideup.liiklus;
 import com.github.bsideup.liiklus.protocol.*;
 import com.github.bsideup.liiklus.test.AbstractIntegrationTest;
 import com.google.protobuf.ByteString;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 
+import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -16,15 +18,15 @@ import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class AckTest extends AbstractIntegrationTest {
+class AckTest extends AbstractIntegrationTest {
 
     SubscribeRequest subscribeRequest;
 
-    @Before
-    public void setUpAckTest() throws Exception {
+    @BeforeEach
+    void setUpAckTest(TestInfo info) throws Exception {
         subscribeRequest = SubscribeRequest.newBuilder()
-                .setTopic(testName.getMethodName())
-                .setGroup(testName.getMethodName())
+                .setTopic(info.getTestMethod().map(Method::getName).orElse("unknown"))
+                .setGroup(info.getTestMethod().map(Method::getName).orElse("unknown"))
                 .setAutoOffsetReset(SubscribeRequest.AutoOffsetReset.EARLIEST)
                 .build();
 
@@ -40,7 +42,7 @@ public class AckTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void testManualAck() throws Exception {
+    void testManualAck() throws Exception {
         Integer partition = stub.subscribe(subscribeRequest)
                 .take(1)
                 .delayUntil(it -> {
@@ -73,7 +75,7 @@ public class AckTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void testStatelessAck() throws Exception {
+    void testStatelessAck() throws Exception {
         int partition = 1;
         int groupVersion = 1;
         AckRequest ackRequest = AckRequest.newBuilder()
@@ -103,7 +105,7 @@ public class AckTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void testAlwaysLatest() throws Exception {
+    void testAlwaysLatest() throws Exception {
         Integer partition = stub.subscribe(subscribeRequest)
                 .map(SubscribeReply::getAssignment)
                 .delayUntil(new Function<>() {
@@ -135,7 +137,7 @@ public class AckTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void testInterruption() throws Exception {
+    void testInterruption() throws Exception {
         String key = "some key";
         int partition = getPartitionByKey(key);
         ByteString keyBytes = ByteString.copyFromUtf8(key);

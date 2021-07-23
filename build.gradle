@@ -1,6 +1,7 @@
 buildscript {
     repositories {
         jcenter()
+        mavenCentral()
     }
     dependencies {
         classpath("org.springframework.boot:spring-boot-gradle-plugin:2.2.9.RELEASE")
@@ -8,12 +9,14 @@ buildscript {
 }
 
 plugins {
-    id "com.google.protobuf" version "0.8.10" apply false
+    id 'io.franzbecker.gradle-lombok' version '4.0.0' apply false
+    id "com.google.protobuf" version "0.8.16" apply false
 }
 
 allprojects {
     repositories {
         jcenter()
+        mavenCentral()
         maven { url "https://repo.spring.io/milestone" }
         maven { url 'https://jitpack.io' }
     }
@@ -33,7 +36,8 @@ allprojects {
 
 configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
     apply plugin: 'io.spring.dependency-management'
-    apply plugin: 'maven'
+    apply plugin: 'io.franzbecker.gradle-lombok'
+    apply plugin: 'maven-publish'
     apply plugin: 'java'
     apply from: "$rootDir/gradle/rerunTests.gradle"
 
@@ -44,6 +48,10 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
                 '-Xlint:deprecation',
                 '-Werror'
         ]
+    }
+
+    lombok {
+        version = '1.18.20'
     }
 
     test {
@@ -67,17 +75,35 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
         }
     }
 
-    project.afterEvaluate {
-        project.tasks.findByName("install")?.dependsOn(tasks.findByName("assemble"))
+    publishing {
+        publications {
+            maven(MavenPublication) {
+                from components.java
+
+                versionMapping {
+                    usage('java-api') {
+                        fromResolutionOf('runtimeClasspath')
+                    }
+                    usage('java-runtime') {
+                        fromResolutionResult()
+                    }
+                }
+            }
+        }
+    }
+
+    task install {
+        dependsOn tasks.publishToMavenLocal
+        dependsOn tasks.findByName("assemble")
     }
 
     dependencyManagement {
         overriddenByDependencies = false
 
         imports {
-            mavenBom 'org.junit:junit-bom:5.5.2'
+            mavenBom 'org.junit:junit-bom:5.7.2'
             mavenBom org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES
-            mavenBom 'org.testcontainers:testcontainers-bom:1.15.1'
+            mavenBom 'org.testcontainers:testcontainers-bom:1.16.0'
 
             // pinned to 1.23.1, see https://github.com/grpc/grpc-java/issues/6707
             mavenBom 'io.grpc:grpc-bom:1.23.1'
@@ -87,8 +113,6 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
         }
 
         dependencies {
-            dependency 'org.projectlombok:lombok:1.18.12'
-
             dependency 'org.pf4j:pf4j:3.1.0'
 
             dependencySet(group: 'io.rsocket.rpc', version: '0.3.0') {
@@ -100,14 +124,28 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
 
             dependency 'com.google.protobuf:protoc:3.10.1'
 
-            dependency 'com.google.auto.service:auto-service:1.0-rc6'
+            dependency 'com.google.auto.service:auto-service:1.0'
 
             // Override kafka-clients' version, otherwise it comes from Spring Boot
             dependency 'org.apache.kafka:kafka-clients:2.3.1'
 
             dependency 'com.salesforce.servicelibs:reactor-grpc-stub:0.10.0'
 
-            dependency 'org.awaitility:awaitility:4.0.1'
+            dependency 'org.awaitility:awaitility:4.1.0'
         }
     }
+
+    dependencies {
+        testImplementation 'org.junit.jupiter:junit-jupiter'
+    }
+
+    configurations {
+        compileOnlyClasspath {
+            // https://discuss.gradle.org/t/what-is-a-configuration-which-cant-be-directly-resolved/30721
+            extendsFrom compileOnly
+            canBeConsumed false
+            canBeResolved true
+        }
+    }
+
 }

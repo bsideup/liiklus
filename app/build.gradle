@@ -1,7 +1,10 @@
-apply plugin: 'org.springframework.boot'
+plugins {
+    id 'java-library'
+    id 'org.springframework.boot'
+}
 
-test {
-    useJUnit()
+java {
+    withSourcesJar()
 }
 
 jar {
@@ -13,23 +16,18 @@ bootJar {
 }
 
 dependencies {
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
+    api project(":api")
+    api project(":protocol")
 
-    compile project(":api")
-    compile project(":protocol")
+    api 'org.springframework.boot:spring-boot-starter-webflux'
+    api 'org.springframework.fu:spring-fu-jafu'
 
-    compile 'org.springframework.boot:spring-boot-starter-webflux'
-    compile 'org.springframework.fu:spring-fu-jafu'
+    api 'org.pf4j:pf4j'
 
-    compile 'org.pf4j:pf4j'
-
-    testCompileOnly 'org.projectlombok:lombok'
-    testAnnotationProcessor 'org.projectlombok:lombok'
-    testCompile 'org.springframework.boot:spring-boot-starter-test'
-    testCompile 'org.assertj:assertj-core'
-    testCompile 'org.awaitility:awaitility'
-    testCompile project(":client")
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.assertj:assertj-core'
+    testImplementation 'org.awaitility:awaitility'
+    testImplementation project(":client")
 }
 
 def plugins = rootProject.allprojects.findAll { it.projectDir.parentFile.name == "plugins" }

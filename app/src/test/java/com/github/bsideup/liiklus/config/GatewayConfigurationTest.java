@@ -4,10 +4,8 @@ import com.github.bsideup.liiklus.records.RecordPostProcessor;
 import com.github.bsideup.liiklus.records.RecordPreProcessor;
 import com.github.bsideup.liiklus.records.RecordsStorage;
 import lombok.ToString;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 import org.springframework.context.support.StaticApplicationContext;
 import org.springframework.mock.env.MockEnvironment;
@@ -16,8 +14,7 @@ import java.util.concurrent.CompletionStage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@RunWith(MockitoJUnitRunner.class)
-public class GatewayConfigurationTest {
+class GatewayConfigurationTest {
 
     MockEnvironment environment;
 
@@ -25,8 +22,8 @@ public class GatewayConfigurationTest {
 
     final GatewayConfiguration gatewayConfiguration = new GatewayConfiguration();
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         environment = new MockEnvironment();
         environment.setActiveProfiles("gateway");
 
@@ -39,7 +36,7 @@ public class GatewayConfigurationTest {
     }
 
     @Test
-    public void testOrderWithEmptyOrders() throws Exception {
+    void testOrderWithEmptyOrders() throws Exception {
         gatewayConfiguration.initialize(applicationContext);
 
         assertThat(applicationContext.getBean(RecordPreProcessorChain.class).getAll()).containsExactly(
@@ -55,7 +52,7 @@ public class GatewayConfigurationTest {
     }
 
     @Test
-    public void testOrderWithDefaultOrder() throws Exception {
+    void testOrderWithDefaultOrder() throws Exception {
         setOrder(P2.class, 0);
 
         gatewayConfiguration.initialize(applicationContext);
@@ -72,7 +69,7 @@ public class GatewayConfigurationTest {
     }
 
     @Test
-    public void testNegativeOrders() throws Exception {
+    void testNegativeOrders() throws Exception {
         setOrder(P2.class, -100);
         setOrder(P3.class, -50);
         gatewayConfiguration.initialize(applicationContext);
@@ -91,7 +88,7 @@ public class GatewayConfigurationTest {
     }
 
     @Test
-    public void testPositiveOrders() throws Exception {
+    void testPositiveOrders() throws Exception {
         setOrder(P2.class, 100);
         setOrder(P3.class, 50);
         gatewayConfiguration.initialize(applicationContext);
@@ -110,7 +107,7 @@ public class GatewayConfigurationTest {
     }
 
     @Test
-    public void testOrderClashing() throws Exception {
+    void testOrderClashing() throws Exception {
         setOrder(P3.class, -100);
         setOrder(P2.class, -100);
         gatewayConfiguration.initialize(applicationContext);

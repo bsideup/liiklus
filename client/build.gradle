@@ -1,8 +1,8 @@
 plugins {
-    id "idea"
+    id 'idea'
+    id 'java-library'
+    id 'com.google.protobuf'
 }
-
-apply plugin: "com.google.protobuf"
 
 protobuf {
     protoc {
@@ -17,7 +17,7 @@ protobuf {
         }
 
         reactor {
-            artifact = "com.salesforce.servicelibs:reactor-grpc:0.9.0:jdk8@jar"
+            artifact = 'com.salesforce.servicelibs:reactor-grpc:0.9.0:jdk8@jar'
         }
 
         rsocketRpc {
@@ -43,6 +43,10 @@ clean {
     delete protobuf.generatedFilesBaseDir
 }
 
+java {
+    withSourcesJar()
+}
+
 idea {
     module {
         generatedSourceDirs += file("${protobuf.generatedFilesBaseDir}/main/java")
@@ -54,23 +58,16 @@ idea {
 
 sourceCompatibility = targetCompatibility = 8
 
-test {
-    useJUnit()
-}
-
 dependencies {
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
-
     protobuf project(":protocol")
-    compile project(":protocol")
+    api project(":protocol")
 
-    compile 'io.grpc:grpc-stub'
-    compile 'io.grpc:grpc-protobuf'
-    compile 'com.salesforce.servicelibs:reactor-grpc-stub'
-    compile 'io.rsocket.rpc:rsocket-rpc-core'
+    api 'io.grpc:grpc-stub'
+    api 'io.grpc:grpc-protobuf'
+    api 'com.salesforce.servicelibs:reactor-grpc-stub'
+    api 'io.rsocket.rpc:rsocket-rpc-core'
 
-    compile 'io.rsocket:rsocket-transport-netty'
-    compile 'io.grpc:grpc-netty'
-    compile 'com.google.protobuf:protobuf-java-util'
+    api 'io.rsocket:rsocket-transport-netty'
+    api 'io.grpc:grpc-netty'
+    api 'com.google.protobuf:protobuf-java-util'
 }

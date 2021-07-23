@@ -1,17 +1,12 @@
-test {
-    useJUnit()
+plugins {
+    id 'java-library'
 }
 
 dependencies {
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
+    api 'org.testcontainers:testcontainers'
+    api 'org.testcontainers:kafka'
 
-    compile 'org.testcontainers:testcontainers'
-    compile 'org.testcontainers:kafka'
-
-    testCompileOnly 'org.projectlombok:lombok'
-    testAnnotationProcessor 'org.projectlombok:lombok'
-    testCompile 'ch.qos.logback:logback-classic'
-    testCompile 'org.assertj:assertj-core'
-    testCompile 'org.awaitility:awaitility'
+    testImplementation 'ch.qos.logback:logback-classic'
+    testImplementation 'org.assertj:assertj-core'
+    testImplementation 'org.awaitility:awaitility'
 }

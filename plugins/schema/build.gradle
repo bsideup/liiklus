@@ -1,3 +1,7 @@
+plugins {
+    id 'java-library'
+}
+
 jar {
     manifest {
         attributes(
@@ -7,31 +11,24 @@ jar {
     }
 
     into('lib') {
-        from(configurations.compile - configurations.compileOnly)
+        from(configurations.runtimeClasspath - configurations.compileOnlyClasspath)
     }
 }
 
 tasks.test.dependsOn(jar)
 
 dependencies {
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
     compileOnly 'com.google.auto.service:auto-service'
     annotationProcessor 'com.google.auto.service:auto-service'
 
     compileOnly project(":app")
 
-    compile 'com.networknt:json-schema-validator:0.1.19'
+    api 'com.networknt:json-schema-validator:0.1.19'
 
-    compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
+    api 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
 
-    testCompileOnly 'org.projectlombok:lombok'
-    testAnnotationProcessor 'org.projectlombok:lombok'
-    testCompile 'org.junit.jupiter:junit-jupiter-api'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
-
-    testCompile project(":app")
-    testCompile project(":tck")
-    testCompile 'org.springframework.boot:spring-boot-test'
-    testCompile 'org.assertj:assertj-core'
+    testImplementation project(":app")
+    testImplementation project(":tck")
+    testImplementation 'org.springframework.boot:spring-boot-test'
+    testImplementation 'org.assertj:assertj-core'
 }

@@ -4,24 +4,26 @@ import com.github.bsideup.liiklus.protocol.GetEndOffsetsRequest;
 import com.github.bsideup.liiklus.protocol.PublishRequest;
 import com.github.bsideup.liiklus.test.AbstractIntegrationTest;
 import com.google.protobuf.ByteString;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 
+import java.lang.reflect.Method;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class EndOffsetsTest extends AbstractIntegrationTest {
+class EndOffsetsTest extends AbstractIntegrationTest {
 
     private String topic;
 
-    @Before
-    public final void setUpEndOffsetsTest() {
-        topic = testName.getMethodName();
+    @BeforeEach
+    final void setUpEndOffsetsTest(TestInfo info) {
+        topic = info.getTestMethod().map(Method::getName).orElse("unknown");
     }
 
     @Test
-    public void testEndOffsets() {
+    void testEndOffsets() {
         for (int partition = 0; partition < NUM_PARTITIONS; partition++) {
             for (int i = 0; i < partition + 1; i++) {
                 stub.publish(PublishRequest.newBuilder()
@@ -45,7 +47,7 @@ public class EndOffsetsTest extends AbstractIntegrationTest {
     }
 
     @Test
-    public void testEndOffsets_unknownTopic() {
+    void testEndOffsets_unknownTopic() {
         var randomTopic = UUID.randomUUID().toString();
         var reply = stub.getEndOffsets(GetEndOffsetsRequest.newBuilder().setTopic(randomTopic).build()).block();
 

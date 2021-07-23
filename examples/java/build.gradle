@@ -1,7 +1,8 @@
 plugins {
-    id "java"
-    id "idea"
-    id "com.google.protobuf"
+    id 'java'
+    id 'idea'
+    id 'com.google.protobuf'
+    id 'io.franzbecker.gradle-lombok'
 }
 
 protobuf {
@@ -42,22 +43,19 @@ idea {
 }
 
 repositories {
-    jcenter()
+    mavenCentral()
 }
 
 dependencies {
-    compileOnly 'org.projectlombok:lombok:1.18.12'
-    annotationProcessor 'org.projectlombok:lombok:1.18.12'
+    implementation 'org.testcontainers:kafka:1.15.3'
 
-    compile 'org.testcontainers:kafka:1.12.3'
+    implementation 'org.apache.commons:commons-math3:3.6.1'
 
-    compile 'org.apache.commons:commons-math3:3.6.1'
+    implementation 'com.google.protobuf:protobuf-java:3.10.0'
 
-    compile 'com.google.protobuf:protobuf-java:3.10.0'
+    implementation 'io.grpc:grpc-netty:1.24.1'
+    implementation 'io.grpc:grpc-protobuf:1.24.1'
+    implementation 'com.salesforce.servicelibs:reactor-grpc-stub:0.10.0'
 
-    compile 'io.grpc:grpc-netty:1.24.1'
-    compile 'io.grpc:grpc-protobuf:1.24.1'
-    compile 'com.salesforce.servicelibs:reactor-grpc-stub:0.10.0'
-
-    runtime 'ch.qos.logback:logback-classic:1.2.3'
+    runtimeOnly 'ch.qos.logback:logback-classic:1.2.3'
 }

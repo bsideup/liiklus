@@ -1,18 +1,16 @@
+plugins {
+    id 'java-library'
+}
+
 sourceCompatibility = targetCompatibility = 8
 
-test {
-    useJUnit()
+java {
+    withSourcesJar()
 }
 
 dependencies {
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
+    api 'org.reactivestreams:reactive-streams'
+    api 'io.cloudevents:cloudevents-api:1.2.0'
 
-    compile 'org.reactivestreams:reactive-streams'
-    compile 'io.cloudevents:cloudevents-api:1.2.0'
-
-    testCompileOnly 'org.projectlombok:lombok'
-    testAnnotationProcessor 'org.projectlombok:lombok'
-    testCompile 'junit:junit'
-    testCompile 'org.assertj:assertj-core'
+    testImplementation 'org.assertj:assertj-core'
 }

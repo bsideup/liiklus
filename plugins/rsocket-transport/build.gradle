@@ -1,8 +1,8 @@
 plugins {
-    id "idea"
+    id 'idea'
+    id 'java-library'
+    id 'com.google.protobuf'
 }
-
-apply plugin: "com.google.protobuf"
 
 protobuf {
     protoc {
@@ -49,13 +49,11 @@ jar {
     }
 
     into('lib') {
-        from(configurations.compile - configurations.compileOnly)
+        from(configurations.runtimeClasspath - configurations.compileOnlyClasspath)
     }
 }
 
 dependencies {
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
     compileOnly 'com.google.auto.service:auto-service'
     annotationProcessor 'com.google.auto.service:auto-service'
 
@@ -63,19 +61,14 @@ dependencies {
 
     compileOnly project(":app")
 
-    compile 'io.rsocket.rpc:rsocket-rpc-core'
-    compile ('io.rsocket:rsocket-transport-netty') {
+    api 'io.rsocket.rpc:rsocket-rpc-core'
+    api ('io.rsocket:rsocket-transport-netty') {
         exclude group: "io.projectreactor.netty", module: "reactor-netty-core"
         exclude group: "io.projectreactor.netty", module: "reactor-netty-http"
     }
 
-    testCompileOnly 'org.projectlombok:lombok'
-    testAnnotationProcessor 'org.projectlombok:lombok'
-    testCompile 'org.junit.jupiter:junit-jupiter-api'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
-
-    testCompile project(":app")
-    testCompile 'org.springframework.boot:spring-boot-test'
-    testCompile 'org.assertj:assertj-core'
-    testCompile 'org.mockito:mockito-core'
+    testImplementation project(":app")
+    testImplementation 'org.springframework.boot:spring-boot-test'
+    testImplementation 'org.assertj:assertj-core'
+    testImplementation 'org.mockito:mockito-core'
 }

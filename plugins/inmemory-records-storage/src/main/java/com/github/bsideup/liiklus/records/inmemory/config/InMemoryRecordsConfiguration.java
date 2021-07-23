@@ -5,12 +5,13 @@ import com.google.auto.service.AutoService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.support.GenericApplicationContext;
-import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.Profiles;
 
 @AutoService(ApplicationContextInitializer.class)
 @Slf4j
 public class InMemoryRecordsConfiguration implements ApplicationContextInitializer<GenericApplicationContext> {
+
+    public static final int NUMBER_OF_PARTITIONS = 32;
 
     @Override
     public void initialize(GenericApplicationContext applicationContext) {
@@ -33,6 +34,6 @@ public class InMemoryRecordsConfiguration implements ApplicationContextInitializ
                 String.format("%0106d", 0).replace("0", "=") + "\n" +
                 String.format("%0106d", 0).replace("0", "=")
         );
-        applicationContext.registerBean(InMemoryRecordsStorage.class, () -> new InMemoryRecordsStorage(32));
+        applicationContext.registerBean(InMemoryRecordsStorage.class, () -> new InMemoryRecordsStorage(NUMBER_OF_PARTITIONS));
     }
 }

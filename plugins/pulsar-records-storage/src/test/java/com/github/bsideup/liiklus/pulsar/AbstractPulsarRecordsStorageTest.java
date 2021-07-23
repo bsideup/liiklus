@@ -10,6 +10,7 @@ import org.apache.pulsar.client.impl.MessageIdImpl;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationContext;
 import org.testcontainers.containers.PulsarContainer;
+import org.testcontainers.utility.DockerImageName;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -20,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 abstract class AbstractPulsarRecordsStorageTest implements RecordStorageTests {
 
-    static final PulsarContainer pulsar = new PulsarContainer("2.5.0")
+    static final PulsarContainer pulsar = new PulsarContainer(DockerImageName.parse("apachepulsar/pulsar:2.5.0"))
             .withReuse(true);
 
     private static final ApplicationContext applicationContext;
@@ -41,7 +42,7 @@ abstract class AbstractPulsarRecordsStorageTest implements RecordStorageTests {
 
     @Override
     @Test
-    @DisabledUntil(value = "2020-09-01", comment = "#180 - Pulsar should fix the way seek works, not disconnecting consumers (apache/pulsar/pull/5022)")
+    @DisabledUntil(value = "2021-09-01", comment = "#180 - Pulsar should fix the way seek works, not disconnecting consumers (apache/pulsar/pull/5022)")
     public void shouldAlwaysUseEarliestOffsetOnEmptyOffsetsInTheInitialProvider() {
         RecordStorageTests.super.shouldAlwaysUseEarliestOffsetOnEmptyOffsetsInTheInitialProvider();
     }

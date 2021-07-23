@@ -1,9 +1,8 @@
 package com.github.bsideup.liiklus.positions;
 
 import lombok.RequiredArgsConstructor;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -11,12 +10,10 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@RunWith(Parameterized.class)
 @RequiredArgsConstructor
-public class GroupIdTest {
+class GroupIdTest {
 
-    @Parameterized.Parameters(name = "{index}: {0}")
-    public static Collection<Object[]> data() {
+    static Collection<Object[]> data() {
         return Arrays.asList(new Object[][]{
                 {"hello", GroupId.of("hello", Optional.empty())},
                 {"hello-", GroupId.of("hello-", Optional.empty())},
@@ -33,17 +30,15 @@ public class GroupIdTest {
         });
     }
 
-    final String string;
-
-    final GroupId object;
-
-    @Test
-    public void testParsing() {
+    @ParameterizedTest
+    @MethodSource("data")
+    void testParsing(String string, GroupId object) {
         assertThat(GroupId.ofString(string)).isEqualTo(object);
     }
 
-    @Test
-    public void testStringRepresentation() {
+    @ParameterizedTest
+    @MethodSource("data")
+    void testStringRepresentation(String string, GroupId object) {
         assertThat(object.asString()).isEqualTo(string);
     }
 }

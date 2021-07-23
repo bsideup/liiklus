@@ -1,3 +1,7 @@
+plugins {
+    id 'java-library'
+}
+
 jar {
     manifest {
         attributes(
@@ -7,25 +11,19 @@ jar {
     }
 
     into('lib') {
-        from(configurations.compile - configurations.compileOnly)
+        from(configurations.runtimeClasspath - configurations.compileOnlyClasspath)
     }
 }
 
 dependencies {
-    compileOnly 'org.projectlombok:lombok'
-    annotationProcessor 'org.projectlombok:lombok'
     compileOnly 'com.google.auto.service:auto-service'
     annotationProcessor 'com.google.auto.service:auto-service'
 
     compileOnly project(":app")
 
-    compile 'io.prometheus:simpleclient_common:0.8.0'
+    api 'io.prometheus:simpleclient_common:0.8.0'
 
-    testCompileOnly 'org.projectlombok:lombok'
-    testAnnotationProcessor 'org.projectlombok:lombok'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
-    testCompile 'org.junit.jupiter:junit-jupiter-api'
-    testCompile project(":app")
-    testCompile 'org.springframework.boot:spring-boot-test'
-    testCompile 'org.assertj:assertj-core'
+    testImplementation project(":app")
+    testImplementation 'org.springframework.boot:spring-boot-test'
+    testImplementation 'org.assertj:assertj-core'
 }
