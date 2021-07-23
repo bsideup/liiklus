@@ -109,13 +109,13 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
             mavenBom 'io.grpc:grpc-bom:1.23.1'
             mavenBom 'com.google.protobuf:protobuf-bom:3.10.0'
 
-            mavenBom 'io.rsocket:rsocket-bom:1.0.1'
+            mavenBom 'io.rsocket:rsocket-bom:1.1.0'
         }
 
         dependencies {
             dependency 'org.pf4j:pf4j:3.1.0'
 
-            dependencySet(group: 'io.rsocket.rpc', version: '0.2.19') {
+            dependencySet(group: 'io.rsocket.rpc', version: '0.3.0') {
                 entry 'rsocket-rpc-core'
                 entry 'rsocket-rpc-protobuf'
             }

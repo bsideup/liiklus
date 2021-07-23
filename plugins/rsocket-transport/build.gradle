@@ -62,7 +62,10 @@ dependencies {
     compileOnly project(":app")
 
     api 'io.rsocket.rpc:rsocket-rpc-core'
-    api 'io.rsocket:rsocket-transport-netty'
+    api ('io.rsocket:rsocket-transport-netty') {
+        exclude group: "io.projectreactor.netty", module: "reactor-netty-core"
+        exclude group: "io.projectreactor.netty", module: "reactor-netty-http"
+    }
 
     testImplementation project(":app")
     testImplementation 'org.springframework.boot:spring-boot-test'
