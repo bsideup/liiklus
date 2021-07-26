@@ -23,17 +23,27 @@ tasks.test.dependsOn(
         rootProject.project(":plugins:inmemory-records-storage").getTasksByName("jar", false)
 )
 
-processResources {
+tasks.register('appDependency') {
     dependsOn(
             tasks.findByPath(":app:sourcesJar"),
             tasks.findByPath(":app:bootJar"),
             tasks.findByPath(":app:jar")
     )
+
+    doLast {
+        def app = tasks.findByPath(":app:bootJar").outputs.files.singleFile
+        if (app.name != 'app-boot.jar') {
+            throw new GradleException(':app:bootJar task should produce explicitly "app-boot.jar" file to be included into TCK, got: ' + app.absolutePath)
+        }
+    }
 }
+
+processResources.dependsOn(tasks.appDependency)
 
 sourceSets {
     main {
         resources.srcDir tasks.findByPath(":app:bootJar").outputs.files.singleFile.parentFile
+        resources.include 'app-boot.jar'
     }
 }
 
