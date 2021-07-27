@@ -33,7 +33,7 @@ tasks.register('appDependency') {
     doLast {
         def app = tasks.findByPath(":app:bootJar").outputs.files.singleFile
         if (app.name != 'app-boot.jar') {
-            throw new GradleException(':app:bootJar task should produce explicitly "app-boot.jar" file to be included into TCK, got: ' + app.absolutePath)
+            throw new GradleException(':app:bootJar task should produce exactly "app-boot.jar" file to be included into TCK, got: ' + app.absolutePath)
         }
     }
 }
