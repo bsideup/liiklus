@@ -6,6 +6,7 @@ import com.github.bsideup.liiklus.transport.rsocket.RSocketLiiklusService;
 import com.github.bsideup.liiklus.transport.rsocket.RSocketServerConfigurer;
 import com.github.bsideup.liiklus.util.PropertiesUtil;
 import com.google.auto.service.AutoService;
+import io.rsocket.SocketAcceptor;
 import io.rsocket.core.RSocketServer;
 import io.rsocket.ipc.RequestHandlingRSocket;
 import io.rsocket.transport.netty.server.CloseableChannel;
@@ -51,11 +52,9 @@ public class RSocketConfiguration implements ApplicationContextInitializer<Gener
 
                     var liiklusService = applicationContext.getBean(LiiklusService.class);
                     var server = new LiiklusServiceServer(liiklusService, Optional.empty(), Optional.empty(), Optional.empty());
-                    var requestHandlingRSocket = new RequestHandlingRSocket()
-                        .withEndpoint(server);
+                    var requestHandlingRSocket = new RequestHandlingRSocket().withEndpoint(server);
 
-                    var rSocketServer = RSocketServer.create()
-                            .acceptor((setup, sendingSocket) -> Mono.just(requestHandlingRSocket));
+                    var rSocketServer = RSocketServer.create(SocketAcceptor.with(requestHandlingRSocket));
 
                     for (var configurer : applicationContext.getBeansOfType(RSocketServerConfigurer.class).values()) {
                         configurer.apply(rSocketServer);
