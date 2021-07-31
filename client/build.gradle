@@ -66,7 +66,6 @@ dependencies {
     api 'io.grpc:grpc-protobuf'
     api 'com.salesforce.servicelibs:reactor-grpc-stub'
     api 'io.rsocket.rpc:rsocket-rpc-core'
-
     api 'io.rsocket:rsocket-transport-netty'
     api 'io.grpc:grpc-netty'
     api 'com.google.protobuf:protobuf-java-util'

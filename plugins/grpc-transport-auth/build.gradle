@@ -36,7 +36,10 @@ dependencies {
     testRuntimeOnly 'io.netty:netty-tcnative-boringssl-static:2.0.25.Final'
 
     testImplementation project(":tck")
-    testImplementation project(":client")
+    testImplementation (project(":client")) {
+        exclude group: 'io.rsocket.rpc', module: 'rsocket-rpc-core'
+        exclude group: 'io.rsocket', module: 'rsocket-transport-netty'
+    }
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.bouncycastle:bcpkix-jdk15on:1.66'
     testImplementation project(":plugins:grpc-transport")
