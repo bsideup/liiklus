@@ -26,7 +26,7 @@ dependencies {
 
     compileOnly project(":app")
 
-    api 'org.apache.pulsar:pulsar-client-original:2.4.0'
+    api 'org.apache.pulsar:pulsar-client-original:2.8.1'
 
     testImplementation project(":tck")
     testImplementation 'org.testcontainers:pulsar'
