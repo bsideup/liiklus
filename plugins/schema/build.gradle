@@ -23,7 +23,7 @@ dependencies {
 
     compileOnly project(":app")
 
-    api 'com.networknt:json-schema-validator:0.1.19'
+    api 'com.networknt:json-schema-validator:1.0.60'
 
     api 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
 
