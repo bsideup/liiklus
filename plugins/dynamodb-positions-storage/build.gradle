@@ -31,5 +31,5 @@ dependencies {
     testImplementation project(":tck")
     testImplementation 'org.springframework.boot:spring-boot-test'
     testImplementation 'org.testcontainers:localstack'
-    testImplementation 'com.amazonaws:aws-java-sdk-dynamodb:1.11.475'
+    testImplementation 'com.amazonaws:aws-java-sdk-dynamodb:1.12.82'
 }
