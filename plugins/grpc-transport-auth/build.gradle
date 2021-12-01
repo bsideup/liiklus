@@ -41,6 +41,6 @@ dependencies {
         exclude group: 'io.rsocket', module: 'rsocket-transport-netty'
     }
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testImplementation 'org.bouncycastle:bcpkix-jdk15on:1.66'
+    testImplementation 'org.bouncycastle:bcpkix-jdk15on:1.70'
     testImplementation project(":plugins:grpc-transport")
 }
