@@ -29,7 +29,7 @@ dependencies {
     compileOnly project(":plugins:grpc-transport")
 
     implementation 'com.auth0:java-jwt:3.9.0'
-    implementation 'com.avast.grpc.jwt:grpc-java-jwt:0.2.0'
+    implementation 'com.avast.grpc.jwt:grpc-java-jwt:0.5.2'
 
     // see https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty for the compatibility version
     runtimeOnly 'io.netty:netty-tcnative-boringssl-static:2.0.25.Final'
