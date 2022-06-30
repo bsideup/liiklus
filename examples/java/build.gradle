@@ -47,7 +47,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.testcontainers:kafka:1.15.3'
+    implementation 'org.testcontainers:kafka:1.17.3'
 
     implementation 'org.apache.commons:commons-math3:3.6.1'
 
