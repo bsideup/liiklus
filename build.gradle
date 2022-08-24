@@ -106,7 +106,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
             mavenBom 'org.testcontainers:testcontainers-bom:1.16.0'
 
             // pinned to 1.23.1, see https://github.com/grpc/grpc-java/issues/6707
-            mavenBom 'io.grpc:grpc-bom:1.23.1'
+            mavenBom 'io.grpc:grpc-bom:1.49.0'
             mavenBom 'com.google.protobuf:protobuf-bom:3.10.0'
 
             mavenBom 'io.rsocket:rsocket-bom:1.1.0'
