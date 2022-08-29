@@ -57,5 +57,5 @@ dependencies {
     implementation 'io.grpc:grpc-protobuf:1.24.1'
     implementation 'com.salesforce.servicelibs:reactor-grpc-stub:0.10.0'
 
-    runtimeOnly 'ch.qos.logback:logback-classic:1.2.4-groovyless'
+    runtimeOnly 'ch.qos.logback:logback-classic:1.4.0'
 }
