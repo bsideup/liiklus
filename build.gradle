@@ -127,7 +127,7 @@ configure(subprojects.findAll { !it.name.startsWith("examples/") }) {
             dependency 'com.google.auto.service:auto-service:1.0'
 
             // Override kafka-clients' version, otherwise it comes from Spring Boot
-            dependency 'org.apache.kafka:kafka-clients:2.3.1'
+            dependency 'org.apache.kafka:kafka-clients:3.2.2'
 
             dependency 'com.salesforce.servicelibs:reactor-grpc-stub:0.10.0'
 
