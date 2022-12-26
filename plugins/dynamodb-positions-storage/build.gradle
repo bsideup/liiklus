@@ -26,7 +26,7 @@ dependencies {
 
     compileOnly project(":app")
 
-    api 'software.amazon.awssdk:dynamodb:2.3.0'
+    api 'software.amazon.awssdk:dynamodb:2.19.4'
 
     testImplementation project(":tck")
     testImplementation 'org.springframework.boot:spring-boot-test'
