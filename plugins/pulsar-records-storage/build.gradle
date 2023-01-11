@@ -30,6 +30,6 @@ dependencies {
 
     testImplementation project(":tck")
     testImplementation 'org.testcontainers:pulsar'
-    testImplementation 'org.apache.pulsar:pulsar-client-admin-original:2.4.0'
+    testImplementation 'org.apache.pulsar:pulsar-client-admin-original:2.11.0'
     testImplementation 'org.springframework.boot:spring-boot-test'
 }
